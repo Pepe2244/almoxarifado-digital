@@ -46,6 +46,35 @@
     <div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <main class="container" role="main">
+        <section id="unified-dashboard" class="card" aria-labelledby="unified-dashboard-title">
+            <div class="card-header">
+                <h2 id="unified-dashboard-title"><i class="fas fa-chart-line" aria-hidden="true"></i> Dashboard Geral</h2>
+            </div>
+            <div class="card-body">
+                <div class="stats-grid" id="dashboard-stats-grid">
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <canvas id="item-types-chart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="stock-levels-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <section id="reporting-section" class="card" aria-labelledby="reporting-section-title">
+            <div class="card-header">
+                <h2 id="reporting-section-title"><i class="fas fa-file-alt" aria-hidden="true"></i> Central de Relatórios</h2>
+            </div>
+            <div class="card-body">
+                <div class="reporting-actions">
+                    <button class="btn btn-info" data-action="export-inventory-pdf"><i class="fas fa-file-pdf"></i> Exportar Inventário (PDF)</button>
+                    <button class="btn btn-info" data-action="export-debits-pdf"><i class="fas fa-file-pdf"></i> Relatório de Débitos (PDF)</button>
+                    <button class="btn btn-success" data-action="export-inventory-csv"><i class="fas fa-file-csv"></i> Exportar Inventário (CSV)</button>
+                </div>
+            </div>
+        </section>
         <section id="service-order-management" class="card" aria-labelledby="service-order-management-title">
             <div class="card-header">
                 <h2 id="service-order-management-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Ordens de Serviço</h2>
@@ -220,8 +249,6 @@
                 </div>
             </div>
         </section>
-        <section id="reporting-section" class="card" aria-labelledby="reporting-section-title"></section>
-        <section id="unified-dashboard" class="card" aria-labelledby="unified-dashboard-title"></section>
         <section id="log-viewer" class="card hidden" aria-labelledby="log-viewer-title"></section>
     </main>
 
@@ -1025,7 +1052,8 @@
     </template>
 
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.3/dist/email.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>

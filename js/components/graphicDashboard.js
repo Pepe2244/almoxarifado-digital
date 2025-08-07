@@ -1,155 +1,93 @@
-// almoxarifado-digital/js/components/graphicDashboard.js
+import { apiClient } from '../modules/apiClient.js';
 
-let stockValueChart = null;
-let movementChart = null;
-let chartUpdateTimeout = null;
-let isChartUpdating = false;
+let itemTypesChart = null;
+let stockLevelsChart = null;
 
-function resizeCharts() {
-    if (stockValueChart) {
-        stockValueChart.resize();
-    }
-    if (movementChart) {
-        movementChart.resize();
-    }
-}
-
-function updateCharts(allItems) {
-    if (isChartUpdating) {
-        return;
-    }
-    isChartUpdating = true;
-
-    clearTimeout(chartUpdateTimeout);
-    chartUpdateTimeout = setTimeout(() => {
-        try {
-            const isDarkMode = document.body.classList.contains('dark');
-            const textColor = isDarkMode ? '#c9d1d9' : '#212529';
-            const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-            const settings = getSettings();
-            const analysisDays = settings.dashboardAnalysisDays || 30;
-
-            const valuePerType = allItems.reduce((acc, item) => {
-                const value = (item.totalStock || 0) * (item.price || 0);
-                if (!acc[item.type]) {
-                    acc[item.type] = 0;
-                }
-                acc[item.type] += value;
-                return acc;
-            }, {});
-
-            const stockLabels = Object.keys(valuePerType);
-            const stockData = Object.values(valuePerType);
-            const stockValueCtx = document.getElementById('stockValueChart')?.getContext('2d');
-
-            if (stockValueCtx) {
-                if (stockValueChart) {
-                    stockValueChart.data.labels = stockLabels;
-                    stockValueChart.data.datasets[0].data = stockData;
-                    stockValueChart.options.plugins.legend.labels.color = textColor;
-                    stockValueChart.data.datasets[0].borderColor = isDarkMode ? '#161b22' : '#ffffff';
-                    stockValueChart.update();
-                } else {
-                    stockValueChart = new Chart(stockValueCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: stockLabels,
-                            datasets: [{
-                                label: 'Valor do Estoque',
-                                data: stockData,
-                                backgroundColor: ['rgba(54, 162, 235, 0.8)', 'rgba(255, 99, 132, 0.8)', 'rgba(255, 206, 86, 0.8)', 'rgba(75, 192, 192, 0.8)', 'rgba(153, 102, 255, 0.8)', 'rgba(255, 159, 64, 0.8)'],
-                                borderColor: isDarkMode ? '#161b22' : '#ffffff',
-                                borderWidth: 2
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: { position: 'top', labels: { color: textColor } }
-                            }
-                        }
-                    });
-                }
-            }
-
-            const movementCtx = document.getElementById('movementChart')?.getContext('2d');
-            if (movementCtx) {
-                const movementTitleElement = movementCtx.canvas.parentElement.querySelector('h4');
-                if (movementTitleElement) {
-                    movementTitleElement.textContent = `Movimentações (Últimos ${analysisDays} dias)`;
-                }
-
-                const dateLabels = new Map();
-                const today = new Date();
-                for (let i = analysisDays - 1; i >= 0; i--) {
-                    const d = new Date(today);
-                    d.setDate(d.getDate() - i);
-                    const key = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                    dateLabels.set(key, { entries: 0, exits: 0 });
-                }
-
-                const startDate = new Date();
-                startDate.setDate(startDate.getDate() - analysisDays);
-                startDate.setHours(0, 0, 0, 0);
-
-                allItems.forEach(item => {
-                    (item.history || []).forEach(record => {
-                        const recordDate = new Date(record.timestamp);
-                        if (recordDate >= startDate) {
-                            const key = recordDate.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-                            if (dateLabels.has(key)) {
-                                const data = dateLabels.get(key);
-                                const quantity = Math.abs(record.quantity);
-                                if ([ACTIONS.HISTORY_ENTRY, ACTIONS.HISTORY_RETURN].includes(record.type)) {
-                                    data.entries += quantity;
-                                } else if ([ACTIONS.HISTORY_EXIT, ACTIONS.HISTORY_LOAN, ACTIONS.HISTORY_LOSS, ACTIONS.HISTORY_DISCARD].includes(record.type)) {
-                                    data.exits += quantity;
-                                }
-                            }
-                        }
-                    });
-                });
-
-                const movementLabels = Array.from(dateLabels.keys());
-                const entryData = Array.from(dateLabels.values()).map(d => d.entries);
-                const exitData = Array.from(dateLabels.values()).map(d => d.exits);
-
-                if (movementChart) {
-                    movementChart.data.labels = movementLabels;
-                    movementChart.data.datasets[0].data = entryData;
-                    movementChart.data.datasets[1].data = exitData;
-                    movementChart.options.plugins.legend.labels.color = textColor;
-                    movementChart.options.scales.y.ticks.color = textColor;
-                    movementChart.options.scales.x.ticks.color = textColor;
-                    movementChart.options.scales.y.grid.color = gridColor;
-                    movementChart.update();
-                } else {
-                    movementChart = new Chart(movementCtx, {
-                        type: 'bar',
-                        data: {
-                            labels: movementLabels,
-                            datasets: [
-                                { label: 'Entradas', data: entryData, backgroundColor: 'rgba(75, 192, 192, 0.7)', borderColor: 'rgba(75, 192, 192, 1)', borderWidth: 1 },
-                                { label: 'Saídas', data: exitData, backgroundColor: 'rgba(255, 99, 132, 0.7)', borderColor: 'rgba(255, 99, 132, 1)', borderWidth: 1 }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
-                                x: { ticks: { color: textColor }, grid: { color: 'transparent' } }
-                            },
-                            plugins: {
-                                legend: { position: 'top', labels: { color: textColor } }
-                            }
-                        }
-                    });
-                }
-            }
-        } finally {
-            isChartUpdating = false;
+async function updateDashboard() {
+    try {
+        const data = await apiClient.get('dashboard-data');
+        renderStatsCards(data);
+        renderCharts(data);
+    } catch (error) {
+        console.error("Failed to update dashboard:", error);
+        const dashboardGrid = document.getElementById('dashboard-stats-grid');
+        if (dashboardGrid) {
+            dashboardGrid.innerHTML = `<p class="error-message">Não foi possível carregar os dados do dashboard.</p>`;
         }
-    }, 50);
+    }
 }
+
+function renderStatsCards(data) {
+    const container = document.getElementById('dashboard-stats-grid');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-boxes"></i></div>
+            <div class="stat-card-info">
+                <span class="stat-card-title">Itens Totais</span>
+                <span class="stat-card-value">${data.totalItems}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-dollar-sign"></i></div>
+            <div class="stat-card-info">
+                <span class="stat-card-title">Valor em Estoque</span>
+                <span class="stat-card-value">R$ ${data.totalStockValue.toFixed(2)}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-users"></i></div>
+            <div class="stat-card-info">
+                <span class="stat-card-title">Colaboradores Ativos</span>
+                <span class="stat-card-value">${data.totalCollaborators}</span>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-card-icon"><i class="fas fa-clipboard-list"></i></div>
+            <div class="stat-card-info">
+                <span class="stat-card-title">O.S. Abertas</span>
+                <span class="stat-card-value">${data.openServiceOrders}</span>
+            </div>
+        </div>
+    `;
+}
+
+function renderCharts(data) {
+    const itemTypesCtx = document.getElementById('item-types-chart')?.getContext('2d');
+    if (itemTypesCtx) {
+        if (itemTypesChart) {
+            itemTypesChart.destroy();
+        }
+        itemTypesChart = new Chart(itemTypesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: data.itemTypesDistribution.map(item => item.type),
+                datasets: [{
+                    label: 'Distribuição por Tipo',
+                    data: data.itemTypesDistribution.map(item => item.count),
+                    backgroundColor: [
+                        '#3498db', '#e74c3c', '#9b59b6', '#f1c40f', '#2ecc71',
+                        '#34495e', '#1abc9c', '#d35400', '#c0392b', '#8e44ad'
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    },
+                    title: {
+                        display: true,
+                        text: 'Distribuição de Itens por Tipo'
+                    }
+                }
+            }
+        });
+    }
+}
+
+export { updateDashboard };
