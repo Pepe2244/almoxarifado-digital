@@ -8,17 +8,30 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-    if (event.httpMethod !== 'GET') {
-        return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
-    }
-
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM logs ORDER BY "timestamp" DESC LIMIT 500');
-        return {
-            statusCode: 200,
-            body: JSON.stringify(result.rows)
-        };
+        switch (event.httpMethod) {
+            case 'GET':
+                const getResult = await client.query('SELECT * FROM logs ORDER BY "timestamp" DESC LIMIT 500');
+                return {
+                    statusCode: 200,
+                    body: JSON.stringify(getResult.rows)
+                };
+
+            case 'POST':
+                const { action, details, user } = JSON.parse(event.body);
+                const postResult = await client.query(
+                    'INSERT INTO logs (action, details, "user") VALUES ($1, $2, $3) RETURNING *',
+                    [action, details, user]
+                );
+                return {
+                    statusCode: 201,
+                    body: JSON.stringify(postResult.rows[0])
+                };
+
+            default:
+                return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+        }
     } catch (error) {
         return {
             statusCode: 500,
