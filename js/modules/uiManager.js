@@ -1,4 +1,5 @@
 import { MODAL_IDS } from '../constants.js';
+import { getSettings } from './settings.js';
 
 export function showToast(message, type = 'info', duration = 3000) {
     const container = document.getElementById('toast-container');
@@ -70,5 +71,42 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
 }
 
 export function openSettingsModal() {
-    openModal(MODAL_IDS.SETTINGS);
+    const modal = document.getElementById(MODAL_IDS.SETTINGS);
+    const template = document.getElementById('settings-modal-template');
+    if (!modal || !template) return;
+
+    modal.innerHTML = template.innerHTML;
+    const form = modal.querySelector('#settings-form');
+    const settings = getSettings();
+
+    form.elements['setting-warehouse-name'].value = settings.warehouseName || 'Almoxarifado Digital';
+    form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
+    form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
+
+    const panelVisibilityContainer = form.querySelector('#panel-visibility-container .checkbox-group');
+    if (panelVisibilityContainer) {
+        panelVisibilityContainer.innerHTML = '';
+        Object.keys(settings.panelVisibility).forEach(panelId => {
+            const panelElement = document.getElementById(panelId);
+            const panelTitle = panelElement?.querySelector('.card-header h2')?.textContent || panelId;
+
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.className = 'checkbox-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `vis-${panelId}`;
+            checkbox.name = panelId;
+            checkbox.checked = settings.panelVisibility[panelId] !== false;
+
+            const label = document.createElement('label');
+            label.htmlFor = `vis-${panelId}`;
+            label.textContent = panelTitle;
+
+            checkboxWrapper.append(checkbox, label);
+            panelVisibilityContainer.appendChild(checkboxWrapper);
+        });
+    }
+
+    modal.showModal();
 }
