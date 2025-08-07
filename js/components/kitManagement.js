@@ -1,110 +1,125 @@
 function initializeKitManagement() {
-    renderKitManagementComponent();
-    addKitTabEventListeners('kit-management');
-}
+    document.body.addEventListener('click', async (event) => {
+        const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
+        if (!action) return;
 
-function renderKitManagementComponent() {
-    const component = document.getElementById('kit-management');
-    if (!component) return;
-
-    const settings = getSettings();
-    if (settings.panelVisibility && settings.panelVisibility['kit-management'] === false) {
-        component.classList.add('hidden');
-        return;
-    }
-    component.classList.remove('hidden');
-
-    component.innerHTML = `
-        <div class="card-header two-row-header">
-            <div class="card-header-top">
-                <h2><i class="fas fa-toolbox"></i> Gestão de Kits</h2>
-                <div class="header-top-actions">
-                    <div class="search-container">
-                        <input type="text" id="kit-search-input" class="search-input" placeholder="Buscar kits...">
-                        <button id="kit-search-btn-icon" class="btn btn-icon-only">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="kit-management" title="Ocultar painel">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="header-main-actions">
-                <button class="btn btn-primary" data-action="${ACTIONS.ADD_KIT}" title="Adicionar Novo Kit"><i class="fas fa-plus"></i> Adicionar Kit</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Kit</th>
-                            <th>Estoque / Emprestado</th>
-                            <th>Itens no Kit</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="kits-table-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="kit-pagination-container" class="card-footer"></div>
-        </div>
-    `;
-}
-
-function addKitTabEventListeners(componentId) {
-    const component = document.getElementById(componentId);
-    if (!component) return;
-
-    component.addEventListener('click', (event) => {
-        const clickableElement = event.target.closest('[data-action]');
-        if (!clickableElement) return;
-
-        const action = clickableElement.dataset.action;
-        const id = clickableElement.dataset.id;
+        const button = event.target.closest('button');
+        const kitId = button?.dataset.id;
 
         switch (action) {
-            case ACTIONS.ADD_KIT:
-                openItemFormModal({ defaultValues: { type: 'Kit' } });
-                break;
-            case ACTIONS.MANAGE_KIT:
-                openKitManagementModal(id);
-                break;
-            case ACTIONS.EDIT_ITEM:
-                openItemFormModal({ itemId: id });
-                break;
-            case ACTIONS.ITEM_EXIT:
-                openMovementModal(id);
-                break;
-            case ACTIONS.VIEW_ITEM_HISTORY:
-                openItemHistoryModal(id);
-                break;
-            case ACTIONS.GENERATE_LABEL:
-                openLabelPrintModal(id);
-                break;
-            case ACTIONS.MANAGE_ALLOCATIONS:
-                const itemToManage = getItemById(id);
-                if (itemToManage) {
-                    openAllocationModal(itemToManage);
+            case 'manage-kit-components':
+                if (kitId) {
+                    openKitManagementModal(kitId);
                 }
                 break;
-            case ACTIONS.DELETE_ITEM:
-                const kitToDelete = getItemById(id);
-                if (kitToDelete) {
-                    openConfirmationModal({
-                        title: 'Excluir Kit',
-                        message: `Tem certeza que deseja excluir o kit "${kitToDelete.name}"? Esta ação não pode ser desfeita.`,
-                        onConfirm: () => {
-                            if (deleteItem(id)) {
-                                document.body.dispatchEvent(new CustomEvent('dataChanged'));
-                                closeModal('confirmation-modal');
-                            }
+            case 'remove-kit-component':
+                {
+                    const componentId = button.dataset.componentId;
+                    const kitModal = document.getElementById('item-kit-modal');
+                    const currentKitId = kitModal.querySelector('#kit-item-id').value;
+                    if (currentKitId && componentId) {
+                        const success = await removeComponentFromKit(currentKitId, componentId);
+                        if (success) {
+                            showToast('Componente removido do kit.', 'success');
+                            openKitManagementModal(currentKitId);
+                        } else {
+                            showToast('Falha ao remover componente.', 'error');
                         }
-                    });
+                    }
+                    break;
                 }
-                break;
         }
     });
+
+    document.body.addEventListener('submit', async (event) => {
+        if (event.target.id === 'kit-item-add-form') {
+            event.preventDefault();
+            const form = event.target;
+            const kitId = form.closest('dialog').querySelector('#kit-item-id').value;
+            const componentId = form.elements.itemId.value;
+            const quantity = parseInt(form.elements.quantity.value, 10);
+
+            if (kitId && componentId && quantity > 0) {
+                const success = await addComponentToKit(kitId, componentId, quantity);
+                if (success) {
+                    showToast('Componente adicionado ao kit.', 'success');
+                    openKitManagementModal(kitId);
+                } else {
+                    showToast('Falha ao adicionar componente.', 'error');
+                }
+            }
+        }
+    });
+}
+
+function renderKitsTable(kits) {
+    const tableBody = document.getElementById('kits-table-body');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (kits.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="3" class="text-center">Nenhum kit encontrado. Crie um item do tipo "Kit".</td></tr>`;
+        return;
+    }
+
+    kits.forEach(kit => {
+        const row = document.createElement('tr');
+        row.dataset.id = kit.id;
+        row.innerHTML = `
+            <td data-label="Nome do Kit">${kit.name}</td>
+            <td data-label="Componentes">${kit.components?.length || 0}</td>
+            <td data-label="Ações">
+                <button class="btn btn-primary btn-sm" data-action="manage-kit-components" data-id="${kit.id}">
+                    <i class="fas fa-edit"></i> Gerir Componentes
+                </button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+async function openKitManagementModal(kitId) {
+    const modal = document.getElementById('item-kit-modal');
+    const template = document.getElementById('item-kit-modal-template');
+    if (!modal || !template) return;
+
+    modal.innerHTML = template.innerHTML;
+    const kit = getItemById(kitId);
+    if (!kit) return;
+
+    modal.querySelector('#kit-modal-title').textContent = `Gerir Componentes do Kit: ${kit.name}`;
+    modal.querySelector('#kit-item-id').value = kitId;
+
+    const components = await getKitComponents(kitId);
+    const componentsTableBody = modal.querySelector('#kit-items-table-body');
+    componentsTableBody.innerHTML = '';
+
+    if (components.length > 0) {
+        components.forEach(comp => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${comp.componentName}</td>
+                <td>${comp.quantity}</td>
+                <td>
+                    <button class="btn btn-danger btn-sm" data-action="remove-kit-component" data-component-id="${comp.componentId}">
+                        <i class="fas fa-trash"></i> Remover
+                    </button>
+                </td>
+            `;
+            componentsTableBody.appendChild(row);
+        });
+    } else {
+        componentsTableBody.innerHTML = '<tr><td colspan="3" class="text-center">Nenhum componente neste kit.</td></tr>';
+    }
+
+    const itemSelect = modal.querySelector('#kit-add-item-select');
+    const allItems = getAllItems().filter(item => item.type !== 'Kit' && item.id !== parseInt(kitId, 10));
+    itemSelect.innerHTML = '<option value="">Selecione um item...</option>';
+    allItems.forEach(item => {
+        const option = new Option(`${item.name} (Estoque: ${item.currentStock})`, item.id);
+        itemSelect.add(option);
+    });
+
+    modal.showModal();
 }

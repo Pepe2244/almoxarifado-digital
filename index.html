@@ -83,7 +83,34 @@
             </div>
         </section>
         <section id="item-management" class="card" aria-labelledby="item-management-title"></section>
-        <section id="kit-management" class="card" aria-labelledby="kit-management-title"></section>
+        <section id="kit-management" class="card" aria-labelledby="kit-management-title">
+            <div class="card-header">
+                <h2 id="kit-management-title"><i class="fas fa-toolbox" aria-hidden="true"></i> Gestão de Kits</h2>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="kit-search-input" class="search-input" placeholder="Buscar por nome do kit...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="name">Nome do Kit</th>
+                                <th scope="col">Componentes</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="kits-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="kit-pagination">
+                </div>
+            </div>
+        </section>
         <section id="collaborator-management" class="card" aria-labelledby="collaborator-management-title">
             <div class="card-header">
                 <h2 id="collaborator-management-title"><i class="fas fa-users" aria-hidden="true"></i> Gestão de Colaboradores</h2>
@@ -970,6 +997,7 @@
     <script src="js/modules/validator.js"></script>
     <script src="js/modules/collaboratorManager.js"></script>
     <script src="js/modules/itemManager.js"></script>
+    <script src="js/modules/kitManager.js"></script>
     <script src="js/modules/debitManager.js"></script>
     <script src="js/modules/analysisManager.js"></script>
     <script src="js/modules/stockControl.js"></script>
