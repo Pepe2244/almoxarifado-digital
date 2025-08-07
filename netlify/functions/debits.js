@@ -36,6 +36,7 @@ exports.handler = async (event, context) => {
                 };
         }
     } catch (error) {
+        console.error('Error in debits function:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Internal Server Error', details: error.message })
@@ -47,10 +48,20 @@ async function getAllDebits() {
     const client = await pool.connect();
     try {
         const result = await client.query(`
-        SELECT d.*, c.name as "collaboratorName"
+        SELECT 
+            d.id,
+            d.item_name AS "itemName",
+            d.quantity,
+            d.unit_value AS "unitValue",
+            d.total_value AS "totalValue",
+            d.reason,
+            d.status,
+            d.created_at AS "createdAt",
+            d.collaborator_id AS "collaboratorId",
+            c.name AS "collaboratorName"
         FROM debits d
-        LEFT JOIN collaborators c ON d.collaboratorId = c.id
-        ORDER BY d."createdAt" DESC
+        LEFT JOIN collaborators c ON d.collaborator_id = c.id
+        ORDER BY d.created_at DESC
     `);
         return {
             statusCode: 200,
@@ -64,20 +75,28 @@ async function getAllDebits() {
 async function updateDebitStatus(id, { status }) {
     const client = await pool.connect();
     try {
-        const query = 'UPDATE debits SET status = $1 WHERE id = $2 RETURNING *;';
-        const values = [status, id];
-        const result = await client.query(query, values);
-
-        if (result.rows.length === 0) {
-            return { statusCode: 404, body: JSON.stringify({ error: 'Debit not found' }) };
-        }
+        await client.query('UPDATE debits SET status = $1 WHERE id = $2', [status, id]);
 
         const updatedDebitQuery = await client.query(`
-        SELECT d.*, c.name as "collaboratorName"
-        FROM debits d
-        LEFT JOIN collaborators c ON d.collaboratorId = c.id
-        WHERE d.id = $1
-    `, [id]);
+            SELECT 
+                d.id,
+                d.item_name AS "itemName",
+                d.quantity,
+                d.unit_value AS "unitValue",
+                d.total_value AS "totalValue",
+                d.reason,
+                d.status,
+                d.created_at AS "createdAt",
+                d.collaborator_id AS "collaboratorId",
+                c.name as "collaboratorName"
+            FROM debits d
+            LEFT JOIN collaborators c ON d.collaborator_id = c.id
+            WHERE d.id = $1
+        `, [id]);
+
+        if (updatedDebitQuery.rows.length === 0) {
+            return { statusCode: 404, body: JSON.stringify({ error: 'Debit not found after update' }) };
+        }
 
         return {
             statusCode: 200,
