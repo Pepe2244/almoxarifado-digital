@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/notificationManager.js
+
 import { getAllAlerts } from './alertSystem.js';
 
 function renderNotifications() {
