@@ -59,7 +59,7 @@ function generateBackupReminderAlert() {
                 id: 'backup-reminder',
                 type: 'info',
                 title: 'Lembrete de Backup',
-                message: `Já passaram mais de ${frequencyDays} dias desde o seu último backup.`,
+                message: `Já passaram mais de ${frequencyDays} dias desde o seu último backup.`
             }];
         }
     } else {
@@ -67,7 +67,7 @@ function generateBackupReminderAlert() {
             id: 'backup-reminder',
             type: 'info',
             title: 'Lembrete de Backup',
-            message: `Considere fazer o seu primeiro backup para segurança dos dados.`,
+            message: `Considere fazer o seu primeiro backup para segurança dos dados.`
         }];
     }
     return [];
