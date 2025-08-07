@@ -1,5 +1,3 @@
-// CÓDIGO CORRIGIDO - netlify/functions/collaborators.js
-
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -10,8 +8,6 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-    // A URL que chega aqui é, por exemplo: /.netlify/functions/collaborators/123
-    // O código abaixo extrai o '123' (o ID) se ele existir.
     const pathParts = event.path.split('/').filter(Boolean);
     const resourceId = pathParts.length > 3 ? pathParts[3] : null;
 
@@ -54,7 +50,7 @@ exports.handler = async (event, context) => {
 async function getAllCollaborators() {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM collaborators ORDER BY name ASC');
+        const result = await client.query('SELECT id, name, role, access_key as "accessKey", status, created_at as "createdAt", updated_at as "updatedAt" FROM collaborators ORDER BY name ASC');
         return {
             statusCode: 200,
             body: JSON.stringify(result.rows)
@@ -67,7 +63,7 @@ async function getAllCollaborators() {
 async function getCollaboratorById(id) {
     const client = await pool.connect();
     try {
-        const result = await client.query('SELECT * FROM collaborators WHERE id = $1', [id]);
+        const result = await client.query('SELECT id, name, role, access_key as "accessKey", status, created_at as "createdAt", updated_at as "updatedAt" FROM collaborators WHERE id = $1', [id]);
         if (result.rows.length === 0) {
             return { statusCode: 404, body: JSON.stringify({ error: 'Collaborator not found' }) };
         }
@@ -83,8 +79,9 @@ async function getCollaboratorById(id) {
 async function createCollaborator(details) {
     const client = await pool.connect();
     try {
-        const query = 'INSERT INTO collaborators (name, role, accessKey, status) VALUES ($1, $2, $3, $4) RETURNING *;';
-        const values = [details.name, details.role, details.accessKey, details.status];
+        // CORREÇÃO: Usando snake_case para as colunas do banco
+        const query = 'INSERT INTO collaborators (name, role, access_key, status) VALUES ($1, $2, $3, $4) RETURNING id, name, role, access_key as "accessKey", status;';
+        const values = [details.name, details.role, details.accessKey, details.status || 'ativo'];
         const result = await client.query(query, values);
         return {
             statusCode: 201,
@@ -98,7 +95,8 @@ async function createCollaborator(details) {
 async function updateCollaborator(id, details) {
     const client = await pool.connect();
     try {
-        const query = 'UPDATE collaborators SET name = $1, role = $2, accessKey = $3, status = $4, "updatedAt" = NOW() WHERE id = $5 RETURNING *;';
+        // CORREÇÃO: Usando snake_case para as colunas do banco
+        const query = 'UPDATE collaborators SET name = $1, role = $2, access_key = $3, status = $4, updated_at = NOW() WHERE id = $5 RETURNING id, name, role, access_key as "accessKey", status;';
         const values = [details.name, details.role, details.accessKey, details.status, id];
         const result = await client.query(query, values);
         if (result.rows.length === 0) {

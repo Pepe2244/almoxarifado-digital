@@ -18,6 +18,15 @@ import { registerLoan, adjustStock, registerDirectLoss } from './modules/stockCo
 import { MODAL_IDS } from './constants.js';
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Objeto para guardar os termos de busca atuais
+    const searchFilters = {
+        items: '',
+        kits: '',
+        collaborators: '',
+        debits: '',
+        serviceOrders: ''
+    };
+
     async function initializeApp() {
         try {
             await initializeDB();
@@ -115,10 +124,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'collaborator-form':
                     {
                         const collabId = form.elements['collaborator-id'].value;
+                        // CORREÇÃO: Mapeando 'registration' para 'accessKey'
                         const collabData = {
                             name: form.elements['collaborator-name'].value,
                             role: form.elements['collaborator-role'].value,
-                            registration: form.elements['collaborator-registration'].value,
+                            accessKey: form.elements['collaborator-registration'].value, // <-- AQUI
                             status: 'ativo'
                         };
                         success = collabId ? await updateCollaborator(collabId, collabData) : await addCollaborator(collabData);
@@ -129,7 +139,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         const names = form.elements['mass-add-collaborator-data'].value.split('\n').filter(name => name.trim() !== '');
                         if (names.length > 0) {
-                            const promises = names.map(name => addCollaborator({ name, role: 'N/A', status: 'ativo' }));
+                            // CORREÇÃO: Incluindo 'accessKey' para novos colaboradores em massa
+                            const promises = names.map(name => addCollaborator({ name, role: 'N/A', status: 'ativo', accessKey: null }));
                             const results = await Promise.all(promises);
                             const successfulAdds = results.filter(r => r).length;
                             showToast(`${successfulAdds} de ${names.length} colaboradores adicionados.`, 'success');
@@ -155,7 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         const itemNames = form.elements['mass-add-data'].value.split('\n').filter(name => name.trim() !== '');
                         if (itemNames.length > 0) {
-                            const promises = itemNames.map(name => createItem({ name, type: 'Geral' }));
+                            const promises = itemNames.map(name => createItem({ name, type: 'Geral', currentStock: 0, minStock: 0, price: 0 }));
                             const results = await Promise.all(promises);
                             const successfulAdds = results.filter(r => r).length;
                             showToast(`${successfulAdds} de ${itemNames.length} itens adicionados.`, 'success');
@@ -181,7 +192,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         saveSettings(settings);
                         showToast('Configurações salvas com sucesso!', 'success');
                         success = true;
-                        // Recarrega a página para aplicar a visibilidade dos painéis
                         setTimeout(() => window.location.reload(), 1000);
                         break;
                     }
@@ -230,16 +240,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const allItems = getAllItems();
-        const allCollaborators = getAllCollaborators();
-        const allDebits = getAllDebits();
-        const allServiceOrders = getAllServiceOrders();
+        // Aplicar filtros de busca
+        const filteredItems = getAllItems().filter(item => item.name.toLowerCase().includes(searchFilters.items));
+        const filteredKits = getAllItems().filter(item => item.type === 'Kit' && item.name.toLowerCase().includes(searchFilters.kits));
+        const filteredCollaborators = getAllCollaborators().filter(c => c.name.toLowerCase().includes(searchFilters.collaborators) || (c.accessKey && c.accessKey.toLowerCase().includes(searchFilters.collaborators)));
+        const filteredDebits = getAllDebits().filter(d => d.collaboratorName?.toLowerCase().includes(searchFilters.debits) || d.itemName?.toLowerCase().includes(searchFilters.debits));
+        const filteredServiceOrders = getAllServiceOrders().filter(os => os.customer.toLowerCase().includes(searchFilters.serviceOrders) || os.technicianName?.toLowerCase().includes(searchFilters.serviceOrders) || os.id.toString().includes(searchFilters.serviceOrders));
 
-        renderItemsTable(allItems.filter(item => item.type !== 'Kit'));
-        renderKitsTable(allItems.filter(item => item.type === 'Kit'));
-        renderCollaboratorsTable(allCollaborators);
-        renderDebitsTable(allDebits);
-        renderServiceOrdersTable(allServiceOrders);
+        renderItemsTable(filteredItems.filter(item => item.type !== 'Kit'));
+        renderKitsTable(filteredKits);
+        renderCollaboratorsTable(filteredCollaborators);
+        renderDebitsTable(filteredDebits);
+        renderServiceOrdersTable(filteredServiceOrders);
         renderNotifications();
         updateDashboard();
     }
@@ -254,7 +266,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addEventListeners() {
-        const debouncedUpdate = debounce(updateAllUI, 100);
+        const debouncedUpdate = debounce(updateAllUI, 300); // 300ms debounce
         document.body.addEventListener('dataChanged', debouncedUpdate);
         document.body.addEventListener('submit', handleFormSubmit);
 
@@ -270,6 +282,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     closeModal(modal.id);
                 }
             }
+        });
+
+        // IMPLEMENTAÇÃO DA BUSCA
+        document.getElementById('search-input')?.addEventListener('input', (e) => {
+            searchFilters.items = e.target.value.toLowerCase();
+            debouncedUpdate();
+        });
+        document.getElementById('kit-search-input')?.addEventListener('input', (e) => {
+            searchFilters.kits = e.target.value.toLowerCase();
+            debouncedUpdate();
+        });
+        document.getElementById('collaborator-search-input')?.addEventListener('input', (e) => {
+            searchFilters.collaborators = e.target.value.toLowerCase();
+            debouncedUpdate();
+        });
+        document.getElementById('debit-search-input')?.addEventListener('input', (e) => {
+            searchFilters.debits = e.target.value.toLowerCase();
+            debouncedUpdate();
+        });
+        document.getElementById('os-search-input')?.addEventListener('input', (e) => {
+            searchFilters.serviceOrders = e.target.value.toLowerCase();
+            debouncedUpdate();
         });
     }
 
