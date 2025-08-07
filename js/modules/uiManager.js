@@ -58,6 +58,7 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
     confirmBtn.textContent = confirmButtonText;
     cancelBtn.textContent = cancelButtonText;
 
+    // Limpa listeners antigos para evitar chamadas múltiplas
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
@@ -81,6 +82,7 @@ export function openSettingsModal() {
     const form = modal.querySelector('#settings-form');
     const settings = getSettings();
 
+    // Preenche os campos do formulário com as configurações salvas
     form.elements['setting-warehouse-name'].value = settings.warehouseName || 'Almoxarifado Digital';
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
@@ -90,7 +92,7 @@ export function openSettingsModal() {
         panelVisibilityContainer.innerHTML = '';
         Object.keys(settings.panelVisibility).forEach(panelId => {
             const panelElement = document.getElementById(panelId);
-            const panelTitle = panelElement?.querySelector('.card-header h2')?.textContent || panelId;
+            const panelTitle = panelElement?.querySelector('.card-header h2')?.textContent.trim() || panelId;
 
             const checkboxWrapper = document.createElement('div');
             checkboxWrapper.className = 'checkbox-item';
@@ -110,8 +112,32 @@ export function openSettingsModal() {
         });
     }
 
+    // *** INÍCIO DA CORREÇÃO: LÓGICA DAS ABAS ***
+    const tabs = modal.querySelectorAll('.settings-tab-btn');
+    const tabContents = modal.querySelectorAll('.settings-tab-content');
+
+    tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove a classe 'active' de todas as abas e conteúdos
+            tabs.forEach(t => t.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+
+            // Adiciona a classe 'active' na aba clicada
+            tab.classList.add('active');
+
+            // Encontra e exibe o conteúdo correspondente
+            const activeContentId = tab.getAttribute('aria-controls');
+            const activeContent = modal.querySelector(`#${activeContentId}`);
+            if (activeContent) {
+                activeContent.classList.add('active');
+            }
+        });
+    });
+    // *** FIM DA CORREÇÃO ***
+
     modal.showModal();
 }
+
 
 export function openMovementModal(itemId) {
     const modal = document.getElementById(MODAL_IDS.MOVEMENT);
