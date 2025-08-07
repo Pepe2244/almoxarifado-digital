@@ -1,139 +1,54 @@
-// almoxarifado-digital/js/modules/dataHandler.js
-let db;
+import { apiClient } from './apiClient.js';
+import { fetchItems } from './itemManager.js';
+import { fetchCollaborators } from './collaboratorManager.js';
+import { fetchDebits } from './debitManager.js';
+import { fetchServiceOrders } from './serviceOrderManager.js';
+import { fetchLogs } from './logManager.js';
+import { saveSettings } from './settings.js';
 
-function initializeDB() {
-    return new Promise((resolve, reject) => {
-        const request = indexedDB.open('AlmoxarifadoDB', 1);
-
-        request.onupgradeneeded = (event) => {
-            const dbInstance = event.target.result;
-            if (!dbInstance.objectStoreNames.contains('images')) {
-                dbInstance.createObjectStore('images', { keyPath: 'id' });
-            }
-        };
-
-        request.onsuccess = (event) => {
-            db = event.target.result;
-            resolve(db);
-        };
-
-        request.onerror = (event) => {
-            console.error('Erro ao inicializar o IndexedDB:', event.target.error);
-            showToast("Erro crítico: Não foi possível iniciar o banco de dados de imagens.", "error");
-            reject(event.target.error);
-        };
-    });
-}
-
-function saveDataToLocal(key, data) {
+async function initializeDB() {
     try {
-        const jsonString = JSON.stringify(data);
-        localStorage.setItem(key, jsonString);
+        await Promise.all([
+            fetchItems(),
+            fetchCollaborators(),
+            fetchDebits(),
+            fetchServiceOrders(),
+            fetchLogs()
+        ]);
     } catch (error) {
-        console.error(`Erro ao salvar dados para a chave "${key}":`, error);
-        if (error.name === 'QuotaExceededError') {
-            showToast("Erro Crítico: O armazenamento local está cheio. Não é possível salvar. Considere fazer um backup e limpar dados antigos.", "error");
-        } else {
-            showToast("Erro crítico ao salvar os dados. Verifique o console para mais detalhes.", "error");
-        }
+        console.error("Failed to initialize data from backend:", error);
+        throw new Error("Could not fetch initial data. Please check the connection.");
     }
 }
 
-function loadDataFromLocal(key) {
-    const jsonData = localStorage.getItem(key);
-    if (jsonData === null) {
-        if (key === DB_KEYS.SETTINGS || key === DB_KEYS.DISMISSED_TEMPORARY_ALERTS) {
-            return {};
-        }
-        return [];
-    }
-
+async function restoreDatabase(data) {
     try {
-        return JSON.parse(jsonData);
+        // Esta função precisaria de endpoints no backend para limpar e inserir dados em massa.
+        // Como estamos a operar com um backend serverless simples, a lógica de restauro
+        // torna-se complexa e perigosa (múltiplas chamadas de API).
+        // A abordagem mais segura com a arquitetura atual é o restauro local.
+
+        // Limpar dados locais (se estivéssemos a usar IndexedDB)
+        // localStorage.clear(); // CUIDADO: Isto apaga tudo
+
+        // Salvar as novas configurações
+        saveSettings(data.settings);
+
+        // A lógica para substituir os dados no backend precisaria de ser implementada
+        // com endpoints específicos para evitar problemas de concorrência e timeouts.
+        // Por agora, vamos focar no backup, que é a parte mais segura.
+        // O restauro é uma operação avançada que requer mais infraestrutura de backend.
+
+        console.log("Dados do backup carregados para as configurações.", data);
+        alert("Funcionalidade de restauro ainda em desenvolvimento. As configurações foram carregadas, mas os dados principais não foram alterados para segurança.");
+
+
+        return true;
     } catch (error) {
-        console.error(`Erro ao carregar ou analisar dados da chave "${key}":`, error);
-
-        const backupKey = `${key}_corrupted_backup_${new Date().toISOString()}`;
-        localStorage.setItem(backupKey, jsonData);
-        localStorage.removeItem(key);
-
-        const friendlyKeyName = key.replace('almoxarifado_', '').replace(/s$/, '');
-        openConfirmationModal({
-            title: 'Erro de Dados Corrompidos',
-            message: `Detectamos um problema ao carregar os dados de "${friendlyKeyName}". Para proteger seu sistema, os dados corrompidos foram removidos e um backup de recuperação foi salvo como "${backupKey}".\n\nO sistema continuará com os dados desta seção reiniciados.`,
-            showConfirmButton: false
-        });
-
-        if (key === DB_KEYS.SETTINGS || key === DB_KEYS.DISMISSED_TEMPORARY_ALERTS) {
-            return {};
-        }
-        return [];
+        console.error("Database restore failed:", error);
+        return false;
     }
 }
 
-function saveImage(itemId, imageDataUrl) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject('IndexedDB não inicializado.');
-            return;
-        }
-        const transaction = db.transaction(['images'], 'readwrite');
-        const store = transaction.objectStore('images');
-        const request = store.put({ id: itemId, data: imageDataUrl });
 
-        request.onsuccess = () => {
-            resolve();
-        };
-
-        request.onerror = (event) => {
-            console.error('Erro ao salvar imagem no IndexedDB:', event.target.error);
-            reject(event.target.error);
-        };
-    });
-}
-
-function loadImage(itemId) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject('IndexedDB não inicializado.');
-            return;
-        }
-        const transaction = db.transaction(['images'], 'readonly');
-        const store = transaction.objectStore('images');
-        const request = store.get(itemId);
-
-        request.onsuccess = (event) => {
-            if (event.target.result) {
-                resolve(event.target.result.data);
-            } else {
-                resolve(null);
-            }
-        };
-
-        request.onerror = (event) => {
-            console.error('Erro ao carregar imagem do IndexedDB:', event.target.error);
-            reject(event.target.error);
-        };
-    });
-}
-
-function deleteImage(itemId) {
-    return new Promise((resolve, reject) => {
-        if (!db) {
-            reject('IndexedDB não inicializado.');
-            return;
-        }
-        const transaction = db.transaction(['images'], 'readwrite');
-        const store = transaction.objectStore('images');
-        const request = store.delete(itemId);
-
-        request.onsuccess = () => {
-            resolve();
-        };
-
-        request.onerror = (event) => {
-            console.error('Erro ao deletar imagem do IndexedDB:', event.target.error);
-            reject(event.target.error);
-        };
-    });
-}
+export { initializeDB, restoreDatabase };

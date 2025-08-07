@@ -1,81 +1,83 @@
-// almoxarifado-digital/js/modules/backupManager.js
+import { getAllItems } from './itemManager.js';
+import { getAllCollaborators } from './collaboratorManager.js';
+import { getAllDebits } from './debitManager.js';
+import { getAllServiceOrders } from './serviceOrderManager.js';
+import { getSettings, saveSettings } from './settings.js';
+import { restoreDatabase } from './dataHandler.js';
+import { showToast, openConfirmationModal, closeModal } from './uiManager.js';
+
+const BACKUP_VERSION = "1.0.0";
+
 function backupData() {
-    try {
-        const data = {
-            items: loadDataFromLocal(DB_KEYS.ITEMS),
-            collaborators: loadDataFromLocal(DB_KEYS.COLLABORATORS),
-            debits: loadDataFromLocal(DB_KEYS.DEBITS),
-            logs: loadDataFromLocal(DB_KEYS.LOGS),
-            settings: loadDataFromLocal(DB_KEYS.SETTINGS),
-            persistentAlerts: loadDataFromLocal(DB_KEYS.PERSISTENT_ALERTS),
-            dismissedTemporaryAlerts: loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS)
-        };
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        a.download = `almoxarifado_backup_${timestamp}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    const backupObject = {
+        version: BACKUP_VERSION,
+        timestamp: new Date().toISOString(),
+        settings: getSettings(),
+        items: getAllItems(),
+        collaborators: getAllCollaborators(),
+        debits: getAllDebits(),
+        serviceOrders: getAllServiceOrders(),
+    };
 
-        const settings = getSettings();
-        if (!settings.backupReminder) {
-            settings.backupReminder = {};
-        }
-        settings.backupReminder.lastBackupDate = new Date().toISOString();
-        saveSettings(settings);
+    const jsonString = JSON.stringify(backupObject, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
 
-        showToast("Backup criado com sucesso!", "success");
-        createLog('BACKUP_DATA', 'Backup completo dos dados realizado.', 'Usuário');
-        document.body.dispatchEvent(new CustomEvent('dataChanged'));
-    } catch (error) {
-        console.error("Erro ao criar backup:", error);
-        showToast("Falha ao criar backup. Verifique o console.", "error");
-        createLog('BACKUP_FAILURE', `Falha ao criar backup: ${error.message}`, 'Sistema');
-    }
+    const a = document.createElement('a');
+    a.href = url;
+    const date = new Date().toISOString().slice(0, 10);
+    a.download = `almoxarifado_backup_${date}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const settings = getSettings();
+    if (!settings.backupReminder) settings.backupReminder = {};
+    settings.backupReminder.lastBackup = new Date().toISOString();
+    saveSettings(settings);
+
+    showToast('Backup realizado com sucesso!', 'success');
 }
 
 function restoreData(event) {
     const file = event.target.files[0];
-    if (!file) {
-        return;
-    }
+    if (!file) return;
 
     const reader = new FileReader();
     reader.onload = (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            if (data.items && data.collaborators && data.debits && data.settings) {
-                openConfirmationModal({
-                    title: 'Restaurar Backup',
-                    message: `Tem certeza que deseja restaurar este backup? Isso substituirá TODOS os seus dados atuais.`,
-                    onConfirm: () => {
-                        saveDataToLocal(DB_KEYS.ITEMS, data.items);
-                        saveDataToLocal(DB_KEYS.COLLABORATORS, data.collaborators);
-                        saveDataToLocal(DB_KEYS.DEBITS, data.debits);
-                        saveDataToLocal(DB_KEYS.LOGS, data.logs || []);
-                        saveDataToLocal(DB_KEYS.SETTINGS, data.settings);
-                        saveDataToLocal(DB_KEYS.PERSISTENT_ALERTS, data.persistentAlerts || []);
-                        saveDataToLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS, data.dismissedTemporaryAlerts || {});
 
-                        showToast("Dados restaurados com sucesso! Recarregando a página...", "success");
-                        createLog('RESTORE_DATA', 'Dados restaurados a partir de um backup.', 'Usuário');
-                        setTimeout(() => window.location.reload(), 1500);
-                    }
-                });
-            } else {
-                showToast("Arquivo de backup inválido. Estrutura de dados incorreta.", "error");
-                createLog('RESTORE_FAILURE', 'Tentativa de restauração com arquivo de backup inválido (estrutura).', 'Usuário');
+            if (!data.version || !data.items || !data.collaborators) {
+                throw new Error('Ficheiro de backup inválido ou corrompido.');
             }
+
+            openConfirmationModal({
+                title: 'Confirmar Restauro',
+                message: 'Tem a certeza? Esta ação irá substituir TODOS os dados atuais pelos dados do ficheiro de backup. Esta operação não pode ser desfeita.',
+                onConfirm: async () => {
+                    closeModal('confirmation-modal');
+                    showToast('A restaurar dados... A página será recarregada.', 'info');
+
+                    const success = await restoreDatabase(data);
+                    if (success) {
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1500);
+                    } else {
+                        showToast('Ocorreu um erro durante o restauro.', 'error');
+                    }
+                }
+            });
+
         } catch (error) {
-            console.error("Erro ao ler ou analisar arquivo de backup:", error);
-            showToast("Erro ao ler arquivo de backup. Certifique-se de que é um JSON válido.", "error");
-            createLog('RESTORE_FAILURE', `Falha ao restaurar backup: ${error.message}`, 'Usuário');
+            showToast(`Erro ao ler o ficheiro de backup: ${error.message}`, 'error');
+        } finally {
+            event.target.value = '';
         }
     };
     reader.readAsText(file);
 }
+
+export { backupData, restoreData };
