@@ -3,7 +3,7 @@ import { apiClient } from '../modules/apiClient.js';
 let itemTypesChart = null;
 let stockLevelsChart = null;
 
-async function updateDashboard() {
+export async function updateDashboard() {
     try {
         const data = await apiClient.get('dashboard-data');
         renderStatsCards(data);
@@ -89,5 +89,3 @@ function renderCharts(data) {
         });
     }
 }
-
-export { updateDashboard };

@@ -1,4 +1,11 @@
-function initializeServiceOrderManagement() {
+import { apiClient } from '../modules/apiClient.js';
+import { getServiceOrderById, deleteServiceOrder, removeItemFromServiceOrder } from '../modules/serviceOrderManager.js';
+import { getAllCollaborators } from '../modules/collaboratorManager.js';
+import { getAllItems, getItemById } from '../modules/itemManager.js';
+import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
+import { MODAL_IDS } from '../constants.js';
+
+export function initializeServiceOrderManagement() {
     document.body.addEventListener('click', (event) => {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
@@ -10,25 +17,19 @@ function initializeServiceOrderManagement() {
                 openServiceOrderModal();
                 break;
             case 'edit-service-order':
-                if (osId) {
-                    openServiceOrderModal(osId);
-                }
+                if (osId) openServiceOrderModal(osId);
                 break;
             case 'delete-service-order':
-                if (osId) {
-                    handleDeleteServiceOrder(osId);
-                }
+                if (osId) handleDeleteServiceOrder(osId);
                 break;
             case 'view-service-order-details':
-                if (osId) {
-                    openServiceOrderDetailsModal(osId);
-                }
+                if (osId) openServiceOrderDetailsModal(osId);
                 break;
         }
     });
 }
 
-function renderServiceOrdersTable(serviceOrders) {
+export function renderServiceOrdersTable(serviceOrders) {
     const tableBody = document.getElementById('service-orders-table-body');
     if (!tableBody) return;
 
@@ -56,15 +57,9 @@ function renderServiceOrdersTable(serviceOrders) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="actions-dropdown-content hidden">
-                         <button class="btn btn-sm" data-action="view-service-order-details" data-id="${os.id}">
-                            <i class="fas fa-eye"></i> Detalhes
-                        </button>
-                        <button class="btn btn-sm" data-action="edit-service-order" data-id="${os.id}">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" data-action="delete-service-order" data-id="${os.id}">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
+                         <button class="btn btn-sm" data-action="view-service-order-details" data-id="${os.id}"><i class="fas fa-eye"></i> Detalhes</button>
+                        <button class="btn btn-sm" data-action="edit-service-order" data-id="${os.id}"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn btn-sm btn-danger" data-action="delete-service-order" data-id="${os.id}"><i class="fas fa-trash"></i> Excluir</button>
                     </div>
                 </div>
             </td>
@@ -74,7 +69,7 @@ function renderServiceOrdersTable(serviceOrders) {
 }
 
 function openServiceOrderModal(osId = null) {
-    const modal = document.getElementById('service-order-modal');
+    const modal = document.getElementById(MODAL_IDS.SERVICE_ORDER);
     const template = document.getElementById('service-order-modal-template');
     if (!modal || !template) return;
 
@@ -108,7 +103,7 @@ function openServiceOrderModal(osId = null) {
 }
 
 async function openServiceOrderDetailsModal(osId) {
-    const modal = document.getElementById('service-order-details-modal');
+    const modal = document.getElementById(MODAL_IDS.SERVICE_ORDER_DETAILS);
     const template = document.getElementById('service-order-details-modal-template');
     if (!modal || !template) return;
 
@@ -185,7 +180,7 @@ function handleDeleteServiceOrder(osId) {
             } else {
                 showToast('Falha ao excluir a Ordem de Serviço.', 'error');
             }
-            closeModal('confirmation-modal');
+            closeModal(MODAL_IDS.CONFIRMATION);
         }
     });
 }

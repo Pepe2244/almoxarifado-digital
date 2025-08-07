@@ -1,4 +1,8 @@
-function initializeDebitManagement() {
+import { getAllDebits, updateDebitStatus, deleteDebit } from '../modules/debitManager.js';
+import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
+import { MODAL_IDS } from '../constants.js';
+
+export function initializeDebitManagement() {
     document.body.addEventListener('click', (event) => {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
@@ -7,20 +11,16 @@ function initializeDebitManagement() {
 
         switch (action) {
             case 'toggle-debit-status':
-                if (debitId) {
-                    handleToggleDebitStatus(debitId);
-                }
+                if (debitId) handleToggleDebitStatus(debitId);
                 break;
             case 'delete-debit':
-                if (debitId) {
-                    handleDeleteDebit(debitId);
-                }
+                if (debitId) handleDeleteDebit(debitId);
                 break;
         }
     });
 }
 
-function renderDebitsTable(debits) {
+export function renderDebitsTable(debits) {
     const tableBody = document.getElementById('debits-table-body');
     if (!tableBody) return;
 
@@ -90,7 +90,7 @@ function handleDeleteDebit(debitId) {
             } else {
                 showToast('Falha ao excluir o débito.', 'error');
             }
-            closeModal('confirmation-modal');
+            closeModal(MODAL_IDS.CONFIRMATION);
         }
     });
 }

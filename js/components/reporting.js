@@ -1,7 +1,7 @@
 import { getAllItems } from '../modules/itemManager.js';
 import { getAllDebits } from '../modules/debitManager.js';
 
-function initializeReporting() {
+export function initializeReporting() {
     document.body.addEventListener('click', (event) => {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
@@ -97,5 +97,3 @@ function exportInventoryToCSV() {
     link.click();
     document.body.removeChild(link);
 }
-
-export { initializeReporting };

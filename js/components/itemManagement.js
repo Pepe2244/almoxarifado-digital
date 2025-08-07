@@ -1,8 +1,9 @@
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
+import { MODAL_IDS } from '../constants.js';
 
-function initializeItemManagement() {
+export function initializeItemManagement() {
     document.body.addEventListener('click', (event) => {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
@@ -41,7 +42,7 @@ function initializeItemManagement() {
     });
 }
 
-function renderItemsTable(items) {
+export function renderItemsTable(items) {
     const tableBody = document.getElementById('items-table-body');
     if (!tableBody) return;
 
@@ -84,7 +85,7 @@ function renderItemsTable(items) {
 }
 
 function openItemFormModal(itemId = null) {
-    const modal = document.getElementById('item-form-modal');
+    const modal = document.getElementById(MODAL_IDS.ITEM_FORM);
     const template = document.getElementById('item-form-modal-template');
     if (!modal || !template) return;
 
@@ -120,7 +121,7 @@ function openItemFormModal(itemId = null) {
 }
 
 async function openItemBatchesModal(itemId) {
-    const modal = document.getElementById('item-batches-modal');
+    const modal = document.getElementById(MODAL_IDS.ITEM_BATCHES);
     const template = document.getElementById('item-batches-modal-template');
     if (!modal || !template) return;
 
@@ -151,7 +152,7 @@ async function openItemBatchesModal(itemId) {
 }
 
 async function openItemHistoryModal(itemId) {
-    const modal = document.getElementById('item-history-modal');
+    const modal = document.getElementById(MODAL_IDS.ITEM_HISTORY);
     const template = document.getElementById('item-history-modal-template');
     if (!modal || !template) return;
 
@@ -184,7 +185,7 @@ async function openItemHistoryModal(itemId) {
 }
 
 function openMassAddModal() {
-    const modal = document.getElementById('mass-add-modal');
+    const modal = document.getElementById(MODAL_IDS.MASS_ADD);
     const template = document.getElementById('mass-add-modal-template');
     if (!modal || !template) return;
     modal.innerHTML = template.innerHTML;
@@ -206,9 +207,7 @@ function handleDeleteItem(itemId) {
             } else {
                 showToast('Falha ao excluir o item.', 'error');
             }
-            closeModal('confirmation-modal');
+            closeModal(MODAL_IDS.CONFIRMATION);
         }
     });
 }
-
-export { initializeItemManagement, renderItemsTable };

@@ -1,4 +1,8 @@
-function initializeCollaboratorManagement() {
+import { getCollaboratorById, deleteCollaborator } from '../modules/collaboratorManager.js';
+import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
+import { MODAL_IDS } from '../constants.js';
+
+export function initializeCollaboratorManagement() {
     document.body.addEventListener('click', (event) => {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
@@ -12,32 +16,24 @@ function initializeCollaboratorManagement() {
             case 'open-mass-add-collaborator-modal':
                 openMassAddCollaboratorModal();
                 break;
-
             case 'edit-collaborator':
-                if (collaboratorId) {
-                    openCollaboratorModal(collaboratorId);
-                }
+                if (collaboratorId) openCollaboratorModal(collaboratorId);
                 break;
             case 'delete-collaborator':
-                if (collaboratorId) {
-                    handleDeleteCollaborator(collaboratorId);
-                }
+                if (collaboratorId) handleDeleteCollaborator(collaboratorId);
                 break;
         }
     });
 }
 
-function renderCollaboratorsTable(collaborators) {
+export function renderCollaboratorsTable(collaborators) {
     const tableBody = document.getElementById('collaborators-table-body');
     if (!tableBody) return;
-
     tableBody.innerHTML = '';
-
     if (collaborators.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="4" class="text-center">Nenhum colaborador encontrado.</td></tr>`;
         return;
     }
-
     collaborators.forEach(collaborator => {
         const row = document.createElement('tr');
         row.dataset.id = collaborator.id;
@@ -51,12 +47,8 @@ function renderCollaboratorsTable(collaborators) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="actions-dropdown-content hidden">
-                        <button class="btn btn-sm" data-action="edit-collaborator" data-id="${collaborator.id}">
-                            <i class="fas fa-edit"></i> Editar
-                        </button>
-                        <button class="btn btn-sm btn-danger" data-action="delete-collaborator" data-id="${collaborator.id}">
-                            <i class="fas fa-trash"></i> Excluir
-                        </button>
+                        <button class="btn btn-sm" data-action="edit-collaborator" data-id="${collaborator.id}"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="btn btn-sm btn-danger" data-action="delete-collaborator" data-id="${collaborator.id}"><i class="fas fa-trash"></i> Excluir</button>
                     </div>
                 </div>
             </td>
@@ -65,16 +57,13 @@ function renderCollaboratorsTable(collaborators) {
     });
 }
 
-
 function openCollaboratorModal(collaboratorId = null) {
-    const modal = document.getElementById('collaborator-modal');
+    const modal = document.getElementById(MODAL_IDS.COLLABORATOR);
     const template = document.getElementById('collaborator-modal-template');
     if (!modal || !template) return;
-
     modal.innerHTML = template.innerHTML;
     const form = modal.querySelector('#collaborator-form');
     const title = form.querySelector('h2');
-
     if (collaboratorId) {
         const collaborator = getCollaboratorById(collaboratorId);
         if (collaborator) {
@@ -86,12 +75,11 @@ function openCollaboratorModal(collaboratorId = null) {
     } else {
         title.textContent = 'Adicionar Colaborador';
     }
-
     modal.showModal();
 }
 
 function openMassAddCollaboratorModal() {
-    const modal = document.getElementById('mass-add-collaborator-modal');
+    const modal = document.getElementById(MODAL_IDS.MASS_ADD_COLLABORATOR);
     const template = document.getElementById('mass-add-collaborator-modal-template');
     if (!modal || !template) return;
     modal.innerHTML = template.innerHTML;
@@ -101,7 +89,6 @@ function openMassAddCollaboratorModal() {
 function handleDeleteCollaborator(collaboratorId) {
     const collaborator = getCollaboratorById(collaboratorId);
     if (!collaborator) return;
-
     openConfirmationModal({
         title: 'Confirmar Exclusão',
         message: `Tem a certeza de que deseja excluir o colaborador "${collaborator.name}"? Esta ação não pode ser desfeita.`,
@@ -113,7 +100,7 @@ function handleDeleteCollaborator(collaboratorId) {
             } else {
                 showToast('Falha ao excluir o colaborador.', 'error');
             }
-            closeModal('confirmation-modal');
+            closeModal(MODAL_IDS.CONFIRMATION);
         }
     });
 }
