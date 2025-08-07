@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - netlify/functions/service-orders.js
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,15 +10,11 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
+    // Path pode ser: /service-orders/123/items/456
     const pathParts = event.path.split('/').filter(part => part);
-    const resource = pathParts[1];
-    const resourceId = pathParts[2];
-    const subResource = pathParts[3];
-    const subResourceId = pathParts[4];
-
-    if (resource !== 'service-orders') {
-        return { statusCode: 404, body: JSON.stringify({ error: 'Not Found' }) };
-    }
+    const resourceId = pathParts[3];
+    const subResource = pathParts[4];
+    const subResourceId = pathParts[5];
 
     try {
         switch (event.httpMethod) {
@@ -27,14 +25,14 @@ exports.handler = async (event, context) => {
                     return await getAllServiceOrders();
                 }
             case 'POST':
-                if (subResource === 'items') {
+                if (resourceId && subResource === 'items') {
                     return await addItemToOrder(resourceId, JSON.parse(event.body));
                 }
                 return await createServiceOrder(JSON.parse(event.body));
             case 'PUT':
                 return await updateServiceOrder(resourceId, JSON.parse(event.body));
             case 'DELETE':
-                if (subResource === 'items' && subResourceId) {
+                if (resourceId && subResource === 'items' && subResourceId) {
                     return await removeItemFromOrder(resourceId, subResourceId);
                 }
                 return await deleteServiceOrder(resourceId);
@@ -138,11 +136,19 @@ async function deleteServiceOrder(id) {
 async function addItemToOrder(orderId, itemDetails) {
     const client = await pool.connect();
     try {
-        const itemPriceResult = await client.query('SELECT price FROM items WHERE id = $1', [itemDetails.itemId]);
-        if (itemPriceResult.rows.length === 0) {
-            return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
+        await client.query('BEGIN'); // Iniciar transação
+
+        const itemResult = await client.query('SELECT "currentStock", price FROM items WHERE id = $1 FOR UPDATE', [itemDetails.itemId]);
+        if (itemResult.rows.length === 0) {
+            throw new Error('Item not found');
         }
-        const unitPrice = itemPriceResult.rows[0].price;
+        if (itemResult.rows[0].currentStock < itemDetails.quantity) {
+            throw new Error('Insufficient stock');
+        }
+
+        await client.query('UPDATE items SET "currentStock" = "currentStock" - $1 WHERE id = $2', [itemDetails.quantity, itemDetails.itemId]);
+
+        const unitPrice = itemResult.rows[0].price;
 
         const query = `
         INSERT INTO service_order_items (serviceOrderId, itemId, quantity, unitPrice)
@@ -150,8 +156,15 @@ async function addItemToOrder(orderId, itemDetails) {
       `;
         const values = [orderId, itemDetails.itemId, itemDetails.quantity, unitPrice];
         const result = await client.query(query, values);
+
+        await client.query('COMMIT'); // Finalizar transação
+
         return { statusCode: 201, body: JSON.stringify(result.rows[0]) };
-    } finally {
+    } catch (error) {
+        await client.query('ROLLBACK');
+        return { statusCode: 400, body: JSON.stringify({ error: error.message }) };
+    }
+    finally {
         client.release();
     }
 }
@@ -159,9 +172,24 @@ async function addItemToOrder(orderId, itemDetails) {
 async function removeItemFromOrder(orderId, itemId) {
     const client = await pool.connect();
     try {
+        await client.query('BEGIN'); // Iniciar transação
+
+        const itemResult = await client.query('SELECT quantity FROM service_order_items WHERE serviceOrderId = $1 AND itemId = $2', [orderId, itemId]);
+        if (itemResult.rows.length > 0) {
+            const quantityToReturn = itemResult.rows[0].quantity;
+            await client.query('UPDATE items SET "currentStock" = "currentStock" + $1 WHERE id = $2', [quantityToReturn, itemId]);
+        }
+
         await client.query('DELETE FROM service_order_items WHERE serviceOrderId = $1 AND itemId = $2', [orderId, itemId]);
+
+        await client.query('COMMIT'); // Finalizar transação
+
         return { statusCode: 204, body: '' };
-    } finally {
+    } catch (error) {
+        await client.query('ROLLBACK');
+        return { statusCode: 500, body: JSON.stringify({ error: error.message }) };
+    }
+    finally {
         client.release();
     }
 }

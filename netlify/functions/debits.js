@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - netlify/functions/debits.js
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,16 +10,8 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-    const pathParts = event.path.split('/').filter(part => part);
-    const resource = pathParts[1];
-    const resourceId = pathParts[2];
-
-    if (resource !== 'debits') {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Not Found' })
-        };
-    }
+    const pathParts = event.path.split('/').filter(Boolean);
+    const resourceId = pathParts.length > 3 ? pathParts[3] : null;
 
     try {
         switch (event.httpMethod) {

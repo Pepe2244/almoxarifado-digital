@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - netlify/functions/collaborators.js
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,16 +10,10 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-    const pathParts = event.path.split('/').filter(part => part);
-    const resource = pathParts[1];
-    const resourceId = pathParts[2];
-
-    if (resource !== 'collaborators') {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ error: 'Not Found' })
-        };
-    }
+    // A URL que chega aqui é, por exemplo: /.netlify/functions/collaborators/123
+    // O código abaixo extrai o '123' (o ID) se ele existir.
+    const pathParts = event.path.split('/').filter(Boolean);
+    const resourceId = pathParts.length > 3 ? pathParts[3] : null;
 
     try {
         switch (event.httpMethod) {

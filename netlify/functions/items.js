@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - netlify/functions/items.js
+
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -8,16 +10,8 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-  const pathParts = event.path.split('/').filter(part => part);
-  const resource = pathParts[1];
-  const resourceId = pathParts[2];
-
-  if (resource !== 'items') {
-    return {
-      statusCode: 404,
-      body: JSON.stringify({ error: 'Not Found' })
-    };
-  }
+  const pathParts = event.path.split('/').filter(Boolean);
+  const resourceId = pathParts.length > 3 ? pathParts[3] : null;
 
   try {
     switch (event.httpMethod) {
@@ -69,19 +63,19 @@ async function getAllItems() {
 }
 
 async function getItemById(id) {
-    const client = await pool.connect();
-    try {
-        const result = await client.query('SELECT * FROM items WHERE id = $1', [id]);
-        if (result.rows.length === 0) {
-            return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
-        }
-        return {
-            statusCode: 200,
-            body: JSON.stringify(result.rows[0])
-        };
-    } finally {
-        client.release();
+  const client = await pool.connect();
+  try {
+    const result = await client.query('SELECT * FROM items WHERE id = $1', [id]);
+    if (result.rows.length === 0) {
+      return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
     }
+    return {
+      statusCode: 200,
+      body: JSON.stringify(result.rows[0])
+    };
+  } finally {
+    client.release();
+  }
 }
 
 async function createItem(itemDetails) {
@@ -138,7 +132,7 @@ async function updateItem(id, itemDetails) {
     ];
     const result = await client.query(query, values);
     if (result.rows.length === 0) {
-        return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
+      return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
     }
     return {
       statusCode: 200,
@@ -153,8 +147,8 @@ async function deleteItem(id) {
   const client = await pool.connect();
   try {
     const result = await client.query('DELETE FROM items WHERE id = $1 RETURNING *;', [id]);
-     if (result.rowCount === 0) {
-        return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
+    if (result.rowCount === 0) {
+      return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
     }
     return {
       statusCode: 204,
