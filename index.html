@@ -82,7 +82,48 @@
                 </div>
             </div>
         </section>
-        <section id="item-management" class="card" aria-labelledby="item-management-title"></section>
+        <section id="item-management" class="card" aria-labelledby="item-management-title">
+            <div class="card-header">
+                <h2 id="item-management-title"><i class="fas fa-boxes" aria-hidden="true"></i> Gestão de Itens</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" data-action="open-item-form-modal">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Adicionar Item
+                    </button>
+                    <button class="btn btn-secondary" data-action="open-mass-add-modal">
+                        <i class="fas fa-cubes" aria-hidden="true"></i> Cadastro em Massa
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="search-input" class="search-input" placeholder="Buscar por nome, tipo ou local...">
+                    </div>
+                    <select id="item-type-filter" class="filter-select" aria-label="Filtrar por tipo de item">
+                        <option value="all">Todos os Tipos</option>
+                    </select>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="name">Item</th>
+                                <th scope="col" data-sort="type">Tipo</th>
+                                <th scope="col" data-sort="currentStock">Estoque</th>
+                                <th scope="col" data-sort="price">Preço (R$)</th>
+                                <th scope="col" data-sort="status">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="item-pagination">
+                </div>
+            </div>
+        </section>
         <section id="kit-management" class="card" aria-labelledby="kit-management-title">
             <div class="card-header">
                 <h2 id="kit-management-title"><i class="fas fa-toolbox" aria-hidden="true"></i> Gestão de Kits</h2>
