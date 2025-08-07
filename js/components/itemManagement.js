@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/components/itemManagement.js
+
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';

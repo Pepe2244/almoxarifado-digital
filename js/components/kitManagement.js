@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/components/kitManagement.js
+
 import { getKitComponents, addComponentToKit, removeComponentFromKit } from '../modules/kitManager.js';
 import { getItemById, getAllItems } from '../modules/itemManager.js';
 import { showToast } from '../modules/uiManager.js';

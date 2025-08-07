@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/components/collaboratorManagement.js
+
 import { getCollaboratorById, deleteCollaborator } from '../modules/collaboratorManager.js';
 import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
 import { MODAL_IDS } from '../constants.js';

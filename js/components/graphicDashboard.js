@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/components/graphicDashboard.js
+
 import { apiClient } from '../modules/apiClient.js';
 
 let itemTypesChart = null;

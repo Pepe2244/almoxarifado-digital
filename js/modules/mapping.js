@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/mapping.js
+
 function generateLocation(aisle, shelf, box) {
     return {
         aisle: aisle.trim().toUpperCase(),

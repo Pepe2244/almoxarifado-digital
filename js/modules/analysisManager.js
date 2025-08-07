@@ -1,4 +1,5 @@
-// almoxarifado-digital/js/modules/analysisManager.js
+// CÓDIGO CORRIGIDO - js/modules/analysisManager.js
+
 function generateUnifiedPredictiveAnalysis() {
     const allItems = getAllItems();
     const settings = getSettings();

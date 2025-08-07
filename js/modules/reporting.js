@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/reporting.js
+
 function generateMovementReport(params) {
     const { startDate, endDate, allItems } = params;
     if (!allItems || !Array.isArray(allItems)) return [];

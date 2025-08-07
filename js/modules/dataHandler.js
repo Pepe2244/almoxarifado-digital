@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/dataHandler.js
+
 import { apiClient } from './apiClient.js';
 import { fetchItems } from './itemManager.js';
 import { fetchCollaborators } from './collaboratorManager.js';

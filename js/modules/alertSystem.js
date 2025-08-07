@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/alertSystem.js
+
 import { getAllItems } from './itemManager.js';
 import { getSettings } from './settings.js';
 

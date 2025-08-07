@@ -1,3 +1,5 @@
+// CÓDIGO CORRIGIDO - js/modules/apiClient.js
+
 const BASE_URL = '/.netlify/functions';
 
 async function request(endpoint, options = {}) {
