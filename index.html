@@ -384,16 +384,22 @@
                     </fieldset>
                 </div>
                 <div class="settings-tab-content" id="settings-tab-contagem" role="tabpanel">
-                    <fieldset><legend>Contagem Cíclica (Avisos de Verificação)</legend>
-                        <div class="form-row" id="count-frequency-container">
+                    <fieldset><legend>Contagem Cíclica (Avisos de Verificação - em dias)</legend>
+                        <div class="form-group">
+                            <label for="setting-count-frequency">Frequência Padrão:</label>
+                            <input type="number" id="setting-count-frequency" name="setting-count-frequency" min="0" placeholder="Ex: 90">
                         </div>
                     </fieldset>
-                    <fieldset><legend>Verificação de Preços</legend>
-                        <div class="form-row" id="price-check-frequency-container">
+                    <fieldset><legend>Verificação de Preços (em dias)</legend>
+                         <div class="form-group">
+                            <label for="setting-price-check-frequency">Frequência Padrão:</label>
+                            <input type="number" id="setting-price-check-frequency" name="setting-price-check-frequency" min="0" placeholder="Ex: 30">
                         </div>
                     </fieldset>
                     <fieldset><legend>Frequência de Manutenção de Ativos (dias)</legend>
-                        <div class="form-row" id="maintenance-frequency-container">
+                         <div class="form-group">
+                            <label for="setting-maintenance-frequency">Frequência Padrão:</label>
+                            <input type="number" id="setting-maintenance-frequency" name="setting-maintenance-frequency" min="0" placeholder="Ex: 180">
                         </div>
                     </fieldset>
                     <fieldset>

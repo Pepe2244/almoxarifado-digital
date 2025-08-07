@@ -18,7 +18,6 @@ import { registerLoan, adjustStock, registerDirectLoss } from './modules/stockCo
 import { MODAL_IDS } from './constants.js';
 
 document.addEventListener('DOMContentLoaded', () => {
-    // Objeto para guardar os termos de busca atuais
     const searchFilters = {
         items: '',
         kits: '',
@@ -124,11 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 case 'collaborator-form':
                     {
                         const collabId = form.elements['collaborator-id'].value;
-                        // CORREÇÃO: Mapeando 'registration' para 'accessKey'
                         const collabData = {
                             name: form.elements['collaborator-name'].value,
                             role: form.elements['collaborator-role'].value,
-                            accessKey: form.elements['collaborator-registration'].value, // <-- AQUI
+                            accessKey: form.elements['collaborator-registration'].value,
                             status: 'ativo'
                         };
                         success = collabId ? await updateCollaborator(collabId, collabData) : await addCollaborator(collabData);
@@ -139,7 +137,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     {
                         const names = form.elements['mass-add-collaborator-data'].value.split('\n').filter(name => name.trim() !== '');
                         if (names.length > 0) {
-                            // CORREÇÃO: Incluindo 'accessKey' para novos colaboradores em massa
                             const promises = names.map(name => addCollaborator({ name, role: 'N/A', status: 'ativo', accessKey: null }));
                             const results = await Promise.all(promises);
                             const successfulAdds = results.filter(r => r).length;
@@ -181,6 +178,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         settings.warehouseName = form.elements['setting-warehouse-name'].value;
                         settings.paginationEnabled = form.elements['setting-pagination-enabled'].checked;
                         settings.itemsPerPage = parseInt(form.elements['setting-items-per-page'].value, 10);
+
+                        // CORREÇÃO: Salvando os novos valores da aba "Contagem"
+                        settings.countFrequency = parseInt(form.elements['setting-count-frequency'].value, 10) || 0;
+                        settings.priceCheckFrequency = parseInt(form.elements['setting-price-check-frequency'].value, 10) || 0;
+                        settings.maintenanceFrequency = parseInt(form.elements['setting-maintenance-frequency'].value, 10) || 0;
+                        settings.predictiveAlertCritical = parseInt(form.elements['setting-alert-critical'].value, 10) || 0;
+                        settings.predictiveAlertWarning = parseInt(form.elements['setting-alert-warning'].value, 10) || 0;
 
                         const panelVisibility = {};
                         const visibilityCheckboxes = form.querySelectorAll('#panel-visibility-container input[type="checkbox"]');
@@ -240,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // Aplicar filtros de busca
         const filteredItems = getAllItems().filter(item => item.name.toLowerCase().includes(searchFilters.items));
         const filteredKits = getAllItems().filter(item => item.type === 'Kit' && item.name.toLowerCase().includes(searchFilters.kits));
         const filteredCollaborators = getAllCollaborators().filter(c => c.name.toLowerCase().includes(searchFilters.collaborators) || (c.accessKey && c.accessKey.toLowerCase().includes(searchFilters.collaborators)));
@@ -266,11 +269,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addEventListeners() {
-        const debouncedUpdate = debounce(updateAllUI, 300); // 300ms debounce
+        const debouncedUpdate = debounce(updateAllUI, 300);
         document.body.addEventListener('dataChanged', debouncedUpdate);
         document.body.addEventListener('submit', handleFormSubmit);
 
-        // Listener genérico para botões de cancelar/fechar modais
         document.body.addEventListener('click', (event) => {
             const button = event.target.closest('button');
             if (!button) return;
@@ -284,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // IMPLEMENTAÇÃO DA BUSCA
         document.getElementById('search-input')?.addEventListener('input', (e) => {
             searchFilters.items = e.target.value.toLowerCase();
             debouncedUpdate();

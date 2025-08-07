@@ -58,7 +58,6 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
     confirmBtn.textContent = confirmButtonText;
     cancelBtn.textContent = cancelButtonText;
 
-    // Limpa listeners antigos para evitar chamadas múltiplas
     const newConfirmBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
@@ -87,6 +86,13 @@ export function openSettingsModal() {
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
 
+    // CORREÇÃO: Preenchendo os novos campos da aba "Contagem"
+    form.elements['setting-count-frequency'].value = settings.countFrequency || 90;
+    form.elements['setting-price-check-frequency'].value = settings.priceCheckFrequency || 30;
+    form.elements['setting-maintenance-frequency'].value = settings.maintenanceFrequency || 180;
+    form.elements['setting-alert-critical'].value = settings.predictiveAlertCritical || 7;
+    form.elements['setting-alert-warning'].value = settings.predictiveAlertWarning || 30;
+
     const panelVisibilityContainer = form.querySelector('#panel-visibility-container .checkbox-group');
     if (panelVisibilityContainer) {
         panelVisibilityContainer.innerHTML = '';
@@ -112,20 +118,15 @@ export function openSettingsModal() {
         });
     }
 
-    // *** INÍCIO DA CORREÇÃO: LÓGICA DAS ABAS ***
     const tabs = modal.querySelectorAll('.settings-tab-btn');
     const tabContents = modal.querySelectorAll('.settings-tab-content');
 
     tabs.forEach(tab => {
         tab.addEventListener('click', () => {
-            // Remove a classe 'active' de todas as abas e conteúdos
             tabs.forEach(t => t.classList.remove('active'));
             tabContents.forEach(c => c.classList.remove('active'));
 
-            // Adiciona a classe 'active' na aba clicada
             tab.classList.add('active');
-
-            // Encontra e exibe o conteúdo correspondente
             const activeContentId = tab.getAttribute('aria-controls');
             const activeContent = modal.querySelector(`#${activeContentId}`);
             if (activeContent) {
@@ -133,7 +134,6 @@ export function openSettingsModal() {
             }
         });
     });
-    // *** FIM DA CORREÇÃO ***
 
     modal.showModal();
 }

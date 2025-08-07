@@ -6,6 +6,12 @@ const defaultSettings = {
     paginationEnabled: true,
     itemsPerPage: 10,
     notificationBehaviors: {},
+    // Adicionando novos valores padrão
+    countFrequency: 90,
+    priceCheckFrequency: 30,
+    maintenanceFrequency: 180,
+    predictiveAlertCritical: 7,
+    predictiveAlertWarning: 30,
     panelVisibility: {
         'service-order-management': true,
         'item-management': true,
@@ -19,7 +25,7 @@ const defaultSettings = {
 
 function initializeSettings() {
     const storedSettings = localStorage.getItem('almoxarifadoSettings');
-    settings = storedSettings ? JSON.parse(storedSettings) : { ...defaultSettings };
+    settings = storedSettings ? { ...defaultSettings, ...JSON.parse(storedSettings) } : { ...defaultSettings };
 
     if (!settings.panelVisibility) {
         settings.panelVisibility = { ...defaultSettings.panelVisibility };
