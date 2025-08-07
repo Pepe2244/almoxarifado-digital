@@ -1,19 +1,36 @@
-// almoxarifado-digital/js/modules/logManager.js
-function createLog(action, details, user) {
-    const logs = loadDataFromLocal(DB_KEYS.LOGS) || [];
-    const newLog = {
-        timestamp: new Date().toISOString(),
-        action: action,
-        details: details,
-        user: user
-    };
-    logs.unshift(newLog);
-    if (logs.length > 500) {
-        logs.pop();
+import { apiClient } from './apiClient.js';
+
+let logs = [];
+
+async function fetchLogs() {
+    try {
+        const data = await apiClient.get('logs');
+        logs = data;
+        return logs;
+    } catch (error) {
+        console.error('Failed to fetch logs:', error);
+        return [];
     }
-    saveDataToLocal(DB_KEYS.LOGS, logs);
 }
 
 function getAllLogs() {
-    return loadDataFromLocal(DB_KEYS.LOGS) || [];
+    return logs;
 }
+
+async function createLog(action, details, user = 'Sistema') {
+    const logEntry = {
+        action,
+        details,
+        user,
+        timestamp: new Date().toISOString()
+    };
+
+    try {
+        await apiClient.post('logs', logEntry);
+        logs.unshift(logEntry);
+    } catch (error) {
+        console.error('Failed to create log:', error);
+    }
+}
+
+export { fetchLogs, getAllLogs, createLog };

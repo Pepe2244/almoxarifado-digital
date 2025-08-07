@@ -249,7 +249,33 @@
                 </div>
             </div>
         </section>
-        <section id="log-viewer" class="card hidden" aria-labelledby="log-viewer-title"></section>
+        <section id="log-viewer" class="card hidden" aria-labelledby="log-viewer-title">
+            <div class="card-header">
+                <h2 id="log-viewer-title"><i class="fas fa-history" aria-hidden="true"></i> Logs de Atividade</h2>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="log-search-input" class="search-input" placeholder="Buscar nos logs...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="timestamp">Data/Hora</th>
+                                <th scope="col" data-sort="action">Ação</th>
+                                <th scope="col" data-sort="details">Detalhes</th>
+                                <th scope="col" data-sort="user">Utilizador</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
     </main>
 
     <dialog id="settings-modal"></dialog>
