@@ -46,7 +46,42 @@
     <div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <main class="container" role="main">
-        <section id="service-order-management" class="card" aria-labelledby="service-order-management-title"></section>
+        <section id="service-order-management" class="card" aria-labelledby="service-order-management-title">
+            <div class="card-header">
+                <h2 id="service-order-management-title"><i class="fas fa-clipboard-list" aria-hidden="true"></i> Ordens de Serviço</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" data-action="open-service-order-modal">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Nova O.S.
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="os-search-input" class="search-input" placeholder="Buscar por Nº, cliente ou técnico...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="id">Nº O.S.</th>
+                                <th scope="col" data-sort="customer">Cliente/Local</th>
+                                <th scope="col" data-sort="technicianName">Técnico</th>
+                                <th scope="col" data-sort="status">Status</th>
+                                <th scope="col" data-sort="createdAt">Data Abertura</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="service-orders-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="service-order-pagination">
+                </div>
+            </div>
+        </section>
         <section id="item-management" class="card" aria-labelledby="item-management-title"></section>
         <section id="kit-management" class="card" aria-labelledby="kit-management-title"></section>
         <section id="collaborator-management" class="card" aria-labelledby="collaborator-management-title">
