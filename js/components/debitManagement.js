@@ -1,85 +1,96 @@
-// almoxarifado-digital/js/components/debitManagement.js
 function initializeDebitManagement() {
-    renderDebitManagementComponent();
-    addDebitTabEventListeners('debit-management');
-}
+    document.body.addEventListener('click', (event) => {
+        const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
+        if (!action) return;
 
-function renderDebitManagementComponent() {
-    const component = document.getElementById('debit-management');
-    if (!component) return;
-
-    const settings = getSettings();
-    if (settings.panelVisibility && settings.panelVisibility['debit-management'] === false) {
-        component.classList.add('hidden');
-        return;
-    }
-    component.classList.remove('hidden');
-
-    component.innerHTML = `
-        <div class="card-header">
-            <h2><i class="fas fa-hand-holding-usd"></i> Gestão de Débitos</h2>
-            <div class="header-actions">
-                <div class="search-container">
-                    <input type="text" id="debit-search-input" class="search-input" placeholder="Buscar débitos...">
-                    <button id="debit-search-btn-icon" class="btn btn-icon-only">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-                <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="debit-management" title="Ocultar painel">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Data</th>
-                            <th>Colaborador</th>
-                            <th>Item (Qtd.)</th>
-                            <th>Motivo</th>
-                            <th>Valor (R$)</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="debits-table-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="debit-pagination-container" class="card-footer"></div>
-        </div>
-    `;
-}
-
-function addDebitTabEventListeners(componentId) {
-    const component = document.getElementById(componentId);
-    if (!component) return;
-
-    component.addEventListener('click', async(event) => {
-        const button = event.target.closest('button');
-        if (!button) return;
-
-        const action = button.dataset.action;
-        const id = button.dataset.id;
+        const debitId = event.target.dataset.id || event.target.closest('tr')?.dataset.id;
 
         switch (action) {
-            case ACTIONS.SETTLE_DEBIT:
-                const debitToSettle = getAllDebits().find(d => d.id === id);
-                if (debitToSettle) {
-                    const collaboratorName = getCollaboratorById(debitToSettle.collaboratorId)?.name || 'Desconhecido';
-                    openConfirmationModal({
-                        title: 'Quitar Débito',
-                        message: `Tem certeza que deseja quitar o débito de R$ ${debitToSettle.amount.toFixed(2)} de "${debitToSettle.itemName}" para ${collaboratorName}?`,
-                        onConfirm: () => {
-                            if (settleDebit(id)) {
-                                document.body.dispatchEvent(new CustomEvent('dataChanged'));
-                                closeModal('confirmation-modal');
-                            }
-                        }
-                    });
+            case 'toggle-debit-status':
+                if (debitId) {
+                    handleToggleDebitStatus(debitId);
                 }
                 break;
+            case 'delete-debit':
+                if (debitId) {
+                    handleDeleteDebit(debitId);
+                }
+                break;
+        }
+    });
+}
+
+function renderDebitsTable(debits) {
+    const tableBody = document.getElementById('debits-table-body');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = '';
+
+    if (debits.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="6" class="text-center">Nenhum débito encontrado.</td></tr>`;
+        return;
+    }
+
+    debits.forEach(debit => {
+        const row = document.createElement('tr');
+        row.dataset.id = debit.id;
+        const createdAt = new Date(debit.createdAt).toLocaleDateString('pt-BR');
+        const isPending = debit.status === 'pendente';
+
+        row.innerHTML = `
+            <td data-label="Colaborador">${debit.collaboratorName || 'N/A'}</td>
+            <td data-label="Item">${debit.itemName}</td>
+            <td data-label="Valor Total">R$ ${Number(debit.totalValue).toFixed(2)}</td>
+            <td data-label="Data">${createdAt}</td>
+            <td data-label="Status"><span class="status-badge status-${debit.status}">${debit.status}</span></td>
+            <td data-label="Ações">
+                <div class="actions-dropdown-container">
+                    <button class="btn btn-secondary btn-sm btn-icon-only" data-action="toggle-actions-dropdown" aria-label="Mais ações">
+                        <i class="fas fa-ellipsis-v"></i>
+                    </button>
+                    <div class="actions-dropdown-content hidden">
+                        <button class="btn btn-sm ${isPending ? 'btn-success' : 'btn-warning'}" data-action="toggle-debit-status" data-id="${debit.id}">
+                            <i class="fas ${isPending ? 'fa-check' : 'fa-undo'}"></i> ${isPending ? 'Marcar como Pago' : 'Marcar como Pendente'}
+                        </button>
+                        <button class="btn btn-sm btn-danger" data-action="delete-debit" data-id="${debit.id}">
+                            <i class="fas fa-trash"></i> Excluir
+                        </button>
+                    </div>
+                </div>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+async function handleToggleDebitStatus(debitId) {
+    const debit = getAllDebits().find(d => d.id === parseInt(debitId, 10));
+    if (!debit) return;
+
+    const newStatus = debit.status === 'pendente' ? 'pago' : 'pendente';
+    const updatedDebit = await updateDebitStatus(debitId, newStatus);
+
+    if (updatedDebit) {
+        showToast(`Status do débito alterado para ${newStatus}.`, 'success');
+        document.body.dispatchEvent(new CustomEvent('dataChanged'));
+    } else {
+        showToast('Falha ao atualizar o status do débito.', 'error');
+    }
+}
+
+function handleDeleteDebit(debitId) {
+    openConfirmationModal({
+        title: 'Confirmar Exclusão',
+        message: 'Tem a certeza de que deseja excluir este registro de débito? Esta ação é permanente.',
+        onConfirm: async () => {
+            const success = await deleteDebit(debitId);
+            if (success) {
+                showToast('Débito excluído com sucesso!', 'success');
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+            } else {
+                showToast('Falha ao excluir o débito.', 'error');
+            }
+            closeModal('confirmation-modal');
         }
     });
 }

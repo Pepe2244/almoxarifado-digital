@@ -49,8 +49,74 @@
         <section id="service-order-management" class="card" aria-labelledby="service-order-management-title"></section>
         <section id="item-management" class="card" aria-labelledby="item-management-title"></section>
         <section id="kit-management" class="card" aria-labelledby="kit-management-title"></section>
-        <section id="collaborator-management" class="card" aria-labelledby="collaborator-management-title"></section>
-        <section id="debit-management" class="card" aria-labelledby="debit-management-title"></section>
+        <section id="collaborator-management" class="card" aria-labelledby="collaborator-management-title">
+            <div class="card-header">
+                <h2 id="collaborator-management-title"><i class="fas fa-users" aria-hidden="true"></i> Gestão de Colaboradores</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" data-action="open-collaborator-modal">
+                        <i class="fas fa-plus" aria-hidden="true"></i> Adicionar Colaborador
+                    </button>
+                    <button class="btn btn-secondary" data-action="open-mass-add-collaborator-modal">
+                        <i class="fas fa-user-friends" aria-hidden="true"></i> Cadastro em Massa
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="collaborator-search-input" class="search-input" placeholder="Buscar por nome ou matrícula...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="name">Nome</th>
+                                <th scope="col" data-sort="role">Cargo</th>
+                                <th scope="col" data-sort="status">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="collaborators-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="collaborator-pagination">
+                </div>
+            </div>
+        </section>
+        <section id="debit-management" class="card" aria-labelledby="debit-management-title">
+            <div class="card-header">
+                <h2 id="debit-management-title"><i class="fas fa-file-invoice-dollar" aria-hidden="true"></i> Gestão de Débitos</h2>
+            </div>
+            <div class="card-body">
+                <div class="toolbar">
+                    <div class="search-container">
+                        <i class="fas fa-search" aria-hidden="true"></i>
+                        <input type="text" id="debit-search-input" class="search-input" placeholder="Buscar por colaborador, item ou motivo...">
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="item-table" aria-live="polite">
+                        <thead>
+                            <tr>
+                                <th scope="col" data-sort="collaboratorName">Colaborador</th>
+                                <th scope="col" data-sort="itemName">Item</th>
+                                <th scope="col" data-sort="totalValue">Valor Total</th>
+                                <th scope="col" data-sort="createdAt">Data</th>
+                                <th scope="col" data-sort="status">Status</th>
+                                <th scope="col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debits-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="pagination-controls" id="debit-pagination">
+                </div>
+            </div>
+        </section>
         <section id="reporting-section" class="card" aria-labelledby="reporting-section-title"></section>
         <section id="unified-dashboard" class="card" aria-labelledby="unified-dashboard-title"></section>
         <section id="log-viewer" class="card hidden" aria-labelledby="log-viewer-title"></section>
@@ -862,6 +928,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     
     <script src="js/constants.js"></script>
+    <script src="js/modules/apiClient.js"></script>
     <script src="js/modules/dataHandler.js"></script>
     <script src="js/modules/settings.js"></script>
     <script src="js/modules/logManager.js"></script>

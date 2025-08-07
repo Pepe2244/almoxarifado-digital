@@ -1,60 +1,55 @@
-function initializeDebits() {
-    return loadDataFromLocal(DB_KEYS.DEBITS);
-}
+import {
+    apiClient
+} from './apiClient.js';
 
-function generateDebitId() {
-    return crypto.randomUUID();
-}
+let debits = [];
 
-function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason) {
-    const finalAmount = Math.round(amount * 100) / 100;
-
-    if (typeof finalAmount !== 'number' || finalAmount <= 0) {
-        showToast("O valor do débito deve ser um número positivo maior que zero.", "error");
-        return null;
+async function fetchDebits() {
+    try {
+        const data = await apiClient.get('debits');
+        debits = data;
+        return debits;
+    } catch (error) {
+        console.error('Failed to fetch debits:', error);
+        return [];
     }
-
-    let debits = getAllDebits();
-    const newDebit = {
-        id: generateDebitId(),
-        collaboratorId: collaboratorId,
-        itemId: itemId,
-        itemName: itemName,
-        quantity: quantity,
-        amount: finalAmount,
-        reason: reason,
-        date: new Date().toISOString(),
-        isSettled: false,
-        settledDate: null
-    };
-    debits.unshift(newDebit);
-    saveDataToLocal(DB_KEYS.DEBITS, debits);
-    const collaboratorName = getCollaboratorById(collaboratorId)?.name || 'Desconhecido';
-    createLog('ADD_DEBIT', `Débito de R$ ${finalAmount.toFixed(2)} gerado para ${collaboratorName} (Item: ${itemName}). Motivo: ${reason}.`, 'Sistema');
-    return newDebit;
-}
-
-function settleDebit(debitId) {
-    let debits = getAllDebits();
-    const index = debits.findIndex(d => d.id === debitId);
-    if (index === -1) {
-        showToast("Débito não encontrado.", "error");
-        return false;
-    }
-    const debit = debits[index];
-    if (debit.isSettled) {
-        showToast("Este débito já está quitado.", "info");
-        return false;
-    }
-    debit.isSettled = true;
-    debit.settledDate = new Date().toISOString();
-    saveDataToLocal(DB_KEYS.DEBITS, debits);
-    const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || 'Desconhecido';
-    createLog('SETTLE_DEBIT', `Débito de R$ ${debit.amount.toFixed(2)} (Item: ${debit.itemName}) de ${collaboratorName} foi quitado.`, 'Usuário');
-    showToast(`Débito de R$ ${debit.amount.toFixed(2)} quitado com sucesso!`, "success");
-    return true;
 }
 
 function getAllDebits() {
-    return loadDataFromLocal(DB_KEYS.DEBITS) || [];
+    return debits;
 }
+
+async function updateDebitStatus(id, status) {
+    try {
+        const updatedDebit = await apiClient.put(`debits/${id}`, { status });
+        if (updatedDebit) {
+            const index = debits.findIndex(d => d.id === parseInt(id, 10));
+            if (index !== -1) {
+                debits[index] = updatedDebit;
+            }
+            return updatedDebit;
+        }
+        return null;
+    } catch (error) {
+        console.error('Failed to update debit status:', error);
+        return null;
+    }
+}
+
+async function deleteDebit(id) {
+    try {
+        await apiClient.delete(`debits/${id}`);
+        debits = debits.filter(d => d.id !== parseInt(id, 10));
+        return true;
+    } catch (error) {
+        console.error('Failed to delete debit:', error);
+        return false;
+    }
+}
+
+export {
+    fetchDebits,
+    getAllDebits,
+    updateDebitStatus,
+    deleteDebit
+};
