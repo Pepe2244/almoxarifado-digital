@@ -1,6 +1,6 @@
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem } from '../modules/itemManager.js';
-import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
+import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
 
 function initializeItemManagement() {
     document.body.addEventListener('click', (event) => {
@@ -27,6 +27,15 @@ function initializeItemManagement() {
                 break;
             case 'view-history':
                 if (itemId) openItemHistoryModal(itemId);
+                break;
+            case 'register-loan':
+                if (itemId) openMovementModal(itemId);
+                break;
+            case 'adjust-stock':
+                if (itemId) openAdjustmentModal(itemId);
+                break;
+            case 'direct-loss':
+                if (itemId) openDirectLossModal(itemId);
                 break;
         }
     });
@@ -58,6 +67,10 @@ function renderItemsTable(items) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="actions-dropdown-content hidden">
+                        <button class="btn btn-sm" data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída</button>
+                        <button class="btn btn-sm" data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajuste</button>
+                        <button class="btn btn-sm" data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Perda</button>
+                        <hr>
                         <button class="btn btn-sm" data-action="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i> Editar</button>
                         <button class="btn btn-sm" data-action="manage-batches" data-id="${item.id}"><i class="fas fa-boxes"></i> Lotes</button>
                         <button class="btn btn-sm" data-action="view-history" data-id="${item.id}"><i class="fas fa-history"></i> Histórico</button>

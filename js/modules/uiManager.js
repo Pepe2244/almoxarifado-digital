@@ -1,5 +1,7 @@
 import { MODAL_IDS } from '../constants.js';
 import { getSettings } from './settings.js';
+import { getItemById } from './itemManager.js';
+import { getAllCollaborators } from './collaboratorManager.js';
 
 export function showToast(message, type = 'info', duration = 3000) {
     const container = document.getElementById('toast-container');
@@ -107,6 +109,62 @@ export function openSettingsModal() {
             panelVisibilityContainer.appendChild(checkboxWrapper);
         });
     }
+
+    modal.showModal();
+}
+
+export function openMovementModal(itemId) {
+    const modal = document.getElementById(MODAL_IDS.MOVEMENT);
+    const template = document.getElementById('movement-modal-template');
+    const item = getItemById(itemId);
+    if (!modal || !template || !item) return;
+
+    modal.innerHTML = template.innerHTML;
+    modal.querySelector('#movement-item-id').value = itemId;
+    modal.querySelector('#movement-item-name').textContent = item.name;
+
+    const collaboratorSelect = modal.querySelector('#movement-collaborator');
+    collaboratorSelect.innerHTML = '<option value="">Selecione um colaborador</option>';
+    getAllCollaborators().forEach(c => {
+        const option = new Option(c.name, c.id);
+        collaboratorSelect.add(option);
+    });
+
+    modal.showModal();
+}
+
+export function openAdjustmentModal(itemId) {
+    const modal = document.getElementById(MODAL_IDS.ADJUSTMENT);
+    const template = document.getElementById('adjustment-modal-template');
+    const item = getItemById(itemId);
+    if (!modal || !template || !item) return;
+
+    modal.innerHTML = template.innerHTML;
+    modal.querySelector('#adjustment-item-id').value = itemId;
+    modal.querySelector('#adjustment-item-name').textContent = item.name;
+    modal.querySelector('#adjustment-system-stock').textContent = item.currentStock || 0;
+    modal.querySelector('#physical-count').value = item.currentStock || 0;
+
+    modal.showModal();
+}
+
+export function openDirectLossModal(itemId) {
+    const modal = document.getElementById(MODAL_IDS.DIRECT_LOSS);
+    const template = document.getElementById('direct-loss-modal-template');
+    const item = getItemById(itemId);
+    if (!modal || !template || !item) return;
+
+    modal.innerHTML = template.innerHTML;
+    modal.querySelector('#direct-loss-item-id').value = itemId;
+    modal.querySelector('#direct-loss-item-name').textContent = item.name;
+    modal.querySelector('#direct-loss-item-stock').textContent = item.currentStock || 0;
+
+    const collaboratorSelect = modal.querySelector('#direct-loss-collaborator');
+    collaboratorSelect.innerHTML = '<option value="">Nenhum (sem débito)</option>';
+    getAllCollaborators().forEach(c => {
+        const option = new Option(c.name, c.id);
+        collaboratorSelect.add(option);
+    });
 
     modal.showModal();
 }
