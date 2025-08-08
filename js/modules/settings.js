@@ -7,8 +7,8 @@ const defaultSettings = {
     paginationEnabled: true,
     itemsPerPage: 10,
     notificationBehaviors: {
-        low_stock: true, // Por padrão, estoque baixo é uma notificação importante
-        backup_reminder: true, // E lembrete de backup também
+        low_stock: true,
+        backup_reminder: true,
     },
     panelVisibility: {
         'service-order-management': true,
@@ -24,15 +24,17 @@ const defaultSettings = {
     maintenanceFrequency: 180,
     predictiveAlertCritical: 7,
     predictiveAlertWarning: 30,
-    itemTypes: ['Geral', 'Consumível', 'Ferramenta', 'Componente', 'Kit'], // Adicionado
-    returnableTypes: ['Ferramenta', 'Kit'], // Adicionado
+    itemTypes: ['Geral', 'Consumível', 'Ferramenta', 'Componente', 'Kit'],
+    returnableTypes: ['Ferramenta', 'Kit'],
+    aisles: 'A, B, C', // Adicionado
+    shelvesPerAisle: 5, // Adicionado
+    boxesPerShelf: 10, // Adicionado
 };
 
 function initializeSettings() {
     const storedSettings = localStorage.getItem('almoxarifadoSettings');
     let loadedSettings = storedSettings ? JSON.parse(storedSettings) : {};
 
-    // Merge profundo para garantir que todas as chaves padrão existam
     settings = {
         ...defaultSettings,
         ...loadedSettings,

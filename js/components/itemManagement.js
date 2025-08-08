@@ -1,9 +1,10 @@
 // CÓDIGO CORRIGIDO - js/components/itemManagement.js
 import { apiClient } from '../modules/apiClient.js';
-import { getItemById, deleteItem } from '../modules/itemManager.js';
+import { getItemById, deleteItem, getAllItems } from '../modules/itemManager.js'; // Importar getAllItems
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
 import { MODAL_IDS } from '../constants.js';
-import { getSettings } from '../modules/settings.js'; // Importar getSettings
+import { getSettings } from '../modules/settings.js';
+import { suggestLocation } from '../modules/mapping.js'; // Importar suggestLocation
 
 export function initializeItemManagement() {
     document.body.addEventListener('click', (event) => {
@@ -41,10 +42,8 @@ export function initializeItemManagement() {
             case 'direct-loss':
                 if (itemId) openDirectLossModal(itemId);
                 break;
-            // CORREÇÃO: Adicionando a ação do botão da notificação
             case 'quick-add-stock':
                 if (itemId) {
-                    // Reutiliza o modal de ajuste para uma entrada rápida
                     openAdjustmentModal(itemId);
                 }
                 break;
@@ -104,7 +103,6 @@ function openItemFormModal(itemId = null) {
     const title = modal.querySelector('#item-form-modal-title');
     const typeSelect = form.elements.type;
 
-    // CORREÇÃO: Popula o select de tipos com os tipos das configurações
     const settings = getSettings();
     typeSelect.innerHTML = '';
     settings.itemTypes.forEach(type => {
@@ -127,6 +125,9 @@ function openItemFormModal(itemId = null) {
             form.elements.price.value = item.price || 0;
             form.elements.shelfLifeDays.value = item.shelf_life_days || 0;
             form.elements.status.value = item.status || 'disponível';
+            form.elements.aisle.value = item.location?.aisle || '';
+            form.elements.shelf.value = item.location?.shelf || '';
+            form.elements.box.value = item.location?.box || '';
 
             const stockLabel = form.querySelector('#item-form-current-stock-label');
             const stockInput = form.querySelector('#item-form-current-stock');
@@ -135,6 +136,13 @@ function openItemFormModal(itemId = null) {
         }
     } else {
         title.textContent = 'Adicionar Novo Item';
+        // CORREÇÃO: Sugerir localização para novo item
+        const suggested = suggestLocation();
+        if (suggested) {
+            form.elements.aisle.value = suggested.aisle;
+            form.elements.shelf.value = suggested.shelf;
+            form.elements.box.value = suggested.box;
+        }
     }
 
     modal.showModal();

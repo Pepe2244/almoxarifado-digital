@@ -3,7 +3,7 @@ import { MODAL_IDS } from '../constants.js';
 import { getSettings } from './settings.js';
 import { getItemById } from './itemManager.js';
 import { getAllCollaborators } from './collaboratorManager.js';
-import { ALERT_TYPES } from './alertSystem.js'; // Importar os tipos de alerta
+import { ALERT_TYPES } from './alertSystem.js';
 
 export function showToast(message, type = 'info', duration = 3000) {
     const container = document.getElementById('toast-container');
@@ -74,7 +74,6 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
     openModal(MODAL_IDS.CONFIRMATION);
 }
 
-// Função auxiliar para renderizar a lista de tipos e os checkboxes
 function renderTypeManagement(modal) {
     const settings = getSettings();
     const existingTypesList = modal.querySelector('#existing-types-list');
@@ -125,6 +124,11 @@ export function openSettingsModal() {
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
 
+    // CORREÇÃO: Carregar configurações de mapeamento
+    form.elements['setting-aisles'].value = settings.aisles || '';
+    form.elements['setting-shelves-per-aisle'].value = settings.shelvesPerAisle || 1;
+    form.elements['setting-boxes-per-shelf'].value = settings.boxesPerShelf || 1;
+
     form.elements['setting-count-frequency'].value = settings.countFrequency || 90;
     form.elements['setting-price-check-frequency'].value = settings.priceCheckFrequency || 30;
     form.elements['setting-maintenance-frequency'].value = settings.maintenanceFrequency || 180;
@@ -156,11 +160,9 @@ export function openSettingsModal() {
         });
     }
 
-    // *** INÍCIO DA CORREÇÃO: LÓGICA DAS CONFIGURAÇÕES DE NOTIFICAÇÃO ***
     const notificationContainer = form.querySelector('#notification-behavior-container');
     if (notificationContainer) {
-        notificationContainer.innerHTML = ''; // Limpa o container
-        // Itera sobre os tipos de alerta definidos no alertSystem.js
+        notificationContainer.innerHTML = '';
         Object.values(ALERT_TYPES).forEach(alertType => {
             const checkboxWrapper = document.createElement('div');
             checkboxWrapper.className = 'checkbox-item';
@@ -169,7 +171,6 @@ export function openSettingsModal() {
             checkbox.type = 'checkbox';
             checkbox.id = `notif-${alertType.id}`;
             checkbox.name = alertType.id;
-            // Verifica a configuração salva para marcar o checkbox
             checkbox.checked = settings.notificationBehaviors[alertType.id] === true;
 
             const label = document.createElement('label');
@@ -180,9 +181,7 @@ export function openSettingsModal() {
             notificationContainer.appendChild(checkboxWrapper);
         });
     }
-    // *** FIM DA CORREÇÃO ***
 
-    // CORREÇÃO: Renderiza a gestão de tipos
     renderTypeManagement(modal);
 
 

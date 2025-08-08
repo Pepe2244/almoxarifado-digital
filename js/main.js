@@ -180,6 +180,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         settings.paginationEnabled = form.elements['setting-pagination-enabled'].checked;
                         settings.itemsPerPage = parseInt(form.elements['setting-items-per-page'].value, 10);
 
+                        // CORREÇÃO: Salvar configurações de mapeamento
+                        settings.aisles = form.elements['setting-aisles'].value;
+                        settings.shelvesPerAisle = parseInt(form.elements['setting-shelves-per-aisle'].value, 10);
+                        settings.boxesPerShelf = parseInt(form.elements['setting-boxes-per-shelf'].value, 10);
+
                         settings.countFrequency = parseInt(form.elements['setting-count-frequency'].value, 10) || 0;
                         settings.priceCheckFrequency = parseInt(form.elements['setting-price-check-frequency'].value, 10) || 0;
                         settings.maintenanceFrequency = parseInt(form.elements['setting-maintenance-frequency'].value, 10) || 0;
@@ -200,7 +205,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         settings.notificationBehaviors = notificationBehaviors;
 
-                        // CORREÇÃO: Salvar os tipos retornáveis
                         const returnableTypes = [];
                         const returnableCheckboxes = form.querySelectorAll('input[name="returnableType"]:checked');
                         returnableCheckboxes.forEach(cb => {
@@ -302,7 +306,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // CORREÇÃO: Lógica para adicionar e remover tipos
             if (modal && modal.id === MODAL_IDS.SETTINGS) {
                 const settings = getSettings();
                 if (action === 'add-new-type') {
@@ -311,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (newType && !settings.itemTypes.includes(newType)) {
                         settings.itemTypes.push(newType);
                         saveSettings(settings);
-                        openSettingsModal(); // Recarrega o modal para exibir a lista atualizada
+                        openSettingsModal();
                         showToast(`Tipo "${newType}" adicionado.`, 'success');
                     } else if (!newType) {
                         showToast('O nome do tipo não pode ser vazio.', 'error');
@@ -324,9 +327,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const typeName = button.dataset.typeName;
                     if (typeName) {
                         settings.itemTypes = settings.itemTypes.filter(t => t !== typeName);
-                        settings.returnableTypes = settings.returnableTypes.filter(t => t !== typeName); // Remove também dos retornáveis
+                        settings.returnableTypes = settings.returnableTypes.filter(t => t !== typeName);
                         saveSettings(settings);
-                        openSettingsModal(); // Recarrega o modal
+                        openSettingsModal();
                         showToast(`Tipo "${typeName}" removido.`, 'success');
                     }
                 }

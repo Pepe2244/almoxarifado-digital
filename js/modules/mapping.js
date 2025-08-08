@@ -1,4 +1,7 @@
 // CÓDIGO CORRIGIDO - js/modules/mapping.js
+import { getAllItems } from './itemManager.js';
+import { getSettings } from './settings.js';
+
 
 function generateLocation(aisle, shelf, box) {
     return {
@@ -64,3 +67,5 @@ function suggestLocation(itemType = null) {
 
     return null;
 }
+
+export { generateLocation, suggestLocation };
