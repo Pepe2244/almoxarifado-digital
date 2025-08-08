@@ -18,7 +18,7 @@ import { updateDashboard } from './components/graphicDashboard.js';
 import { registerLoan, adjustStock, registerDirectLoss } from './modules/stockControl.js';
 import { MODAL_IDS } from './constants.js';
 import { backupData, restoreData } from './modules/backupManager.js';
-import { apiClient } from './modules/apiClient.js'; // Importar apiClient
+import { apiClient } from './modules/apiClient.js';
 
 document.addEventListener('DOMContentLoaded', () => {
     const searchFilters = {
@@ -117,13 +117,13 @@ document.addEventListener('DOMContentLoaded', () => {
                                 box: form.elements.box.value,
                             },
                         };
+                        // CORREÇÃO: O campo 'currentStock' só existe no formulário de criação
                         if (!itemId) {
                             itemData.currentStock = parseInt(form.elements.currentStock.value, 10) || 0;
                         }
                         success = itemId ? await updateItem(itemId, itemData) : await createItem(itemData);
                         break;
                     }
-                // CORREÇÃO: Adicionado case para o formulário de lote
                 case 'batch-form':
                     {
                         const itemId = form.closest('dialog').querySelector('#item-batches-item-id').value;
@@ -138,9 +138,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             await apiClient.post(`item-details/${itemId}/batches`, batchData);
                             success = true;
                             showToast('Lote adicionado com sucesso!', 'success');
-                            // Não fecha o modal, apenas atualiza a lista (requer modificação em openItemBatchesModal)
                             modalToClose = null;
-                            needsDataChangedEvent = true; // Recarrega os dados gerais
+                            needsDataChangedEvent = true;
                         } else {
                             showToast('Por favor, preencha a quantidade e a data de aquisição.', 'error');
                         }

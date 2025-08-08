@@ -6,26 +6,74 @@ import { MODAL_IDS } from '../constants.js';
 import { getSettings } from '../modules/settings.js';
 import { suggestLocation } from '../modules/mapping.js';
 
-// Função para fechar todos os menus de ação abertos
 const closeAllActionDropdowns = () => {
     document.querySelectorAll('.actions-dropdown-content:not(.hidden)').forEach(dropdown => {
         dropdown.classList.add('hidden');
     });
 };
 
-// Adiciona um listener para fechar os menus ao clicar fora
 document.addEventListener('click', (event) => {
     if (!event.target.closest('.actions-dropdown-container')) {
         closeAllActionDropdowns();
     }
 });
 
+function populateTypeFilter() {
+    const settings = getSettings();
+    const filterSelect = document.getElementById('item-type-filter');
+    if (!filterSelect) return;
+
+    // Guarda o valor selecionado para restaurar depois
+    const selectedValue = filterSelect.value;
+
+    // Limpa opções antigas (exceto a primeira "Todos os Tipos")
+    while (filterSelect.options.length > 1) {
+        filterSelect.remove(1);
+    }
+
+    settings.itemTypes.forEach(type => {
+        const option = new Option(type, type);
+        filterSelect.add(option);
+    });
+
+    // Restaura a seleção anterior se ainda existir
+    filterSelect.value = selectedValue;
+}
 
 export function initializeItemManagement() {
+    // Popula o filtro assim que o módulo é inicializado
+    populateTypeFilter();
+
+    // Listener para o filtro de tipo
+    const typeFilter = document.getElementById('item-type-filter');
+    if (typeFilter) {
+        typeFilter.addEventListener('change', () => {
+            document.body.dispatchEvent(new CustomEvent('dataChanged'));
+        });
+    }
+
+    // CORREÇÃO: Listener para o botão de busca
+    const searchBtn = document.querySelector('#item-management .search-container .fa-search');
+    if (searchBtn) {
+        searchBtn.parentElement.addEventListener('click', (e) => {
+            e.currentTarget.classList.toggle('active');
+            const input = e.currentTarget.querySelector('.search-input');
+            if (e.currentTarget.classList.contains('active')) {
+                input.focus();
+            }
+        });
+    }
+
+
     document.body.addEventListener('click', (event) => {
-        const button = event.target.closest('button');
+        const button = event.target.closest('button, a'); // Agora considera <a> e <button>
         const action = button?.dataset.action;
         if (!action) return;
+
+        // CORREÇÃO: Evita que links de ação rolem a página
+        if (button.tagName === 'A') {
+            event.preventDefault();
+        }
 
         const itemId = button?.dataset.id || button?.dataset.itemId || event.target.closest('tr')?.dataset.id;
 
@@ -66,11 +114,10 @@ export function initializeItemManagement() {
                     const dropdown = dropdownContainer.querySelector('.actions-dropdown-content');
                     const isHidden = dropdown.classList.contains('hidden');
 
-                    closeAllActionDropdowns(); // Fecha todos os outros
+                    closeAllActionDropdowns();
 
                     if (isHidden) {
                         dropdown.classList.remove('hidden');
-                        // Lógica para reposicionar o dropdown se estiver fora da tela
                         const rect = dropdown.getBoundingClientRect();
                         const viewportHeight = window.innerHeight;
                         if (rect.bottom > viewportHeight) {
@@ -81,7 +128,7 @@ export function initializeItemManagement() {
                             dropdown.style.bottom = `auto`;
                         }
                     }
-                    event.stopPropagation(); // Impede que o listener do documento feche o menu imediatamente
+                    event.stopPropagation();
                     break;
                 }
         }
@@ -94,14 +141,19 @@ export function renderItemsTable(items) {
 
     tableBody.innerHTML = '';
 
-    if (items.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum item encontrado.</td></tr>';
+    const filterValue = document.getElementById('item-type-filter')?.value;
+    const filteredItems = filterValue && filterValue !== 'all' ? items.filter(item => item.type === filterValue) : items;
+
+
+    if (filteredItems.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum item encontrado com os filtros atuais.</td></tr>';
         return;
     }
 
-    items.forEach(item => {
+    filteredItems.forEach(item => {
         const row = document.createElement('tr');
         row.dataset.id = item.id;
+        // CORREÇÃO: trocados <a> por <button> para evitar rolagem da página
         row.innerHTML = `
             <td data-label="Item">${item.name}</td>
             <td data-label="Tipo">${item.type}</td>
@@ -114,15 +166,15 @@ export function renderItemsTable(items) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="actions-dropdown-content hidden">
-                        <a href="#" data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída / Empréstimo</a>
-                        <a href="#" data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajustar Estoque</a>
-                        <a href="#" data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Registrar Perda</a>
+                        <button data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída / Empréstimo</button>
+                        <button data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajustar Estoque</button>
+                        <button data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Registrar Perda</button>
                         <div class="dropdown-divider"></div>
-                        <a href="#" data-action="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i> Editar Detalhes</a>
-                        <a href="#" data-action="manage-batches" data-id="${item.id}"><i class="fas fa-boxes"></i> Gerenciar Lotes</a>
-                        <a href="#" data-action="view-history" data-id="${item.id}"><i class="fas fa-history"></i> Ver Histórico</a>
+                        <button data-action="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i> Editar Detalhes</button>
+                        <button data-action="manage-batches" data-id="${item.id}"><i class="fas fa-boxes"></i> Gerenciar Lotes</button>
+                        <button data-action="view-history" data-id="${item.id}"><i class="fas fa-history"></i> Ver Histórico</button>
                         <div class="dropdown-divider"></div>
-                        <a href="#" class="danger-action" data-action="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i> Excluir Item</a>
+                        <button class="danger-action" data-action="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i> Excluir Item</button>
                     </div>
                 </div>
             </td>
@@ -170,7 +222,6 @@ function openItemFormModal(itemId = null) {
             const stockLabel = form.querySelector('#item-form-current-stock-label');
             const stockInput = form.querySelector('#item-form-current-stock');
             if (stockLabel) stockLabel.parentElement.style.display = 'none';
-            if (stockInput) stockInput.parentElement.style.display = 'none';
         }
     } else {
         title.textContent = 'Adicionar Novo Item';
