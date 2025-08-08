@@ -6,16 +6,24 @@ import { getSettings } from '../modules/settings.js';
 import { suggestLocation } from '../modules/mapping.js';
 
 const closeAllActionDropdowns = () => {
-    document.querySelectorAll('.actions-dropdown-content:not(.hidden)').forEach(dropdown => {
+    const openDropdowns = document.querySelectorAll('.actions-dropdown-content.active');
+    openDropdowns.forEach(dropdown => {
+        dropdown.classList.remove('active');
         dropdown.classList.add('hidden');
+        // Se o dropdown foi movido para o body, ele deve ser removido
+        if (dropdown.parentElement === document.body) {
+            document.body.removeChild(dropdown);
+        }
     });
 };
 
 document.addEventListener('click', (event) => {
-    if (!event.target.closest('.actions-dropdown-container')) {
+    // Se o clique não for no botão de toggle nem dentro de um dropdown ativo, fecha todos
+    if (!event.target.closest('[data-action="toggle-actions-dropdown"]') && !event.target.closest('.actions-dropdown-content.active')) {
         closeAllActionDropdowns();
     }
 });
+
 
 function populateTypeFilter() {
     const settings = getSettings();
@@ -100,20 +108,29 @@ export function initializeItemManagement() {
                 {
                     const dropdownContainer = button.closest('.actions-dropdown-container');
                     const dropdown = dropdownContainer.querySelector('.actions-dropdown-content');
-                    const isHidden = dropdown.classList.contains('hidden');
+                    const isActive = dropdown.classList.contains('active');
 
+                    // Fecha todos os outros dropdowns abertos antes de decidir o que fazer
                     closeAllActionDropdowns();
 
-                    if (isHidden) {
+                    if (!isActive) {
+                        // Move o dropdown para o body para evitar problemas de overflow
+                        document.body.appendChild(dropdown);
                         dropdown.classList.remove('hidden');
-                        const rect = dropdown.getBoundingClientRect();
-                        const viewportHeight = window.innerHeight;
-                        if (rect.bottom > viewportHeight) {
-                            dropdown.style.top = `auto`;
-                            dropdown.style.bottom = `100%`;
-                        } else {
-                            dropdown.style.top = `100%`;
-                            dropdown.style.bottom = `auto`;
+                        dropdown.classList.add('active');
+
+                        // Calcula a posição
+                        const buttonRect = button.getBoundingClientRect();
+                        dropdown.style.top = `${buttonRect.bottom + window.scrollY}px`;
+                        dropdown.style.left = `${buttonRect.left + window.scrollX}px`;
+
+                        // Ajusta a posição para não sair da tela
+                        const dropdownRect = dropdown.getBoundingClientRect();
+                        if (dropdownRect.right > window.innerWidth) {
+                            dropdown.style.left = `${buttonRect.right + window.scrollX - dropdownRect.width}px`;
+                        }
+                        if (dropdownRect.bottom > window.innerHeight) {
+                            dropdown.style.top = `${buttonRect.top + window.scrollY - dropdownRect.height}px`;
                         }
                     }
                     event.stopPropagation();
@@ -127,6 +144,18 @@ export function renderItemsTable(items) {
     const tableBody = document.getElementById('items-table-body');
     if (!tableBody) return;
 
+    // Antes de renderizar, move qualquer dropdown de volta para seu container original
+    document.querySelectorAll('.actions-dropdown-content.active').forEach(dropdown => {
+        const originalContainerId = dropdown.dataset.originalContainer;
+        const originalContainer = document.querySelector(`[data-container-id="${originalContainerId}"]`);
+        if (originalContainer) {
+            originalContainer.appendChild(dropdown);
+            dropdown.classList.remove('active');
+            dropdown.classList.add('hidden');
+        }
+    });
+
+
     tableBody.innerHTML = '';
 
     const filterValue = document.getElementById('item-type-filter')?.value;
@@ -139,6 +168,7 @@ export function renderItemsTable(items) {
 
     filteredItems.forEach(item => {
         const row = document.createElement('tr');
+        const uniqueId = `dropdown-container-${item.id}`;
         row.dataset.id = item.id;
         row.innerHTML = `
             <td data-label="Item">${item.name}</td>
@@ -147,11 +177,11 @@ export function renderItemsTable(items) {
             <td data-label="Preço (R$)">${Number(item.price || 0).toFixed(2)}</td>
             <td data-label="Status"><span class="status-badge status-${item.status || 'disponível'}">${item.status || 'disponível'}</span></td>
             <td data-label="Ações">
-                <div class="actions-dropdown-container">
+                <div class="actions-dropdown-container" data-container-id="${uniqueId}">
                     <button class="btn btn-secondary btn-sm btn-icon-only" data-action="toggle-actions-dropdown" aria-label="Mais ações">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div class="actions-dropdown-content hidden">
+                    <div class="actions-dropdown-content hidden" data-original-container="${uniqueId}">
                         <button data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída / Empréstimo</button>
                         <button data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajustar Estoque</button>
                         <button data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Registrar Perda</button>
@@ -267,7 +297,7 @@ async function openItemBatchesModal(itemId) {
             showToast('Lote adicionado com sucesso!', 'success');
             form.reset();
             document.body.dispatchEvent(new CustomEvent('dataChanged', { detail: { noClose: true } }));
-            await _renderBatchesTable(modal, itemId); // Re-renderiza a tabela
+            await _renderBatchesTable(modal, itemId);
         } else {
             showToast('Por favor, preencha a quantidade e a data de aquisição.', 'error');
         }

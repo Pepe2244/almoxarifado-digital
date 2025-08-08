@@ -511,8 +511,9 @@ body {
     vertical-align: middle;
 }
 
+/* CORREÇÃO: O menu de ações agora é posicionado de forma fixa quando ativo */
 .actions-dropdown-content {
-    position: absolute;
+    position: absolute; /* Posição padrão quando dentro do container */
     right: 0;
     top: calc(100% + 5px);
     background-color: var(--card-bg);
@@ -528,13 +529,11 @@ body {
     animation: fadeIn 0.2s ease-out;
     white-space: normal;
 }
-
-.actions-dropdown-content.fixed-dropdown {
-    position: fixed;
+.actions-dropdown-content.active {
+    position: fixed; /* Posição fixa para flutuar sobre tudo */
     z-index: 10000;
-    right: auto;
-    top: auto;
 }
+
 
 .actions-dropdown-content button {
     background: none;
@@ -775,16 +774,45 @@ textarea:focus-visible {
     flex-shrink: 0;
 }
 
-/* ESTILOS DE MODAL PADRONIZADOS */
+/* --- ESTILOS DE MODAL CORRIGIDOS --- */
+dialog {
+    background-color: var(--card-bg);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: 0;
+    width: 90vw;
+    max-width: 800px;
+}
+dialog::backdrop {
+    background: rgba(0, 0, 0, 0.5);
+    -webkit-backdrop-filter: blur(4px);
+    backdrop-filter: blur(4px);
+}
+.modal-form { /* Estilo base para forms dentro de modais simples */
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 1rem;
+}
+.modal-form h2 {
+    margin: 0 0 1rem 0;
+}
+.modal-form .modal-body {
+    padding: 0;
+}
 .modal-content-wrapper {
     display: flex;
     flex-direction: column;
     height: 100%;
+    max-height: 85vh; /* Garante que o modal não seja maior que a tela */
 }
 
 .settings-header {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 .settings-header h2 {
     font-size: 1.25rem;
@@ -804,7 +832,70 @@ textarea:focus-visible {
     justify-content: flex-end;
     gap: 1rem;
     background-color: var(--bg-color);
+    flex-shrink: 0;
 }
+
+/* --- ESTILOS DE NOTIFICAÇÃO CORRIGIDOS --- */
+.notification-bell-container {
+    position: relative;
+}
+.notification-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: var(--danger-color);
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 10px;
+    font-weight: bold;
+    line-height: 1;
+    transform: translate(40%, -40%);
+}
+.notification-panel {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    width: 350px;
+    max-height: 400px;
+    overflow-y: auto;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    box-shadow: var(--shadow-lg);
+    z-index: 1001;
+}
+.notification-panel-header {
+    padding: 0.75rem 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--border-color);
+    position: sticky;
+    top: 0;
+    background-color: var(--card-bg);
+}
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+.notification-item:last-child {
+    border-bottom: none;
+}
+.notification-item strong {
+    font-weight: 600;
+}
+.notification-item p {
+    margin: 0.25rem 0 0 0;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+}
+.no-notification-item {
+    padding: 2rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+}
+
 
 .history-list {
     display: flex;
