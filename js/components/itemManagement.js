@@ -1,7 +1,9 @@
+// CÓDIGO CORRIGIDO - js/components/itemManagement.js
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
 import { MODAL_IDS } from '../constants.js';
+import { getSettings } from '../modules/settings.js'; // Importar getSettings
 
 export function initializeItemManagement() {
     document.body.addEventListener('click', (event) => {
@@ -100,6 +102,16 @@ function openItemFormModal(itemId = null) {
     modal.innerHTML = template.innerHTML;
     const form = modal.querySelector('#item-form');
     const title = modal.querySelector('#item-form-modal-title');
+    const typeSelect = form.elements.type;
+
+    // CORREÇÃO: Popula o select de tipos com os tipos das configurações
+    const settings = getSettings();
+    typeSelect.innerHTML = '';
+    settings.itemTypes.forEach(type => {
+        const option = new Option(type, type);
+        typeSelect.add(option);
+    });
+
 
     if (itemId) {
         const item = getItemById(itemId);

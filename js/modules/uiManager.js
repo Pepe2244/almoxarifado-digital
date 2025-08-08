@@ -1,3 +1,4 @@
+// CÓDIGO CORRIGIDO - js/modules/uiManager.js
 import { MODAL_IDS } from '../constants.js';
 import { getSettings } from './settings.js';
 import { getItemById } from './itemManager.js';
@@ -73,6 +74,44 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
     openModal(MODAL_IDS.CONFIRMATION);
 }
 
+// Função auxiliar para renderizar a lista de tipos e os checkboxes
+function renderTypeManagement(modal) {
+    const settings = getSettings();
+    const existingTypesList = modal.querySelector('#existing-types-list');
+    const returnableTypesContainer = modal.querySelector('#returnable-types-container');
+
+    if (existingTypesList) {
+        existingTypesList.innerHTML = '';
+        settings.itemTypes.forEach(type => {
+            const typeElement = document.createElement('div');
+            typeElement.className = 'existing-type-item';
+            typeElement.innerHTML = `
+                <span>${type}</span>
+                <button type="button" class="btn btn-danger btn-sm btn-icon-only" data-action="delete-type" data-type-name="${type}" title="Excluir tipo ${type}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+            existingTypesList.appendChild(typeElement);
+        });
+    }
+
+    if (returnableTypesContainer) {
+        returnableTypesContainer.innerHTML = '';
+        settings.itemTypes.forEach(type => {
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.className = 'checkbox-item';
+            const isChecked = settings.returnableTypes.includes(type);
+
+            checkboxWrapper.innerHTML = `
+                <input type="checkbox" id="ret-${type}" name="returnableType" value="${type}" ${isChecked ? 'checked' : ''}>
+                <label for="ret-${type}">${type}</label>
+            `;
+            returnableTypesContainer.appendChild(checkboxWrapper);
+        });
+    }
+}
+
+
 export function openSettingsModal() {
     const modal = document.getElementById(MODAL_IDS.SETTINGS);
     const template = document.getElementById('settings-modal-template');
@@ -142,6 +181,10 @@ export function openSettingsModal() {
         });
     }
     // *** FIM DA CORREÇÃO ***
+
+    // CORREÇÃO: Renderiza a gestão de tipos
+    renderTypeManagement(modal);
+
 
     const tabs = modal.querySelectorAll('.settings-tab-btn');
     const tabContents = modal.querySelectorAll('.settings-tab-content');

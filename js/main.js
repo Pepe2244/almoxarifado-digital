@@ -1,3 +1,4 @@
+// CÓDIGO CORRIGIDO - js/main.js
 import { initializeDB } from './modules/dataHandler.js';
 import { getSettings, saveSettings, initializeSettings } from './modules/settings.js';
 import { initializeItemManagement, renderItemsTable } from './components/itemManagement.js';
@@ -192,13 +193,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                         settings.panelVisibility = panelVisibility;
 
-                        // CORREÇÃO: Salvando as configurações de notificação
                         const notificationBehaviors = {};
                         const notificationCheckboxes = form.querySelectorAll('#notification-behavior-container input[type="checkbox"]');
                         notificationCheckboxes.forEach(cb => {
                             notificationBehaviors[cb.name] = cb.checked;
                         });
                         settings.notificationBehaviors = notificationBehaviors;
+
+                        // CORREÇÃO: Salvar os tipos retornáveis
+                        const returnableTypes = [];
+                        const returnableCheckboxes = form.querySelectorAll('input[name="returnableType"]:checked');
+                        returnableCheckboxes.forEach(cb => {
+                            returnableTypes.push(cb.value);
+                        });
+                        settings.returnableTypes = returnableTypes;
+
 
                         saveSettings(settings);
                         showToast('Configurações salvas com sucesso!', 'success');
@@ -285,12 +294,44 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!button) return;
 
             const action = button.dataset.action;
+            const modal = button.closest('dialog');
+
             if (action && (action.startsWith('cancel-') || action.startsWith('close-'))) {
-                const modal = button.closest('dialog');
                 if (modal) {
                     closeModal(modal.id);
                 }
             }
+
+            // CORREÇÃO: Lógica para adicionar e remover tipos
+            if (modal && modal.id === MODAL_IDS.SETTINGS) {
+                const settings = getSettings();
+                if (action === 'add-new-type') {
+                    const input = modal.querySelector('#new-item-type');
+                    const newType = input.value.trim();
+                    if (newType && !settings.itemTypes.includes(newType)) {
+                        settings.itemTypes.push(newType);
+                        saveSettings(settings);
+                        openSettingsModal(); // Recarrega o modal para exibir a lista atualizada
+                        showToast(`Tipo "${newType}" adicionado.`, 'success');
+                    } else if (!newType) {
+                        showToast('O nome do tipo não pode ser vazio.', 'error');
+                    } else {
+                        showToast(`O tipo "${newType}" já existe.`, 'warning');
+                    }
+                }
+
+                if (action === 'delete-type') {
+                    const typeName = button.dataset.typeName;
+                    if (typeName) {
+                        settings.itemTypes = settings.itemTypes.filter(t => t !== typeName);
+                        settings.returnableTypes = settings.returnableTypes.filter(t => t !== typeName); // Remove também dos retornáveis
+                        saveSettings(settings);
+                        openSettingsModal(); // Recarrega o modal
+                        showToast(`Tipo "${typeName}" removido.`, 'success');
+                    }
+                }
+            }
+
         });
 
         document.getElementById('search-input')?.addEventListener('input', (e) => {
