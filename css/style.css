@@ -448,7 +448,7 @@ body.dark .stat-card {
 
 .toast-info { background-color: var(--info-color); }
 .toast-success { background-color: var(--success-color); }
-.toast-warning { background-color: var(--warning-color); color: #212529; }
+.toast-warning { background-color: var(--warning-color); color: #c4d3e2; }
 .toast-error { background-color: var(--danger-color); }
 
 @media (max-width: 768px) {
