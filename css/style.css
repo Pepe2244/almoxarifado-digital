@@ -511,9 +511,8 @@ body {
     vertical-align: middle;
 }
 
-/* CORREÇÃO: O menu de ações agora é posicionado de forma fixa quando ativo */
 .actions-dropdown-content {
-    position: absolute; /* Posição padrão quando dentro do container */
+    position: absolute; 
     right: 0;
     top: calc(100% + 5px);
     background-color: var(--card-bg);
@@ -530,7 +529,7 @@ body {
     white-space: normal;
 }
 .actions-dropdown-content.active {
-    position: fixed; /* Posição fixa para flutuar sobre tudo */
+    position: fixed;
     z-index: 10000;
 }
 
@@ -784,45 +783,45 @@ dialog {
     padding: 0;
     width: 90vw;
     max-width: 800px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
+
 dialog::backdrop {
     background: rgba(0, 0, 0, 0.5);
     -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
 }
-.modal-form { /* Estilo base para forms dentro de modais simples */
+
+.modal-content-wrapper,
+dialog > form.modal-content-wrapper {
     display: flex;
     flex-direction: column;
-    padding: 1.5rem;
-    gap: 1rem;
-}
-.modal-form h2 {
-    margin: 0 0 1rem 0;
-}
-.modal-form .modal-body {
-    padding: 0;
-}
-.modal-content-wrapper {
-    display: flex;
-    flex-direction: column;
+    flex-grow: 1;
     height: 100%;
-    max-height: 85vh; /* Garante que o modal não seja maior que a tela */
+    overflow: hidden;
+}
+
+.settings-header,
+.modal-actions {
+    flex-shrink: 0; /* Impede que o header e o footer encolham */
+}
+
+.modal-body.settings-body {
+    flex-grow: 1; /* Faz o corpo crescer para preencher o espaço */
+    overflow-y: auto; /* Adiciona a barra de rolagem APENAS aqui */
+    padding: 1.5rem;
 }
 
 .settings-header {
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border-color);
-    flex-shrink: 0;
 }
 .settings-header h2 {
     font-size: 1.25rem;
     font-weight: 600;
-}
-
-.settings-body {
-    padding: 1.5rem;
-    overflow-y: auto;
-    flex-grow: 1;
 }
 
 .modal-actions {
@@ -832,7 +831,6 @@ dialog::backdrop {
     justify-content: flex-end;
     gap: 1rem;
     background-color: var(--bg-color);
-    flex-shrink: 0;
 }
 
 /* --- ESTILOS DE NOTIFICAÇÃO CORRIGIDOS --- */
