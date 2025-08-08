@@ -1,5 +1,3 @@
-// CÓDIGO CORRIGIDO - js/components/itemManagement.js
-
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
@@ -10,7 +8,8 @@ export function initializeItemManagement() {
         const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
         if (!action) return;
 
-        const itemId = event.target.dataset.id || event.target.closest('tr')?.dataset.id;
+        const button = event.target.closest('button');
+        const itemId = button?.dataset.id || button?.dataset.itemId || event.target.closest('tr')?.dataset.id;
 
         switch (action) {
             case 'open-item-form-modal':
@@ -40,6 +39,13 @@ export function initializeItemManagement() {
             case 'direct-loss':
                 if (itemId) openDirectLossModal(itemId);
                 break;
+            // CORREÇÃO: Adicionando a ação do botão da notificação
+            case 'quick-add-stock':
+                if (itemId) {
+                    // Reutiliza o modal de ajuste para uma entrada rápida
+                    openAdjustmentModal(itemId);
+                }
+                break;
         }
     });
 }
@@ -61,7 +67,7 @@ export function renderItemsTable(items) {
         row.innerHTML = `
             <td data-label="Item">${item.name}</td>
             <td data-label="Tipo">${item.type}</td>
-            <td data-label="Estoque">${item.currentStock || 0}</td>
+            <td data-label="Estoque">${item.current_stock || 0}</td>
             <td data-label="Preço (R$)">${Number(item.price || 0).toFixed(2)}</td>
             <td data-label="Status"><span class="status-badge status-${item.status || 'disponível'}">${item.status || 'disponível'}</span></td>
             <td data-label="Ações">
@@ -104,10 +110,10 @@ function openItemFormModal(itemId = null) {
             form.elements.barcode.value = item.barcode || '';
             form.elements.type.value = item.type;
             form.elements.unit.value = item.unit || '';
-            form.elements.minStock.value = item.minStock || 0;
-            form.elements.maxStock.value = item.maxStock || 0;
+            form.elements.minStock.value = item.min_stock || 0;
+            form.elements.maxStock.value = item.max_stock || 0;
             form.elements.price.value = item.price || 0;
-            form.elements.shelfLifeDays.value = item.shelfLifeDays || 0;
+            form.elements.shelfLifeDays.value = item.shelf_life_days || 0;
             form.elements.status.value = item.status || 'disponível';
 
             const stockLabel = form.querySelector('#item-form-current-stock-label');

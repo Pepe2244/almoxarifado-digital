@@ -2,6 +2,7 @@ import { MODAL_IDS } from '../constants.js';
 import { getSettings } from './settings.js';
 import { getItemById } from './itemManager.js';
 import { getAllCollaborators } from './collaboratorManager.js';
+import { ALERT_TYPES } from './alertSystem.js'; // Importar os tipos de alerta
 
 export function showToast(message, type = 'info', duration = 3000) {
     const container = document.getElementById('toast-container');
@@ -81,12 +82,10 @@ export function openSettingsModal() {
     const form = modal.querySelector('#settings-form');
     const settings = getSettings();
 
-    // Preenche os campos do formulário com as configurações salvas
     form.elements['setting-warehouse-name'].value = settings.warehouseName || 'Almoxarifado Digital';
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
 
-    // CORREÇÃO: Preenchendo os novos campos da aba "Contagem"
     form.elements['setting-count-frequency'].value = settings.countFrequency || 90;
     form.elements['setting-price-check-frequency'].value = settings.priceCheckFrequency || 30;
     form.elements['setting-maintenance-frequency'].value = settings.maintenanceFrequency || 180;
@@ -117,6 +116,32 @@ export function openSettingsModal() {
             panelVisibilityContainer.appendChild(checkboxWrapper);
         });
     }
+
+    // *** INÍCIO DA CORREÇÃO: LÓGICA DAS CONFIGURAÇÕES DE NOTIFICAÇÃO ***
+    const notificationContainer = form.querySelector('#notification-behavior-container');
+    if (notificationContainer) {
+        notificationContainer.innerHTML = ''; // Limpa o container
+        // Itera sobre os tipos de alerta definidos no alertSystem.js
+        Object.values(ALERT_TYPES).forEach(alertType => {
+            const checkboxWrapper = document.createElement('div');
+            checkboxWrapper.className = 'checkbox-item';
+
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `notif-${alertType.id}`;
+            checkbox.name = alertType.id;
+            // Verifica a configuração salva para marcar o checkbox
+            checkbox.checked = settings.notificationBehaviors[alertType.id] === true;
+
+            const label = document.createElement('label');
+            label.htmlFor = `notif-${alertType.id}`;
+            label.textContent = alertType.title;
+
+            checkboxWrapper.append(checkbox, label);
+            notificationContainer.appendChild(checkboxWrapper);
+        });
+    }
+    // *** FIM DA CORREÇÃO ***
 
     const tabs = modal.querySelectorAll('.settings-tab-btn');
     const tabContents = modal.querySelectorAll('.settings-tab-content');

@@ -179,7 +179,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         settings.paginationEnabled = form.elements['setting-pagination-enabled'].checked;
                         settings.itemsPerPage = parseInt(form.elements['setting-items-per-page'].value, 10);
 
-                        // CORREÇÃO: Salvando os novos valores da aba "Contagem"
                         settings.countFrequency = parseInt(form.elements['setting-count-frequency'].value, 10) || 0;
                         settings.priceCheckFrequency = parseInt(form.elements['setting-price-check-frequency'].value, 10) || 0;
                         settings.maintenanceFrequency = parseInt(form.elements['setting-maintenance-frequency'].value, 10) || 0;
@@ -192,6 +191,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             panelVisibility[cb.name] = cb.checked;
                         });
                         settings.panelVisibility = panelVisibility;
+
+                        // CORREÇÃO: Salvando as configurações de notificação
+                        const notificationBehaviors = {};
+                        const notificationCheckboxes = form.querySelectorAll('#notification-behavior-container input[type="checkbox"]');
+                        notificationCheckboxes.forEach(cb => {
+                            notificationBehaviors[cb.name] = cb.checked;
+                        });
+                        settings.notificationBehaviors = notificationBehaviors;
 
                         saveSettings(settings);
                         showToast('Configurações salvas com sucesso!', 'success');

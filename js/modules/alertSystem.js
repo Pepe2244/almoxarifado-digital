@@ -1,48 +1,30 @@
-// CÓDIGO CORRIGIDO - js/modules/alertSystem.js
-
 import { getAllItems } from './itemManager.js';
 import { getSettings } from './settings.js';
+
+// Define os tipos de alerta para que possamos nos referir a eles de forma consistente
+export const ALERT_TYPES = {
+    LOW_STOCK: { id: 'low_stock', title: 'Estoque Baixo' },
+    EXPIRY_WARNING: { id: 'expiry_warning', title: 'Item Próximo ao Vencimento' },
+    ITEM_EXPIRED: { id: 'item_expired', title: 'Item Vencido' },
+    BACKUP_REMINDER: { id: 'backup_reminder', title: 'Lembrete de Backup' },
+    MAINTENANCE_DUE: { id: 'maintenance_due', title: 'Manutenção Necessária' },
+    PRICE_CHECK_DUE: { id: 'price_check_due', title: 'Verificação de Preço Necessária' },
+    STOCK_COUNT_DUE: { id: 'stock_count_due', title: 'Contagem de Estoque Necessária' },
+};
+
 
 function generateLowStockAlerts() {
     const items = getAllItems();
     const alerts = [];
     items.forEach(item => {
-        if (item.minStock > 0 && item.currentStock < item.minStock) {
+        if (item.min_stock > 0 && item.current_stock < item.min_stock) {
             alerts.push({
-                id: `lowstock-${item.id}`,
+                id: `${ALERT_TYPES.LOW_STOCK.id}-${item.id}`,
                 type: 'warning',
-                title: 'Stock Baixo',
-                message: `O item "${item.name}" está com stock baixo (${item.currentStock}/${item.minStock}).`,
-                itemId: item.id
-            });
-        }
-    });
-    return alerts;
-}
-
-function generateExpiryAlerts() {
-    const items = getAllItems();
-    const settings = getSettings();
-    const criticalThreshold = settings.predictiveAlertLevels?.critical || 7;
-    const warningThreshold = settings.predictiveAlertLevels?.warning || 30;
-    const alerts = [];
-
-    items.forEach(item => {
-        if (item.batches && item.batches.length > 0) {
-            item.batches.forEach(batch => {
-                if (batch.expiryDate) {
-                    const daysRemaining = (new Date(batch.expiryDate) - new Date()) / (1000 * 60 * 60 * 24);
-                    if (daysRemaining <= warningThreshold) {
-                        alerts.push({
-                            id: `expiry-${item.id}-${batch.id}`,
-                            type: daysRemaining <= criticalThreshold ? 'error' : 'warning',
-                            title: 'Item a Expirar',
-                            message: `Lote do item "${item.name}" expira em ${Math.ceil(daysRemaining)} dias.`,
-                            itemId: item.id,
-                            batchId: batch.id
-                        });
-                    }
-                }
+                title: ALERT_TYPES.LOW_STOCK.title,
+                message: `O item "${item.name}" está com estoque baixo (${item.current_stock}/${item.min_stock}).`,
+                itemId: item.id,
+                action: 'quick-add-stock' // Ação para abrir um modal de entrada rápida
             });
         }
     });
@@ -58,18 +40,20 @@ function generateBackupReminderAlert() {
         const daysSinceBackup = (new Date() - new Date(lastBackup)) / (1000 * 60 * 60 * 24);
         if (daysSinceBackup > frequencyDays) {
             return [{
-                id: 'backup-reminder',
+                id: ALERT_TYPES.BACKUP_REMINDER.id,
                 type: 'info',
-                title: 'Lembrete de Backup',
-                message: `Já passaram mais de ${frequencyDays} dias desde o seu último backup.`
+                title: ALERT_TYPES.BACKUP_REMINDER.title,
+                message: `Já passaram mais de ${frequencyDays} dias desde o seu último backup.`,
+                action: 'do-backup' // Ação para iniciar o backup
             }];
         }
     } else {
         return [{
-            id: 'backup-reminder',
+            id: ALERT_TYPES.BACKUP_REMINDER.id,
             type: 'info',
-            title: 'Lembrete de Backup',
-            message: `Considere fazer o seu primeiro backup para segurança dos dados.`
+            title: ALERT_TYPES.BACKUP_REMINDER.title,
+            message: `Considere fazer o seu primeiro backup para segurança dos dados.`,
+            action: 'do-backup'
         }];
     }
     return [];
@@ -77,10 +61,25 @@ function generateBackupReminderAlert() {
 
 
 function getAllAlerts() {
+    // No futuro, outras funções de alerta (vencimento, contagem) serão adicionadas aqui
     const lowStockAlerts = generateLowStockAlerts();
-    const expiryAlerts = generateExpiryAlerts();
     const backupAlert = generateBackupReminderAlert();
-    return [...lowStockAlerts, ...expiryAlerts, ...backupAlert];
+    return [...lowStockAlerts, ...backupAlert];
 }
 
-export { getAllAlerts };
+
+// Função para remover alertas que não são importantes
+function clearDismissibleAlerts() {
+    const settings = getSettings();
+    const allAlerts = getAllAlerts();
+
+    // Filtra, mantendo apenas os alertas marcados como "ação necessária" nas configurações
+    const importantAlerts = allAlerts.filter(alert => {
+        const alertTypeId = alert.id.split('-')[0]; // Pega o tipo base, ex: 'low_stock'
+        return settings.notificationBehaviors[alertTypeId] === true;
+    });
+
+    return importantAlerts;
+}
+
+export { getAllAlerts, clearDismissibleAlerts };
