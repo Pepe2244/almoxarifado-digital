@@ -1,7 +1,5 @@
-// CÓDIGO CORRIGIDO - js/components/serviceOrderManagement.js
-
 import { apiClient } from '../modules/apiClient.js';
-import { getServiceOrderById, deleteServiceOrder, removeItemFromServiceOrder } from '../modules/serviceOrderManager.js';
+import { getServiceOrderById, deleteServiceOrder, removeItemFromServiceOrder, addServiceOrder, updateServiceOrder } from '../modules/serviceOrderManager.js';
 import { getAllCollaborators } from '../modules/collaboratorManager.js';
 import { getAllItems, getItemById } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';

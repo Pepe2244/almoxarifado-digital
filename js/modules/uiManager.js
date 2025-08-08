@@ -1,9 +1,7 @@
-// CÓDIGO CORRIGIDO - js/modules/uiManager.js
 import { MODAL_IDS } from '../constants.js';
 import { getSettings } from './settings.js';
 import { getItemById } from './itemManager.js';
 import { getAllCollaborators } from './collaboratorManager.js';
-import { ALERT_TYPES } from './alertSystem.js';
 
 export function showToast(message, type = 'info', duration = 3000) {
     const container = document.getElementById('toast-container');
@@ -74,43 +72,6 @@ export function openConfirmationModal({ title, message, onConfirm, onCancel, con
     openModal(MODAL_IDS.CONFIRMATION);
 }
 
-function renderTypeManagement(modal) {
-    const settings = getSettings();
-    const existingTypesList = modal.querySelector('#existing-types-list');
-    const returnableTypesContainer = modal.querySelector('#returnable-types-container');
-
-    if (existingTypesList) {
-        existingTypesList.innerHTML = '';
-        settings.itemTypes.forEach(type => {
-            const typeElement = document.createElement('div');
-            typeElement.className = 'existing-type-item';
-            typeElement.innerHTML = `
-                <span>${type}</span>
-                <button type="button" class="btn btn-danger btn-sm btn-icon-only" data-action="delete-type" data-type-name="${type}" title="Excluir tipo ${type}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            `;
-            existingTypesList.appendChild(typeElement);
-        });
-    }
-
-    if (returnableTypesContainer) {
-        returnableTypesContainer.innerHTML = '';
-        settings.itemTypes.forEach(type => {
-            const checkboxWrapper = document.createElement('div');
-            checkboxWrapper.className = 'checkbox-item';
-            const isChecked = settings.returnableTypes.includes(type);
-
-            checkboxWrapper.innerHTML = `
-                <input type="checkbox" id="ret-${type}" name="returnableType" value="${type}" ${isChecked ? 'checked' : ''}>
-                <label for="ret-${type}">${type}</label>
-            `;
-            returnableTypesContainer.appendChild(checkboxWrapper);
-        });
-    }
-}
-
-
 export function openSettingsModal() {
     const modal = document.getElementById(MODAL_IDS.SETTINGS);
     const template = document.getElementById('settings-modal-template');
@@ -124,25 +85,12 @@ export function openSettingsModal() {
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
 
-    form.elements['setting-aisles'].value = settings.aisles || '';
-    form.elements['setting-shelves-per-aisle'].value = settings.shelvesPerAisle || 1;
-    form.elements['setting-boxes-per-shelf'].value = settings.boxesPerShelf || 1;
-
-    // CORREÇÃO: Carregar frequência de backup
-    form.elements['setting-backup-frequency'].value = settings.backupReminder?.frequencyDays || 7;
-
-    form.elements['setting-count-frequency'].value = settings.countFrequency || 90;
-    form.elements['setting-price-check-frequency'].value = settings.priceCheckFrequency || 30;
-    form.elements['setting-maintenance-frequency'].value = settings.maintenanceFrequency || 180;
-    form.elements['setting-alert-critical'].value = settings.predictiveAlertCritical || 7;
-    form.elements['setting-alert-warning'].value = settings.predictiveAlertWarning || 30;
-
     const panelVisibilityContainer = form.querySelector('#panel-visibility-container .checkbox-group');
     if (panelVisibilityContainer) {
         panelVisibilityContainer.innerHTML = '';
         Object.keys(settings.panelVisibility).forEach(panelId => {
             const panelElement = document.getElementById(panelId);
-            const panelTitle = panelElement?.querySelector('.card-header h2')?.textContent.trim() || panelId;
+            const panelTitle = panelElement?.querySelector('.card-header h2')?.textContent || panelId;
 
             const checkboxWrapper = document.createElement('div');
             checkboxWrapper.className = 'checkbox-item';
@@ -162,51 +110,8 @@ export function openSettingsModal() {
         });
     }
 
-    const notificationContainer = form.querySelector('#notification-behavior-container');
-    if (notificationContainer) {
-        notificationContainer.innerHTML = '';
-        Object.values(ALERT_TYPES).forEach(alertType => {
-            const checkboxWrapper = document.createElement('div');
-            checkboxWrapper.className = 'checkbox-item';
-
-            const checkbox = document.createElement('input');
-            checkbox.type = 'checkbox';
-            checkbox.id = `notif-${alertType.id}`;
-            checkbox.name = alertType.id;
-            checkbox.checked = settings.notificationBehaviors[alertType.id] === true;
-
-            const label = document.createElement('label');
-            label.htmlFor = `notif-${alertType.id}`;
-            label.textContent = alertType.title;
-
-            checkboxWrapper.append(checkbox, label);
-            notificationContainer.appendChild(checkboxWrapper);
-        });
-    }
-
-    renderTypeManagement(modal);
-
-
-    const tabs = modal.querySelectorAll('.settings-tab-btn');
-    const tabContents = modal.querySelectorAll('.settings-tab-content');
-
-    tabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            tabs.forEach(t => t.classList.remove('active'));
-            tabContents.forEach(c => c.classList.remove('active'));
-
-            tab.classList.add('active');
-            const activeContentId = tab.getAttribute('aria-controls');
-            const activeContent = modal.querySelector(`#${activeContentId}`);
-            if (activeContent) {
-                activeContent.classList.add('active');
-            }
-        });
-    });
-
     modal.showModal();
 }
-
 
 export function openMovementModal(itemId) {
     const modal = document.getElementById(MODAL_IDS.MOVEMENT);

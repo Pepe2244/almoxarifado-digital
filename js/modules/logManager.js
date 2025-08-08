@@ -21,13 +21,14 @@ async function createLog(action, details, user = 'Sistema') {
     const logEntry = {
         action,
         details,
-        user,
-        timestamp: new Date().toISOString()
+        user
     };
 
     try {
-        await apiClient.post('logs', logEntry);
-        logs.unshift(logEntry);
+        const newLog = await apiClient.post('logs', logEntry);
+        if (newLog) {
+            logs.unshift(newLog);
+        }
     } catch (error) {
         console.error('Failed to create log:', error);
     }

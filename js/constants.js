@@ -1,5 +1,3 @@
-// CÓDIGO CORRIGIDO - js/constants.js
-
 export const DB_NAME = 'AlmoxarifadoDB';
 export const DB_VERSION = 1;
 export const STORES = {

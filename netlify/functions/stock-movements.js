@@ -48,12 +48,11 @@ exports.handler = async (event, context) => {
 };
 
 async function handleLoan(client, { itemId, collaboratorId, quantity, location }) {
-    // CORREÇÃO: Usando snake_case
-    const itemResult = await client.query('SELECT current_stock, name FROM items WHERE id = $1 FOR UPDATE', [itemId]);
+    const itemResult = await client.query('SELECT "currentStock", name FROM items WHERE id = $1 FOR UPDATE', [itemId]);
     if (itemResult.rows.length === 0) throw new Error('Item not found');
-    if (itemResult.rows[0].current_stock < quantity) throw new Error('Insufficient stock');
+    if (itemResult.rows[0].currentStock < quantity) throw new Error('Insufficient stock');
 
-    await client.query('UPDATE items SET current_stock = current_stock - $1 WHERE id = $2', [quantity, itemId]);
+    await client.query('UPDATE items SET "currentStock" = "currentStock" - $1 WHERE id = $2', [quantity, itemId]);
 
     const collaboratorResult = await client.query('SELECT name FROM collaborators WHERE id = $1', [collaboratorId]);
     const collaboratorName = collaboratorResult.rows.length > 0 ? collaboratorResult.rows[0].name : 'Desconhecido';
@@ -68,8 +67,7 @@ async function handleLoan(client, { itemId, collaboratorId, quantity, location }
 }
 
 async function handleReturn(client, { itemId, quantity, responsible }) {
-    // CORREÇÃO: Usando snake_case
-    await client.query('UPDATE items SET current_stock = current_stock + $1 WHERE id = $2', [quantity, itemId]);
+    await client.query('UPDATE items SET "currentStock" = "currentStock" + $1 WHERE id = $2', [quantity, itemId]);
 
     const details = `Devolução de item ao estoque.`;
     await client.query(
@@ -81,14 +79,13 @@ async function handleReturn(client, { itemId, quantity, responsible }) {
 }
 
 async function handleAdjustment(client, { itemId, newCount, responsible }) {
-    // CORREÇÃO: Usando snake_case
-    const itemResult = await client.query('SELECT current_stock, name FROM items WHERE id = $1 FOR UPDATE', [itemId]);
+    const itemResult = await client.query('SELECT "currentStock", name FROM items WHERE id = $1 FOR UPDATE', [itemId]);
     if (itemResult.rows.length === 0) throw new Error('Item not found');
 
-    const oldStock = itemResult.rows[0].current_stock;
+    const oldStock = itemResult.rows[0].currentStock;
     const quantityChange = newCount - oldStock;
 
-    await client.query('UPDATE items SET current_stock = $1 WHERE id = $2', [newCount, itemId]);
+    await client.query('UPDATE items SET "currentStock" = $1 WHERE id = $2', [newCount, itemId]);
 
     const details = `Ajuste de ${oldStock} para ${newCount}.`;
     await client.query(
@@ -100,12 +97,11 @@ async function handleAdjustment(client, { itemId, newCount, responsible }) {
 }
 
 async function handleDirectLoss(client, { itemId, quantity, reason, responsible, collaboratorId }) {
-    // CORREÇÃO: Usando snake_case
-    const itemResult = await client.query('SELECT current_stock, name, price FROM items WHERE id = $1 FOR UPDATE', [itemId]);
+    const itemResult = await client.query('SELECT "currentStock", name, price FROM items WHERE id = $1 FOR UPDATE', [itemId]);
     if (itemResult.rows.length === 0) throw new Error('Item not found');
-    if (itemResult.rows[0].current_stock < quantity) throw new Error('Insufficient stock for loss');
+    if (itemResult.rows[0].currentStock < quantity) throw new Error('Insufficient stock for loss');
 
-    await client.query('UPDATE items SET current_stock = current_stock - $1 WHERE id = $2', [quantity, itemId]);
+    await client.query('UPDATE items SET "currentStock" = "currentStock" - $1 WHERE id = $2', [quantity, itemId]);
 
     const details = `Perda direta do estoque. Motivo: ${reason}.`;
     await client.query(
@@ -116,7 +112,7 @@ async function handleDirectLoss(client, { itemId, quantity, reason, responsible,
     if (collaboratorId) {
         const totalValue = itemResult.rows[0].price * quantity;
         await client.query(
-            'INSERT INTO debits (collaborator_id, item_name, quantity, unit_value, total_value, reason) VALUES ($1, $2, $3, $4, $5, $6)',
+            'INSERT INTO debits ("collaboratorId", "itemName", quantity, "unitValue", "totalValue", reason) VALUES ($1, $2, $3, $4, $5, $6)',
             [collaboratorId, itemResult.rows[0].name, quantity, itemResult.rows[0].price, totalValue, `Perda direta: ${reason}`]
         );
     }

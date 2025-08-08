@@ -1,6 +1,4 @@
-import {
-    apiClient
-} from './apiClient.js';
+import { apiClient } from './apiClient.js';
 
 let collaborators = [];
 

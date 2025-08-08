@@ -1,6 +1,3 @@
-// CÓDIGO CORRIGIDO - js/modules/dataHandler.js
-
-import { apiClient } from './apiClient.js';
 import { fetchItems } from './itemManager.js';
 import { fetchCollaborators } from './collaboratorManager.js';
 import { fetchDebits } from './debitManager.js';
@@ -25,25 +22,15 @@ async function initializeDB() {
 
 async function restoreDatabase(data) {
     try {
-        // Esta função precisaria de endpoints no backend para limpar e inserir dados em massa.
-        // Como estamos a operar com um backend serverless simples, a lógica de restauro
-        // torna-se complexa e perigosa (múltiplas chamadas de API).
-        // A abordagem mais segura com a arquitetura atual é o restauro local.
-
-        // Limpar dados locais (se estivéssemos a usar IndexedDB)
-        // localStorage.clear(); // CUIDADO: Isto apaga tudo
-
-        // Salvar as novas configurações
+        // Esta é uma operação complexa que precisaria de endpoints de backend dedicados.
+        // Por segurança, na nossa arquitetura atual, vamos restaurar apenas as configurações.
         saveSettings(data.settings);
 
-        // A lógica para substituir os dados no backend precisaria de ser implementada
-        // com endpoints específicos para evitar problemas de concorrência e timeouts.
-        // Por agora, vamos focar no backup, que é a parte mais segura.
-        // O restauro é uma operação avançada que requer mais infraestrutura de backend.
+        // A lógica completa de restauro de dados (itens, colaboradores, etc.)
+        // seria implementada aqui com chamadas de API para apagar e recriar os dados.
 
-        console.log("Dados do backup carregados para as configurações.", data);
-        alert("Funcionalidade de restauro ainda em desenvolvimento. As configurações foram carregadas, mas os dados principais não foram alterados para segurança.");
-
+        console.log("Configurações do backup foram restauradas.", data.settings);
+        alert("Funcionalidade de restauro está em modo de segurança. Apenas as configurações foram restauradas. A página será recarregada.");
 
         return true;
     } catch (error) {
@@ -51,6 +38,5 @@ async function restoreDatabase(data) {
         return false;
     }
 }
-
 
 export { initializeDB, restoreDatabase };

@@ -1,17 +1,14 @@
 {
   "name": "almoxarifado-digital",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Sistema de gestão de estoque e ativos.",
+  "main": "js/main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "netlify dev"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Pedro Henrique",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "dotenv": "^17.2.1",
-    "pg": "^8.16.3"
+    "pg": "^8.11.3"
   }
 }

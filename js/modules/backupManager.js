@@ -5,6 +5,7 @@ import { getAllServiceOrders } from './serviceOrderManager.js';
 import { getSettings, saveSettings } from './settings.js';
 import { restoreDatabase } from './dataHandler.js';
 import { showToast, openConfirmationModal, closeModal } from './uiManager.js';
+import { MODAL_IDS } from '../constants.js';
 
 const BACKUP_VERSION = "1.0.0";
 
@@ -57,7 +58,7 @@ function restoreData(event) {
                 title: 'Confirmar Restauro',
                 message: 'Tem a certeza? Esta ação irá substituir TODOS os dados atuais pelos dados do ficheiro de backup. Esta operação não pode ser desfeita.',
                 onConfirm: async () => {
-                    closeModal('confirmation-modal');
+                    closeModal(MODAL_IDS.CONFIRMATION);
                     showToast('A restaurar dados... A página será recarregada.', 'info');
 
                     const success = await restoreDatabase(data);

@@ -9,12 +9,11 @@ const pool = new Pool({
 
 exports.handler = async (event, context) => {
     const pathParts = event.path.split('/').filter(part => part);
-    const resource = pathParts[1];
     const kitId = pathParts[2];
     const subResource = pathParts[3];
     const componentId = pathParts[4];
 
-    if (resource !== 'kits' || !kitId || subResource !== 'components') {
+    if (!kitId || subResource !== 'components') {
         return { statusCode: 404, body: JSON.stringify({ error: 'Not Found' }) };
     }
 

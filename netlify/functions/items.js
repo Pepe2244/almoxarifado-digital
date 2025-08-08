@@ -8,8 +8,8 @@ const pool = new Pool({
 });
 
 exports.handler = async (event, context) => {
-  const pathParts = event.path.split('/').filter(Boolean);
-  const resourceId = pathParts.length > 3 ? pathParts[3] : null;
+  const pathParts = event.path.split('/').filter(part => part);
+  const resourceId = pathParts[2];
 
   try {
     switch (event.httpMethod) {
@@ -24,33 +24,25 @@ exports.handler = async (event, context) => {
       case 'PUT':
         if (resourceId) {
           return await updateItem(resourceId, JSON.parse(event.body));
-        } else {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Item ID is required for update' }) };
         }
+        return { statusCode: 400, body: JSON.stringify({ error: 'Item ID is required for update' }) };
       case 'DELETE':
         if (resourceId) {
           return await deleteItem(resourceId);
-        } else {
-          return { statusCode: 400, body: JSON.stringify({ error: 'Item ID is required for deletion' }) };
         }
+        return { statusCode: 400, body: JSON.stringify({ error: 'Item ID is required for deletion' }) };
       default:
-        return {
-          statusCode: 405,
-          body: JSON.stringify({ error: 'Method Not Allowed' })
-        };
+        return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
     }
   } catch (error) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'Internal Server Error', details: error.message })
-    };
+    return { statusCode: 500, body: JSON.stringify({ error: 'Internal Server Error', details: error.message }) };
   }
 };
 
 async function getAllItems() {
   const client = await pool.connect();
   try {
-    const result = await client.query('SELECT id, name, barcode, type, unit, current_stock as "currentStock", min_stock as "minStock", max_stock as "maxStock", price, shelf_life_days as "shelfLifeDays", location, status, created_at as "createdAt", updated_at as "updatedAt" FROM items ORDER BY name ASC');
+    const result = await client.query('SELECT * FROM items ORDER BY name ASC');
     return {
       statusCode: 200,
       body: JSON.stringify(result.rows)
@@ -63,7 +55,7 @@ async function getAllItems() {
 async function getItemById(id) {
   const client = await pool.connect();
   try {
-    const result = await client.query('SELECT id, name, barcode, type, unit, current_stock as "currentStock", min_stock as "minStock", max_stock as "maxStock", price, shelf_life_days as "shelfLifeDays", location, status, created_at as "createdAt", updated_at as "updatedAt" FROM items WHERE id = $1', [id]);
+    const result = await client.query('SELECT * FROM items WHERE id = $1', [id]);
     if (result.rows.length === 0) {
       return { statusCode: 404, body: JSON.stringify({ error: 'Item not found' }) };
     }
@@ -79,24 +71,23 @@ async function getItemById(id) {
 async function createItem(itemDetails) {
   const client = await pool.connect();
   try {
-    // CORREÇÃO: Usando snake_case para as colunas do banco
     const query = `
-      INSERT INTO items (name, barcode, type, unit, current_stock, min_stock, max_stock, price, shelf_life_days, location, status)
+      INSERT INTO items (name, barcode, type, unit, "minStock", "maxStock", price, "shelfLifeDays", location, status, "currentStock")
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-      RETURNING id, name, barcode, type, unit, current_stock as "currentStock", min_stock as "minStock", max_stock as "maxStock", price, shelf_life_days as "shelfLifeDays", location, status, created_at as "createdAt", updated_at as "updatedAt";
+      RETURNING *;
     `;
     const values = [
       itemDetails.name,
       itemDetails.barcode,
       itemDetails.type,
       itemDetails.unit,
-      itemDetails.currentStock,
       itemDetails.minStock,
       itemDetails.maxStock,
       itemDetails.price,
       itemDetails.shelfLifeDays,
       itemDetails.location,
-      itemDetails.status || 'disponível'
+      itemDetails.status,
+      itemDetails.currentStock
     ];
     const result = await client.query(query, values);
     return {
@@ -111,12 +102,11 @@ async function createItem(itemDetails) {
 async function updateItem(id, itemDetails) {
   const client = await pool.connect();
   try {
-    // CORREÇÃO: Usando snake_case para as colunas do banco
     const query = `
       UPDATE items
-      SET name = $1, barcode = $2, type = $3, unit = $4, min_stock = $5, max_stock = $6, price = $7, shelf_life_days = $8, location = $9, status = $10, updated_at = NOW()
+      SET name = $1, barcode = $2, type = $3, unit = $4, "minStock" = $5, "maxStock" = $6, price = $7, "shelfLifeDays" = $8, location = $9, status = $10, "updatedAt" = NOW()
       WHERE id = $11
-      RETURNING id, name, barcode, type, unit, current_stock as "currentStock", min_stock as "minStock", max_stock as "maxStock", price, shelf_life_days as "shelfLifeDays", location, status, created_at as "createdAt", updated_at as "updatedAt";
+      RETURNING *;
     `;
     const values = [
       itemDetails.name,

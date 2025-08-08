@@ -1,5 +1,3 @@
-// CÓDIGO CORRIGIDO - netlify/functions/dashboard-data.js
-
 const { Pool } = require('pg');
 
 const pool = new Pool({
@@ -19,8 +17,8 @@ exports.handler = async (event, context) => {
         const itemStatsQuery = `
       SELECT
         COUNT(*) AS "totalItems",
-        SUM(price * current_stock) AS "totalStockValue",
-        SUM(current_stock) AS "totalStockQuantity"
+        SUM(price * "currentStock") AS "totalStockValue",
+        SUM("currentStock") AS "totalStockQuantity"
       FROM items;
     `;
 
@@ -29,7 +27,7 @@ exports.handler = async (event, context) => {
         const debitStatsQuery = `
       SELECT
         COUNT(*) AS "pendingDebitsCount",
-        SUM(total_value) AS "pendingDebitsValue"
+        SUM("totalValue") AS "pendingDebitsValue"
       FROM debits
       WHERE status = 'pendente';
     `;
@@ -73,7 +71,6 @@ exports.handler = async (event, context) => {
             body: JSON.stringify(dashboardData)
         };
     } catch (error) {
-        console.error('Error in dashboard-data function:', error);
         return {
             statusCode: 500,
             body: JSON.stringify({ error: 'Internal Server Error', details: error.message })

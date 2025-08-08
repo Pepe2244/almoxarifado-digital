@@ -1,5 +1,3 @@
-// CÓDIGO CORRIGIDO - js/components/debitManagement.js
-
 import { getAllDebits, updateDebitStatus, deleteDebit } from '../modules/debitManager.js';
 import { openConfirmationModal, closeModal, showToast } from '../modules/uiManager.js';
 import { MODAL_IDS } from '../constants.js';
