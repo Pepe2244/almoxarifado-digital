@@ -1,4 +1,3 @@
-// CÓDIGO CORRIGIDO - js/components/itemManagement.js
 import { apiClient } from '../modules/apiClient.js';
 import { getItemById, deleteItem, getAllItems } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
@@ -23,28 +22,20 @@ function populateTypeFilter() {
     const filterSelect = document.getElementById('item-type-filter');
     if (!filterSelect) return;
 
-    // Guarda o valor selecionado para restaurar depois
     const selectedValue = filterSelect.value;
-
-    // Limpa opções antigas (exceto a primeira "Todos os Tipos")
     while (filterSelect.options.length > 1) {
         filterSelect.remove(1);
     }
-
     settings.itemTypes.forEach(type => {
         const option = new Option(type, type);
         filterSelect.add(option);
     });
-
-    // Restaura a seleção anterior se ainda existir
     filterSelect.value = selectedValue;
 }
 
 export function initializeItemManagement() {
-    // Popula o filtro assim que o módulo é inicializado
     populateTypeFilter();
 
-    // Listener para o filtro de tipo
     const typeFilter = document.getElementById('item-type-filter');
     if (typeFilter) {
         typeFilter.addEventListener('change', () => {
@@ -52,10 +43,9 @@ export function initializeItemManagement() {
         });
     }
 
-    // CORREÇÃO: Listener para o botão de busca
-    const searchBtn = document.querySelector('#item-management .search-container .fa-search');
-    if (searchBtn) {
-        searchBtn.parentElement.addEventListener('click', (e) => {
+    const searchContainer = document.querySelector('#item-management .search-container');
+    if (searchContainer) {
+        searchContainer.addEventListener('click', (e) => {
             e.currentTarget.classList.toggle('active');
             const input = e.currentTarget.querySelector('.search-input');
             if (e.currentTarget.classList.contains('active')) {
@@ -64,13 +54,11 @@ export function initializeItemManagement() {
         });
     }
 
-
     document.body.addEventListener('click', (event) => {
-        const button = event.target.closest('button, a'); // Agora considera <a> e <button>
+        const button = event.target.closest('button, a');
         const action = button?.dataset.action;
         if (!action) return;
 
-        // CORREÇÃO: Evita que links de ação rolem a página
         if (button.tagName === 'A') {
             event.preventDefault();
         }
@@ -144,7 +132,6 @@ export function renderItemsTable(items) {
     const filterValue = document.getElementById('item-type-filter')?.value;
     const filteredItems = filterValue && filterValue !== 'all' ? items.filter(item => item.type === filterValue) : items;
 
-
     if (filteredItems.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="6" class="text-center">Nenhum item encontrado com os filtros atuais.</td></tr>';
         return;
@@ -153,7 +140,6 @@ export function renderItemsTable(items) {
     filteredItems.forEach(item => {
         const row = document.createElement('tr');
         row.dataset.id = item.id;
-        // CORREÇÃO: trocados <a> por <button> para evitar rolagem da página
         row.innerHTML = `
             <td data-label="Item">${item.name}</td>
             <td data-label="Tipo">${item.type}</td>
@@ -200,7 +186,6 @@ function openItemFormModal(itemId = null) {
         typeSelect.add(option);
     });
 
-
     if (itemId) {
         const item = getItemById(itemId);
         if (item) {
@@ -219,9 +204,8 @@ function openItemFormModal(itemId = null) {
             form.elements.shelf.value = item.location?.shelf || '';
             form.elements.box.value = item.location?.box || '';
 
-            const stockLabel = form.querySelector('#item-form-current-stock-label');
-            const stockInput = form.querySelector('#item-form-current-stock');
-            if (stockLabel) stockLabel.parentElement.style.display = 'none';
+            const stockField = form.querySelector('[name="currentStock"]').parentElement;
+            if (stockField) stockField.style.display = 'none';
         }
     } else {
         title.textContent = 'Adicionar Novo Item';
@@ -232,8 +216,28 @@ function openItemFormModal(itemId = null) {
             form.elements.box.value = suggested.box;
         }
     }
-
     modal.showModal();
+}
+
+async function _renderBatchesTable(modal, itemId) {
+    const batches = await apiClient.get(`item-details/${itemId}/batches`);
+    const tableBody = modal.querySelector('#batches-table-body');
+    tableBody.innerHTML = '';
+
+    if (batches && batches.length > 0) {
+        batches.forEach(batch => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${batch.id}</td>
+                <td>${batch.quantity}</td>
+                <td>${new Date(batch.acquisition_date).toLocaleDateString('pt-BR')}</td>
+                <td>${batch.manufacturing_date ? new Date(batch.manufacturing_date).toLocaleDateString('pt-BR') : 'N/A'}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    } else {
+        tableBody.innerHTML = '<tr><td colspan="4">Nenhum lote encontrado.</td></tr>';
+    }
 }
 
 async function openItemBatchesModal(itemId) {
@@ -246,29 +250,32 @@ async function openItemBatchesModal(itemId) {
     modal.querySelector('#item-batches-modal-title').textContent = `Lotes de: ${item.name}`;
     modal.querySelector('#item-batches-item-id').value = itemId;
 
-    const batches = await apiClient.get(`item-details/${itemId}/batches`);
-    const tableBody = modal.querySelector('#batches-table-body');
-    tableBody.innerHTML = '';
-    if (batches && batches.length > 0) {
-        batches.forEach(batch => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${batch.id}</td>
-                <td>${batch.quantity}</td>
-                <td>${new Date(batch.acquisition_date).toLocaleDateString('pt-BR')}</td>
-                <td>${batch.manufacturing_date ? new Date(batch.manufacturing_date).toLocaleDateString('pt-BR') : 'N/A'}</td>
-                <td>...</td> 
-                <td>...</td>
-                <td>...</td>
-            `;
-            tableBody.appendChild(row);
-        });
-    } else {
-        tableBody.innerHTML = '<tr><td colspan="7">Nenhum lote encontrado.</td></tr>';
-    }
+    await _renderBatchesTable(modal, itemId);
+
+    modal.querySelector('#batch-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const batchData = {
+            quantity: parseInt(form.elements.quantity.value, 10),
+            acquisitionDate: form.elements.acquisitionDate.value,
+            manufacturingDate: form.elements.manufacturingDate.value || null,
+            shelfLifeDays: parseInt(form.elements.shelfLifeDays.value, 10) || null
+        };
+
+        if (itemId && batchData.quantity > 0 && batchData.acquisitionDate) {
+            await apiClient.post(`item-details/${itemId}/batches`, batchData);
+            showToast('Lote adicionado com sucesso!', 'success');
+            form.reset();
+            document.body.dispatchEvent(new CustomEvent('dataChanged', { detail: { noClose: true } }));
+            await _renderBatchesTable(modal, itemId); // Re-renderiza a tabela
+        } else {
+            showToast('Por favor, preencha a quantidade e a data de aquisição.', 'error');
+        }
+    });
 
     modal.showModal();
 }
+
 
 async function openItemHistoryModal(itemId) {
     const modal = document.getElementById(MODAL_IDS.ITEM_HISTORY);
@@ -287,7 +294,7 @@ async function openItemHistoryModal(itemId) {
         let historyHTML = '<div class="history-list">';
         history.forEach(entry => {
             const date = new Date(entry.created_at).toLocaleString('pt-BR');
-            const typeClass = entry.type.toLowerCase().replace(' ', '-');
+            const typeClass = (entry.type || '').toLowerCase().replace(/[^a-z]/g, '-');
             const icon = {
                 'entrada': 'fa-arrow-circle-down',
                 'saída': 'fa-arrow-circle-up',
