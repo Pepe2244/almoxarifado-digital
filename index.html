@@ -301,7 +301,7 @@
     <dialog id="service-order-details-modal"></dialog>
 
     <template id="settings-modal-template">
-        <form id="settings-form" class="modal-form" novalidate>
+        <form id="settings-form" class="modal-content-wrapper" novalidate>
             <div class="settings-header">
                 <h2><i class="fas fa-cogs" aria-hidden="true"></i> Configurações</h2>
                 <div class="settings-tabs" role="tablist" aria-label="Abas de Configurações">
@@ -653,9 +653,11 @@
     </template>
 
     <template id="movement-modal-template">
-        <form id="movement-form" class="modal-form">
-            <h2 id="movement-modal-title">Registrar Saída / Empréstimo</h2>
-            <div class="modal-body">
+        <form id="movement-form" class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="movement-modal-title">Registrar Saída / Empréstimo</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" name="movement-item-id" id="movement-item-id">
                 <div class="info-box">Item: <strong id="movement-item-name"></strong></div>
                 <div class="form-group">
@@ -670,9 +672,11 @@
     </template>
 
     <template id="mass-add-modal-template">
-        <form id="mass-add-form" class="modal-form">
-            <h2>Cadastro Rápido de Itens</h2>
-            <div class="modal-body">
+        <form id="mass-add-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2>Cadastro Rápido de Itens</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <div class="form-group"><label for="mass-add-data">Cole os nomes dos itens (um por linha):</label><textarea name="mass-add-data" id="mass-add-data" rows="10" placeholder="Parafuso Sextavado\nLuva de Raspa..." maxlength="5000"></textarea><small>Apenas o nome é necessário. Outros detalhes podem ser editados depois.</small></div>
             </div>
             <div class="modal-actions"><button type="button" class="btn btn-secondary" data-action="cancel-mass-add">Cancelar</button><button type="submit" class="btn btn-success">Cadastrar Itens</button></div>
@@ -680,9 +684,11 @@
     </template>
 
     <template id="allocation-modal-template">
-        <div class="modal-content">
-            <h2 id="allocation-modal-title">Gerenciar Itens com Colaboradores</h2>
-            <div id="allocations-content" class="modal-body"></div>
+        <div class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="allocation-modal-title">Gerenciar Itens com Colaboradores</h2>
+            </div>
+            <div id="allocations-content" class="modal-body settings-body"></div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-primary" data-action="close-allocation">Fechar</button>
             </div>
@@ -690,9 +696,11 @@
     </template>
 
     <template id="collaborator-modal-template">
-        <form id="collaborator-form" class="modal-form">
-            <h2>Adicionar/Editar Colaborador</h2>
-            <div class="modal-body">
+        <form id="collaborator-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2>Adicionar/Editar Colaborador</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="collaborator-id" name="collaborator-id">
                 <div class="form-group"><label for="collaborator-name">Nome Completo:</label><input type="text" id="collaborator-name" name="collaborator-name" required maxlength="100"></div>
                 <div class="form-row">
@@ -708,9 +716,11 @@
     </template>
 
     <template id="mass-add-collaborator-modal-template">
-        <form id="mass-add-collaborator-form" class="modal-form">
-            <h2>Cadastro Rápido de Colaboradores</h2>
-            <div class="modal-body">
+        <form id="mass-add-collaborator-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2>Cadastro Rápido de Colaboradores</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <div class="form-group">
                     <label for="mass-add-collaborator-data">Cole os nomes dos colaboradores (um por linha):</label>
                     <textarea name="mass-add-collaborator-data" id="mass-add-collaborator-data" rows="10" placeholder="João da Silva\nMaria Oliveira..." maxlength="5000"></textarea>
@@ -725,9 +735,11 @@
     </template>
 
     <template id="loss-registration-modal-template">
-        <form id="loss-registration-form" class="modal-form">
-            <h2>Registrar Perda de Item (Empréstimo)</h2>
-            <div class="modal-body">
+        <form id="loss-registration-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2>Registrar Perda de Item (Empréstimo)</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="loss-item-id" name="loss-item-id">
                 <input type="hidden" id="loss-allocation-id" name="loss-allocation-id">
                 <div id="loss-info-box" class="info-box"></div>
@@ -744,9 +756,11 @@
     </template>
 
     <template id="direct-loss-modal-template">
-        <form id="direct-loss-form" class="modal-form">
-            <h2>Registrar Perda Direta de Estoque</h2>
-            <div class="modal-body">
+        <form id="direct-loss-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2>Registrar Perda Direta de Estoque</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="direct-loss-item-id" name="direct-loss-item-id">
                 <div class="info-box">Item: <strong id="direct-loss-item-name"></strong> | Estoque Total: <strong id="direct-loss-item-stock"></strong></div>
                 <div class="form-group">
@@ -774,9 +788,11 @@
     </template>
 
     <template id="confirmation-modal-template">
-        <div class="modal-content">
-            <h2 id="confirmation-title">Confirmar Ação</h2>
-            <div class="modal-body">
+        <div class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="confirmation-title">Confirmar Ação</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <div class="modal-icon"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
                 <p id="confirmation-message">Você tem certeza?</p>
             </div>
@@ -788,9 +804,11 @@
     </template>
 
     <template id="quick-entry-modal-template">
-        <form id="quick-entry-form" class="modal-form">
-            <h2 id="quick-entry-modal-title">Entrada Rápida</h2>
-            <div class="modal-body">
+        <form id="quick-entry-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="quick-entry-modal-title">Entrada Rápida</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="quick-entry-item-id" name="item-id">
                 <input type="hidden" id="quick-entry-action-type" name="action-type">
                 <div class="info-box">Item: <strong id="quick-entry-item-name"></strong></div>
@@ -811,9 +829,11 @@
     </template>
 
     <template id="adjustment-modal-template">
-        <form id="adjustment-form" class="modal-form" novalidate>
-            <h2><i class="fas fa-sync-alt" aria-hidden="true"></i> Ajuste de Estoque Físico</h2>
-            <div class="modal-body">
+        <form id="adjustment-form" class="modal-content-wrapper" novalidate>
+             <div class="settings-header">
+                <h2><i class="fas fa-sync-alt" aria-hidden="true"></i> Ajuste de Estoque Físico</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="adjustment-item-id" name="itemId">
                 <div class="info-box">Item: <strong id="adjustment-item-name"></strong> | Estoque no Sistema: <strong id="adjustment-system-stock"></strong></div>
                 <div class="form-group">
@@ -834,9 +854,11 @@
     </template>
 
     <template id="barcode-action-modal-template">
-        <div class="modal-content">
-            <h2 id="barcode-action-title"><i class="fas fa-barcode" aria-hidden="true"></i> Buscar Item por Código</h2>
-            <div class="modal-body">
+        <div class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="barcode-action-title"><i class="fas fa-barcode" aria-hidden="true"></i> Buscar Item por Código</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <div id="barcode-initial-view">
                     <div class="form-group">
                         <label for="barcode-input">Leia o código, digite e pressione Enter, ou clique em Buscar:</label>
@@ -891,9 +913,11 @@
     </template>
     
     <template id="label-print-modal-template">
-        <div class="modal-content">
-            <h2><i class="fas fa-print" aria-hidden="true"></i> Gerar Etiqueta</h2>
-            <div class="modal-body" id="label-content-area" style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
+        <div class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2><i class="fas fa-print" aria-hidden="true"></i> Gerar Etiqueta</h2>
+            </div>
+            <div class="modal-body settings-body" id="label-content-area" style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" data-action="cancel-label-print">Fechar</button>
@@ -957,9 +981,11 @@
     </template>
     
     <template id="kit-return-modal-template">
-        <form id="kit-return-form" class="modal-form">
-            <h2 id="kit-return-modal-title">Registrar Devolução de Kit</h2>
-            <div class="modal-body">
+        <form id="kit-return-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="kit-return-modal-title">Registrar Devolução de Kit</h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" id="kit-return-kit-id">
                 <input type="hidden" id="kit-return-allocation-id">
                 <div id="kit-return-info" class="info-box"></div>
@@ -990,9 +1016,11 @@
     </template>
 
     <template id="service-order-modal-template">
-        <form id="service-order-form" class="modal-form">
-            <h2 id="os-form-modal-title"></h2>
-            <div class="modal-body">
+        <form id="service-order-form" class="modal-content-wrapper">
+             <div class="settings-header">
+                <h2 id="os-form-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
                 <input type="hidden" name="os-id" id="os-id">
                 <fieldset>
                     <legend>Informações da O.S.</legend>

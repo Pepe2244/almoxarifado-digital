@@ -38,19 +38,20 @@ export function renderCollaboratorsTable(collaborators) {
     }
     collaborators.forEach(collaborator => {
         const row = document.createElement('tr');
+        const uniqueId = `dropdown-container-collab-${collaborator.id}`; // ID Único
         row.dataset.id = collaborator.id;
         row.innerHTML = `
             <td data-label="Nome">${collaborator.name}</td>
             <td data-label="Cargo">${collaborator.role || 'N/A'}</td>
             <td data-label="Status"><span class="status-badge status-${collaborator.status || 'ativo'}">${collaborator.status || 'ativo'}</span></td>
             <td data-label="Ações">
-                <div class="actions-dropdown-container">
+                <div class="actions-dropdown-container" data-container-id="${uniqueId}">
                     <button class="btn btn-secondary btn-sm btn-icon-only" data-action="toggle-actions-dropdown" aria-label="Mais ações">
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
-                    <div class="actions-dropdown-content hidden">
-                        <button class="btn btn-sm" data-action="edit-collaborator" data-id="${collaborator.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn btn-sm btn-danger" data-action="delete-collaborator" data-id="${collaborator.id}"><i class="fas fa-trash"></i> Excluir</button>
+                    <div class="actions-dropdown-content hidden" data-original-container="${uniqueId}">
+                        <button data-action="edit-collaborator" data-id="${collaborator.id}"><i class="fas fa-edit"></i> Editar</button>
+                        <button class="danger-action" data-action="delete-collaborator" data-id="${collaborator.id}"><i class="fas fa-trash"></i> Excluir</button>
                     </div>
                 </div>
             </td>
