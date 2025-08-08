@@ -1,17 +1,32 @@
 // CÓDIGO CORRIGIDO - js/components/itemManagement.js
 import { apiClient } from '../modules/apiClient.js';
-import { getItemById, deleteItem, getAllItems } from '../modules/itemManager.js'; // Importar getAllItems
+import { getItemById, deleteItem, getAllItems } from '../modules/itemManager.js';
 import { openConfirmationModal, closeModal, showToast, openMovementModal, openAdjustmentModal, openDirectLossModal } from '../modules/uiManager.js';
 import { MODAL_IDS } from '../constants.js';
 import { getSettings } from '../modules/settings.js';
-import { suggestLocation } from '../modules/mapping.js'; // Importar suggestLocation
+import { suggestLocation } from '../modules/mapping.js';
+
+// Função para fechar todos os menus de ação abertos
+const closeAllActionDropdowns = () => {
+    document.querySelectorAll('.actions-dropdown-content:not(.hidden)').forEach(dropdown => {
+        dropdown.classList.add('hidden');
+    });
+};
+
+// Adiciona um listener para fechar os menus ao clicar fora
+document.addEventListener('click', (event) => {
+    if (!event.target.closest('.actions-dropdown-container')) {
+        closeAllActionDropdowns();
+    }
+});
+
 
 export function initializeItemManagement() {
     document.body.addEventListener('click', (event) => {
-        const action = event.target.dataset.action || event.target.closest('button')?.dataset.action;
+        const button = event.target.closest('button');
+        const action = button?.dataset.action;
         if (!action) return;
 
-        const button = event.target.closest('button');
         const itemId = button?.dataset.id || button?.dataset.itemId || event.target.closest('tr')?.dataset.id;
 
         switch (action) {
@@ -43,10 +58,32 @@ export function initializeItemManagement() {
                 if (itemId) openDirectLossModal(itemId);
                 break;
             case 'quick-add-stock':
-                if (itemId) {
-                    openAdjustmentModal(itemId);
-                }
+                if (itemId) openAdjustmentModal(itemId);
                 break;
+            case 'toggle-actions-dropdown':
+                {
+                    const dropdownContainer = button.closest('.actions-dropdown-container');
+                    const dropdown = dropdownContainer.querySelector('.actions-dropdown-content');
+                    const isHidden = dropdown.classList.contains('hidden');
+
+                    closeAllActionDropdowns(); // Fecha todos os outros
+
+                    if (isHidden) {
+                        dropdown.classList.remove('hidden');
+                        // Lógica para reposicionar o dropdown se estiver fora da tela
+                        const rect = dropdown.getBoundingClientRect();
+                        const viewportHeight = window.innerHeight;
+                        if (rect.bottom > viewportHeight) {
+                            dropdown.style.top = `auto`;
+                            dropdown.style.bottom = `100%`;
+                        } else {
+                            dropdown.style.top = `100%`;
+                            dropdown.style.bottom = `auto`;
+                        }
+                    }
+                    event.stopPropagation(); // Impede que o listener do documento feche o menu imediatamente
+                    break;
+                }
         }
     });
 }
@@ -68,7 +105,7 @@ export function renderItemsTable(items) {
         row.innerHTML = `
             <td data-label="Item">${item.name}</td>
             <td data-label="Tipo">${item.type}</td>
-            <td data-label="Estoque">${item.current_stock || 0}</td>
+            <td data-label="Estoque">${item.currentStock || 0}</td>
             <td data-label="Preço (R$)">${Number(item.price || 0).toFixed(2)}</td>
             <td data-label="Status"><span class="status-badge status-${item.status || 'disponível'}">${item.status || 'disponível'}</span></td>
             <td data-label="Ações">
@@ -77,14 +114,15 @@ export function renderItemsTable(items) {
                         <i class="fas fa-ellipsis-v"></i>
                     </button>
                     <div class="actions-dropdown-content hidden">
-                        <button class="btn btn-sm" data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída</button>
-                        <button class="btn btn-sm" data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajuste</button>
-                        <button class="btn btn-sm" data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Perda</button>
-                        <hr>
-                        <button class="btn btn-sm" data-action="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i> Editar</button>
-                        <button class="btn btn-sm" data-action="manage-batches" data-id="${item.id}"><i class="fas fa-boxes"></i> Lotes</button>
-                        <button class="btn btn-sm" data-action="view-history" data-id="${item.id}"><i class="fas fa-history"></i> Histórico</button>
-                        <button class="btn btn-sm btn-danger" data-action="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i> Excluir</button>
+                        <a href="#" data-action="register-loan" data-id="${item.id}"><i class="fas fa-sign-out-alt"></i> Saída / Empréstimo</a>
+                        <a href="#" data-action="adjust-stock" data-id="${item.id}"><i class="fas fa-sync-alt"></i> Ajustar Estoque</a>
+                        <a href="#" data-action="direct-loss" data-id="${item.id}"><i class="fas fa-heart-broken"></i> Registrar Perda</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" data-action="edit-item" data-id="${item.id}"><i class="fas fa-edit"></i> Editar Detalhes</a>
+                        <a href="#" data-action="manage-batches" data-id="${item.id}"><i class="fas fa-boxes"></i> Gerenciar Lotes</a>
+                        <a href="#" data-action="view-history" data-id="${item.id}"><i class="fas fa-history"></i> Ver Histórico</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="#" class="danger-action" data-action="delete-item" data-id="${item.id}"><i class="fas fa-trash"></i> Excluir Item</a>
                     </div>
                 </div>
             </td>
@@ -120,10 +158,10 @@ function openItemFormModal(itemId = null) {
             form.elements.barcode.value = item.barcode || '';
             form.elements.type.value = item.type;
             form.elements.unit.value = item.unit || '';
-            form.elements.minStock.value = item.min_stock || 0;
-            form.elements.maxStock.value = item.max_stock || 0;
+            form.elements.minStock.value = item.minStock || 0;
+            form.elements.maxStock.value = item.maxStock || 0;
             form.elements.price.value = item.price || 0;
-            form.elements.shelfLifeDays.value = item.shelf_life_days || 0;
+            form.elements.shelfLifeDays.value = item.shelfLifeDays || 0;
             form.elements.status.value = item.status || 'disponível';
             form.elements.aisle.value = item.location?.aisle || '';
             form.elements.shelf.value = item.location?.shelf || '';
@@ -131,12 +169,11 @@ function openItemFormModal(itemId = null) {
 
             const stockLabel = form.querySelector('#item-form-current-stock-label');
             const stockInput = form.querySelector('#item-form-current-stock');
-            if (stockLabel) stockLabel.style.display = 'none';
-            if (stockInput) stockInput.style.display = 'none';
+            if (stockLabel) stockLabel.parentElement.style.display = 'none';
+            if (stockInput) stockInput.parentElement.style.display = 'none';
         }
     } else {
         title.textContent = 'Adicionar Novo Item';
-        // CORREÇÃO: Sugerir localização para novo item
         const suggested = suggestLocation();
         if (suggested) {
             form.elements.aisle.value = suggested.aisle;
@@ -161,7 +198,7 @@ async function openItemBatchesModal(itemId) {
     const batches = await apiClient.get(`item-details/${itemId}/batches`);
     const tableBody = modal.querySelector('#batches-table-body');
     tableBody.innerHTML = '';
-    if (batches.length > 0) {
+    if (batches && batches.length > 0) {
         batches.forEach(batch => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -169,11 +206,14 @@ async function openItemBatchesModal(itemId) {
                 <td>${batch.quantity}</td>
                 <td>${new Date(batch.acquisition_date).toLocaleDateString('pt-BR')}</td>
                 <td>${batch.manufacturing_date ? new Date(batch.manufacturing_date).toLocaleDateString('pt-BR') : 'N/A'}</td>
+                <td>...</td> 
+                <td>...</td>
+                <td>...</td>
             `;
             tableBody.appendChild(row);
         });
     } else {
-        tableBody.innerHTML = '<tr><td colspan="5">Nenhum lote encontrado.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="7">Nenhum lote encontrado.</td></tr>';
     }
 
     modal.showModal();
@@ -192,25 +232,42 @@ async function openItemHistoryModal(itemId) {
     const historyContent = modal.querySelector('#history-content');
     historyContent.innerHTML = '';
 
-    if (history.length > 0) {
-        const list = document.createElement('ul');
-        list.className = 'history-list';
+    if (history && history.length > 0) {
+        let historyHTML = '<div class="history-list">';
         history.forEach(entry => {
-            const listItem = document.createElement('li');
-            listItem.innerHTML = `
-                <strong>${new Date(entry.created_at).toLocaleString('pt-BR')} - ${entry.type}</strong>
-                <p>Detalhes: ${entry.details}</p>
-                <p>Alteração: ${entry.quantity_change > 0 ? '+' : ''}${entry.quantity_change} | Responsável: ${entry.responsible}</p>
+            const date = new Date(entry.created_at).toLocaleString('pt-BR');
+            const typeClass = entry.type.toLowerCase().replace(' ', '-');
+            const icon = {
+                'entrada': 'fa-arrow-circle-down',
+                'saída': 'fa-arrow-circle-up',
+                'ajuste': 'fa-sync-alt',
+                'perda': 'fa-heart-broken',
+                'devolução': 'fa-undo-alt'
+            }[typeClass] || 'fa-history';
+
+            historyHTML += `
+                <div class="history-entry history-${typeClass}">
+                    <div class="history-icon"><i class="fas ${icon}"></i></div>
+                    <div class="history-details">
+                        <p><strong>${entry.type}</strong> por <strong>${entry.responsible || 'Sistema'}</strong></p>
+                        <p>${entry.details}</p>
+                        <small>${date}</small>
+                    </div>
+                    <div class="history-quantity">
+                        <span>${entry.quantity_change > 0 ? '+' : ''}${entry.quantity_change}</span>
+                    </div>
+                </div>
             `;
-            list.appendChild(listItem);
         });
-        historyContent.appendChild(list);
+        historyHTML += '</div>';
+        historyContent.innerHTML = historyHTML;
     } else {
         historyContent.innerHTML = '<p>Nenhum histórico de movimentação para este item.</p>';
     }
 
     modal.showModal();
 }
+
 
 function openMassAddModal() {
     const modal = document.getElementById(MODAL_IDS.MASS_ADD);

@@ -26,9 +26,13 @@ const defaultSettings = {
     predictiveAlertWarning: 30,
     itemTypes: ['Geral', 'Consumível', 'Ferramenta', 'Componente', 'Kit'],
     returnableTypes: ['Ferramenta', 'Kit'],
-    aisles: 'A, B, C', // Adicionado
-    shelvesPerAisle: 5, // Adicionado
-    boxesPerShelf: 10, // Adicionado
+    aisles: 'A, B, C',
+    shelvesPerAisle: 5,
+    boxesPerShelf: 10,
+    backupReminder: { // Adicionado
+        lastBackup: null,
+        frequencyDays: 7
+    },
 };
 
 function initializeSettings() {
@@ -47,7 +51,11 @@ function initializeSettings() {
             ...(loadedSettings.panelVisibility || {})
         },
         itemTypes: loadedSettings.itemTypes || [...defaultSettings.itemTypes],
-        returnableTypes: loadedSettings.returnableTypes || [...defaultSettings.returnableTypes]
+        returnableTypes: loadedSettings.returnableTypes || [...defaultSettings.returnableTypes],
+        backupReminder: { // Adicionado
+            ...defaultSettings.backupReminder,
+            ...(loadedSettings.backupReminder || {})
+        }
     };
 }
 

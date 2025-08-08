@@ -124,10 +124,12 @@ export function openSettingsModal() {
     form.elements['setting-pagination-enabled'].checked = settings.paginationEnabled !== false;
     form.elements['setting-items-per-page'].value = settings.itemsPerPage || 10;
 
-    // CORREÇÃO: Carregar configurações de mapeamento
     form.elements['setting-aisles'].value = settings.aisles || '';
     form.elements['setting-shelves-per-aisle'].value = settings.shelvesPerAisle || 1;
     form.elements['setting-boxes-per-shelf'].value = settings.boxesPerShelf || 1;
+
+    // CORREÇÃO: Carregar frequência de backup
+    form.elements['setting-backup-frequency'].value = settings.backupReminder?.frequencyDays || 7;
 
     form.elements['setting-count-frequency'].value = settings.countFrequency || 90;
     form.elements['setting-price-check-frequency'].value = settings.priceCheckFrequency || 30;

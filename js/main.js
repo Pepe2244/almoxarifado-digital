@@ -8,7 +8,7 @@ import { initializeDebitManagement, renderDebitsTable } from './components/debit
 import { initializeReporting } from './components/reporting.js';
 import { initializeServiceOrderManagement, renderServiceOrdersTable } from './components/serviceOrderManagement.js';
 import { openSettingsModal, closeModal, showToast } from './modules/uiManager.js';
-import { createLog, getAllLogs } from './modules/logManager.js';
+import { createLog } from './modules/logManager.js';
 import { getAllItems, createItem, updateItem } from './modules/itemManager.js';
 import { getAllCollaborators, addCollaborator, updateCollaborator } from './modules/collaboratorManager.js';
 import { getAllDebits } from './modules/debitManager.js';
@@ -17,6 +17,8 @@ import { renderNotifications } from './modules/notificationManager.js';
 import { updateDashboard } from './components/graphicDashboard.js';
 import { registerLoan, adjustStock, registerDirectLoss } from './modules/stockControl.js';
 import { MODAL_IDS } from './constants.js';
+import { backupData, restoreData } from './modules/backupManager.js';
+import { apiClient } from './modules/apiClient.js'; // Importar apiClient
 
 document.addEventListener('DOMContentLoaded', () => {
     const searchFilters = {
@@ -92,6 +94,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = event.target;
         let success = false;
         let needsDataChangedEvent = true;
+        let modalToClose = form.closest('dialog');
 
         try {
             switch (form.id) {
@@ -118,6 +121,29 @@ document.addEventListener('DOMContentLoaded', () => {
                             itemData.currentStock = parseInt(form.elements.currentStock.value, 10) || 0;
                         }
                         success = itemId ? await updateItem(itemId, itemData) : await createItem(itemData);
+                        break;
+                    }
+                // CORREÇÃO: Adicionado case para o formulário de lote
+                case 'batch-form':
+                    {
+                        const itemId = form.closest('dialog').querySelector('#item-batches-item-id').value;
+                        const batchData = {
+                            quantity: parseInt(form.elements.quantity.value, 10),
+                            acquisitionDate: form.elements.acquisitionDate.value,
+                            manufacturingDate: form.elements.manufacturingDate.value || null,
+                            shelfLifeDays: parseInt(form.elements.shelfLifeDays.value, 10) || null
+                        };
+
+                        if (itemId && batchData.quantity > 0 && batchData.acquisitionDate) {
+                            await apiClient.post(`item-details/${itemId}/batches`, batchData);
+                            success = true;
+                            showToast('Lote adicionado com sucesso!', 'success');
+                            // Não fecha o modal, apenas atualiza a lista (requer modificação em openItemBatchesModal)
+                            modalToClose = null;
+                            needsDataChangedEvent = true; // Recarrega os dados gerais
+                        } else {
+                            showToast('Por favor, preencha a quantidade e a data de aquisição.', 'error');
+                        }
                         break;
                     }
 
@@ -180,10 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         settings.paginationEnabled = form.elements['setting-pagination-enabled'].checked;
                         settings.itemsPerPage = parseInt(form.elements['setting-items-per-page'].value, 10);
 
-                        // CORREÇÃO: Salvar configurações de mapeamento
                         settings.aisles = form.elements['setting-aisles'].value;
                         settings.shelvesPerAisle = parseInt(form.elements['setting-shelves-per-aisle'].value, 10);
                         settings.boxesPerShelf = parseInt(form.elements['setting-boxes-per-shelf'].value, 10);
+
+                        if (!settings.backupReminder) settings.backupReminder = {};
+                        settings.backupReminder.frequencyDays = parseInt(form.elements['setting-backup-frequency'].value, 10) || 7;
+
 
                         settings.countFrequency = parseInt(form.elements['setting-count-frequency'].value, 10) || 0;
                         settings.priceCheckFrequency = parseInt(form.elements['setting-price-check-frequency'].value, 10) || 0;
@@ -238,9 +267,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         if (success) {
-            const modal = form.closest('dialog');
-            if (modal) {
-                closeModal(modal.id);
+            if (modalToClose) {
+                closeModal(modalToClose.id);
             }
             if (needsDataChangedEvent) {
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
@@ -333,9 +361,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         showToast(`Tipo "${typeName}" removido.`, 'success');
                     }
                 }
+
+                if (button.id === 'backup-btn') {
+                    backupData();
+                }
+                if (button.id === 'restore-btn') {
+                    document.getElementById('restore-input').click();
+                }
             }
 
         });
+
+        const restoreInput = document.getElementById('restore-input');
+        if (restoreInput) {
+            restoreInput.addEventListener('change', restoreData);
+        }
 
         document.getElementById('search-input')?.addEventListener('input', (e) => {
             searchFilters.items = e.target.value.toLowerCase();
