@@ -470,86 +470,84 @@
     </template>
 
     <template id="item-form-modal-template">
-        <div class="modal-content-wrapper">
+        <form id="item-form" class="modal-content-wrapper" novalidate>
             <div class="settings-header">
                 <h2 id="item-form-modal-title"></h2>
             </div>
             <div class="modal-body settings-body">
-                <form id="item-form" novalidate>
-                    <input type="hidden" name="id">
-                    <fieldset>
-                        <legend>Informações Básicas</legend>
-                        <div class="form-row">
-                            <div class="form-group" style="flex: 2;"><label for="item-form-name">Nome do Item:</label><input type="text" id="item-form-name" name="name" required maxlength="100"></div>
-                            <div class="form-group" style="flex: 1;">
-                                <label for="item-form-barcode">Código de Barras:</label>
-                                <div class="input-with-button">
-                                    <input type="text" id="item-form-barcode" name="barcode" maxlength="100">
-                                    <button type="button" class="btn btn-icon-only" data-action="scan-for-input" title="Escanear código de barras para este campo" aria-label="Escanear código de barras para este campo">
-                                        <i class="fas fa-barcode" aria-hidden="true"></i>
-                                    </button>
-                                </div>
+                <input type="hidden" name="id">
+                <fieldset>
+                    <legend>Informações Básicas</legend>
+                    <div class="form-row">
+                        <div class="form-group" style="flex: 2;"><label for="item-form-name">Nome do Item:</label><input type="text" id="item-form-name" name="name" required maxlength="100"></div>
+                        <div class="form-group" style="flex: 1;">
+                            <label for="item-form-barcode">Código de Barras:</label>
+                            <div class="input-with-button">
+                                <input type="text" id="item-form-barcode" name="barcode" maxlength="100">
+                                <button type="button" class="btn btn-icon-only" data-action="scan-for-input" title="Escanear código de barras para este campo" aria-label="Escanear código de barras para este campo">
+                                    <i class="fas fa-barcode" aria-hidden="true"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group"><label for="item-form-type">Tipo:</label><select id="item-form-type" name="type" required></select></div>
-                            <div class="form-group"><label for="item-form-unit">Unidade:</label><input type="text" id="item-form-unit" name="unit" placeholder="un, kg, L, cx" maxlength="20"></div>
-                        </div>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Estoque e Custo</legend>
-                        <div class="form-row">
-                            <div class="form-group"><label for="item-form-current-stock" id="item-form-current-stock-label">Estoque Inicial:</label><input type="number" id="item-form-current-stock" name="currentStock" value="0" min="0" required></div>
-                            <div class="form-group"><label for="item-form-min-stock">Estoque Mínimo:</label><input type="number" id="item-form-min-stock" name="minStock" value="0" min="0"></div>
-                            <div class="form-group"><label for="item-form-max-stock">Estoque Máximo:</label><input type="number" id="item-form-max-stock" name="maxStock" value="0" min="0"></div>
-                        </div>
-                         <div class="form-row">
-                            <div class="form-group"><label for="item-form-price">Preço de Custo (R$):</label><input type="number" id="item-form-price" name="price" value="0" min="0" step="0.01"></div>
-                            <div class="form-group" data-group="item-form-shelfLife"><label for="item-form-shelf-life">Vida Útil Padrão (dias):</label><input type="number" id="item-form-shelf-life" name="shelfLifeDays" min="0" value="0" placeholder="0 se não aplicável"></div>
-                        </div>
-                    </fieldset>
-                    <fieldset>
-                        <legend>Localização e Aparência</legend>
-                        <div class="form-row">
-                             <div class="form-group" style="flex: 1.5;">
-                                <div class="image-upload-container">
-                                    <img id="item-form-image-preview" src="icons/placeholder.png" alt="Pré-visualização da imagem">
-                                    <input type="file" id="item-form-image-upload" name="imageUpload" accept="image/png, image/jpeg, image/webp" aria-labelledby="item-form-image-upload-label">
-                                    <label for="item-form-image-upload" class="btn btn-secondary" id="item-form-image-upload-label">
-                                        <i class="fas fa-upload" aria-hidden="true"></i> Enviar Imagem
-                                    </label>
-                                </div>
-                            </div>
-                            <div style="flex: 2; display: flex; flex-direction: column; gap: 1rem;">
-                                <div class="form-group"><label for="item-form-aisle">Corredor:</label><input type="text" id="item-form-aisle" name="aisle" maxlength="20"></div>
-                                <div class="form-group"><label for="item-form-shelf">Prateleira:</label><input type="text" id="item-form-shelf" name="shelf" maxlength="20"></div>
-                                <div class="form-group"><label for="item-form-box">Caixa:</label><input type="text" id="item-form-box" name="box" maxlength="20"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="item-form-type">Tipo:</label><select id="item-form-type" name="type" required></select></div>
+                        <div class="form-group"><label for="item-form-unit">Unidade:</label><input type="text" id="item-form-unit" name="unit" placeholder="un, kg, L, cx" maxlength="20"></div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Estoque e Custo</legend>
+                    <div class="form-row">
+                        <div class="form-group" id="item-form-current-stock-group"><label for="item-form-current-stock">Estoque Inicial:</label><input type="number" id="item-form-current-stock" name="currentStock" value="0" min="0" required></div>
+                        <div class="form-group"><label for="item-form-min-stock">Estoque Mínimo:</label><input type="number" id="item-form-min-stock" name="minStock" value="0" min="0"></div>
+                        <div class="form-group"><label for="item-form-max-stock">Estoque Máximo:</label><input type="number" id="item-form-max-stock" name="maxStock" value="0" min="0"></div>
+                    </div>
+                     <div class="form-row">
+                        <div class="form-group"><label for="item-form-price">Preço de Custo (R$):</label><input type="number" id="item-form-price" name="price" value="0" min="0" step="0.01"></div>
+                        <div class="form-group" data-group="item-form-shelfLife"><label for="item-form-shelf-life">Vida Útil Padrão (dias):</label><input type="number" id="item-form-shelf-life" name="shelfLifeDays" min="0" value="0" placeholder="0 se não aplicável"></div>
+                    </div>
+                </fieldset>
+                <fieldset>
+                    <legend>Localização e Aparência</legend>
+                    <div class="form-row">
+                         <div class="form-group" style="flex: 1.5;">
+                            <div class="image-upload-container">
+                                <img id="item-form-image-preview" src="icons/placeholder.png" alt="Pré-visualização da imagem">
+                                <input type="file" id="item-form-image-upload" name="imageUpload" accept="image/png, image/jpeg, image/webp" aria-labelledby="item-form-image-upload-label">
+                                <label for="item-form-image-upload" class="btn btn-secondary" id="item-form-image-upload-label">
+                                    <i class="fas fa-upload" aria-hidden="true"></i> Enviar Imagem
+                                </label>
                             </div>
                         </div>
-                    </fieldset>
-                     <fieldset>
-                        <legend>Avançado</legend>
-                        <div class="form-group" data-group="item-form-status" style="display: none;">
-                            <label for="item-form-status">Status do Ativo:</label>
-                            <select id="item-form-status" name="status">
-                                <option value="Ativo">Ativo</option>
-                                <option value="Em Manutenção">Em Manutenção</option>
-                                <option value="Aposentado">Aposentado</option>
-                                <option value="N/A">Não Aplicável</option>
-                            </select>
+                        <div style="flex: 2; display: flex; flex-direction: column; gap: 1rem;">
+                            <div class="form-group"><label for="item-form-aisle">Corredor:</label><input type="text" id="item-form-aisle" name="aisle" maxlength="20"></div>
+                            <div class="form-group"><label for="item-form-shelf">Prateleira:</label><input type="text" id="item-form-shelf" name="shelf" maxlength="20"></div>
+                            <div class="form-group"><label for="item-form-box">Caixa:</label><input type="text" id="item-form-box" name="box" maxlength="20"></div>
                         </div>
-                        <div class="form-group" id="item-form-id-display-group" style="display: none;">
-                            <label for="item-form-id-display">ID do Item (Não editável)</label>
-                            <input type="text" id="item-form-id-display" disabled readonly>
-                        </div>
-                    </fieldset>
-                </form>
+                    </div>
+                </fieldset>
+                 <fieldset>
+                    <legend>Avançado</legend>
+                    <div class="form-group" data-group="item-form-status" style="display: none;">
+                        <label for="item-form-status">Status do Ativo:</label>
+                        <select id="item-form-status" name="status">
+                            <option value="Ativo">Ativo</option>
+                            <option value="Em Manutenção">Em Manutenção</option>
+                            <option value="Aposentado">Aposentado</option>
+                            <option value="N/A">Não Aplicável</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="item-form-id-display-group" style="display: none;">
+                        <label for="item-form-id-display">ID do Item (Não editável)</label>
+                        <input type="text" id="item-form-id-display" disabled readonly>
+                    </div>
+                </fieldset>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" data-action="cancel-item-form-modal">Cancelar</button>
-                <button type="submit" form="item-form" class="btn btn-success"><i class="fas fa-save" aria-hidden="true"></i> Salvar</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save" aria-hidden="true"></i> Salvar</button>
             </div>
-        </div>
+        </form>
     </template>
 
     <template id="item-batches-modal-template">
