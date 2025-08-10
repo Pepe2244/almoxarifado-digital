@@ -1,105 +1,75 @@
-// Define a URL base da nossa API.
-// Quando rodando localmente com 'netlify dev', a Netlify automaticamente
-// redireciona chamadas para este caminho para nossas funções.
+// js/modules/apiClient.js
+
+// A URL base para todas as nossas funções do Netlify.
+// O Netlify expõe todas as funções sob este caminho padrão.
 const API_BASE_URL = '/.netlify/functions';
 
 /**
- * Lida com respostas da API, tratando sucessos e erros de forma padronizada.
- * @param {Response} response - O objeto de resposta do fetch.
- * @returns {Promise<any>} - O corpo da resposta em JSON.
- * @throws {Error} - Lança um erro se a resposta não for bem-sucedida.
+ * Função genérica para fazer requisições à nossa API.
+ * @param {string} endpoint - O nome da função que queremos chamar (ex: 'items').
+ * @param {object} options - As opções da requisição (método, corpo, cabeçalhos, etc.).
+ * @returns {Promise<any>} - Uma promessa que resolve com os dados da resposta em JSON.
  */
-async function handleResponse(response) {
-    if (response.ok) {
-        // Se a resposta for "No Content" (código 204), não há corpo para ler.
+async function request(endpoint, options = {}) {
+    const url = `${API_BASE_URL}/${endpoint}`;
+
+    // Adiciona cabeçalhos padrão para todas as requisições.
+    const defaultHeaders = {
+        'Content-Type': 'application/json',
+    };
+
+    // Combina os cabeçalhos padrão com quaisquer cabeçalhos específicos passados nas opções.
+    const config = {
+        ...options,
+        headers: {
+            ...defaultHeaders,
+            ...options.headers,
+        },
+    };
+
+    try {
+        const response = await fetch(url, config);
+
+        // Se a resposta não for 'ok' (status fora da faixa 200-299),
+        // tentamos ler o erro do corpo da resposta e lançamos uma exceção.
+        if (!response.ok) {
+            // Tenta extrair a mensagem de erro do corpo da resposta JSON.
+            // Se falhar, usa o texto de status padrão.
+            const errorData = await response.json().catch(() => ({ message: response.statusText }));
+            throw new Error(errorData.error || `Erro na requisição: ${response.status}`);
+        }
+
+        // Se a resposta for 204 (No Content), como no nosso DELETE,
+        // não há corpo para ser lido, então retornamos nulo.
         if (response.status === 204) {
             return null;
         }
+
+        // Se tudo deu certo, retorna o corpo da resposta convertido de JSON para um objeto JavaScript.
         return response.json();
-    } else {
-        // Se houver um erro, tenta ler a mensagem de erro da API.
-        const errorBody = await response.json().catch(() => ({ error: 'An unknown error occurred' }));
-        const errorMessage = errorBody.error || `Request failed with status ${response.status}`;
-        console.error('API Error:', errorMessage, 'Details:', errorBody.details || 'N/A');
-        throw new Error(errorMessage);
-    }
-}
-
-/**
- * Busca todos os itens da API.
- * Corresponde ao método GET em /items.
- * @returns {Promise<Array>} - Uma lista de itens.
- */
-export async function getAllItems() {
-    try {
-        const response = await fetch(`${API_BASE_URL}/items`);
-        return await handleResponse(response);
     } catch (error) {
-        showToast(`Erro ao buscar itens: ${error.message}`, "error");
-        return [];
+        // Em caso de falha na rede ou qualquer outro erro, logamos para depuração
+        // e relançamos o erro para que a função que chamou possa tratá-lo.
+        console.error(`Falha na API: ${config.method || 'GET'} ${url}`, error);
+        throw error;
     }
 }
 
-/**
- * Cria um novo item na API.
- * Corresponde ao método POST em /items.
- * @param {object} itemDetails - Os detalhes do item a ser criado.
- * @returns {Promise<object|null>} - O item criado ou null em caso de erro.
- */
-export async function createItem(itemDetails) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/items`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(itemDetails),
-        });
-        return await handleResponse(response);
-    } catch (error) {
-        showToast(`Erro ao criar item: ${error.message}`, "error");
-        return null;
-    }
-}
+// Exportamos um objeto 'apiClient' com métodos simplificados para cada tipo de requisição (GET, POST, PUT, DELETE).
+// Isso torna o uso no resto do código muito mais limpo e legível.
+export const apiClient = {
+    get: (endpoint) => request(endpoint, { method: 'GET' }),
 
-/**
- * Atualiza um item existente na API.
- * Corresponde ao método PUT em /items/:id.
- * @param {string} itemId - O ID do item a ser atualizado.
- * @param {object} updatedDetails - Os novos detalhes do item.
- * @returns {Promise<object|null>} - O item atualizado ou null em caso de erro.
- */
-export async function updateItem(itemId, updatedDetails) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatedDetails),
-        });
-        return await handleResponse(response);
-    } catch (error) {
-        showToast(`Erro ao atualizar item: ${error.message}`, "error");
-        return null;
-    }
-}
+    post: (endpoint, body) => request(endpoint, {
+        method: 'POST',
+        body: JSON.stringify(body),
+    }),
 
-/**
- * Deleta um item da API.
- * Corresponde ao método DELETE em /items/:id.
- * @param {string} itemId - O ID do item a ser deletado.
- * @returns {Promise<boolean>} - True se foi bem-sucedido, false caso contrário.
- */
-export async function deleteItem(itemId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/items/${itemId}`, {
-            method: 'DELETE',
-        });
-        await handleResponse(response);
-        return true;
-    } catch (error) {
-        showToast(`Erro ao deletar item: ${error.message}`, "error");
-        return false;
-    }
-}
+    put: (endpoint, body) => request(endpoint, {
+        method: 'PUT',
+        body: JSON.stringify(body),
+    }),
 
-// Futuramente, adicionaremos aqui as funções para os outros endpoints:
-// export async function getAllCollaborators() { ... }
-// export async function createCollaborator(details) { ... }
+    // Para o delete, passamos o ID como um parâmetro de query na URL.
+    delete: (endpoint, id) => request(`${endpoint}?id=${id}`, { method: 'DELETE' }),
+};

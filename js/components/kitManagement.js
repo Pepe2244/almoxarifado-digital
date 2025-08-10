@@ -1,110 +1,170 @@
-function initializeKitManagement() {
-    renderKitManagementComponent();
-    addKitTabEventListeners('kit-management');
+import { getAllKits, createKit, updateKit, deleteKit, getKitById } from '../modules/kitManager.js';
+import { getAllItems } from '../modules/itemManager.js';
+import { showToast, openModal, closeModal } from '../modules/uiManager.js';
+
+let kitForm, kitModal, kitsTableBody, filterKitInput, kitIdField, itemsContainer;
+
+export function initializeKitManagement() {
+    kitForm = document.getElementById('kit-form');
+    kitModal = document.getElementById('kit-modal');
+    kitsTableBody = document.getElementById('kits-table-body');
+    filterKitInput = document.getElementById('filter-kits');
+    kitIdField = document.getElementById('kit-id');
+    itemsContainer = document.getElementById('kit-items-container');
+
+    kitForm.addEventListener('submit', handleFormSubmit);
+    filterKitInput.addEventListener('input', renderKits);
+    kitsTableBody.addEventListener('click', handleTableClick);
+
+    document.querySelector('[data-modal-target="kit-modal"]').addEventListener('click', () => {
+        resetKitForm();
+        addKitItemRow(); // Adiciona a primeira linha de item ao abrir
+    });
+
+    document.getElementById('add-kit-item-btn').addEventListener('click', addKitItemRow);
+
+    renderKits();
 }
 
-function renderKitManagementComponent() {
-    const component = document.getElementById('kit-management');
-    if (!component) return;
+function renderKits() {
+    const filterText = filterKitInput.value.toLowerCase();
+    const allKits = getAllKits();
+    kitsTableBody.innerHTML = '';
 
-    const settings = getSettings();
-    if (settings.panelVisibility && settings.panelVisibility['kit-management'] === false) {
-        component.classList.add('hidden');
+    const filteredKits = allKits.filter(k => k.name.toLowerCase().includes(filterText));
+
+    if (filteredKits.length === 0) {
+        kitsTableBody.innerHTML = '<tr><td colspan="3">Nenhum kit encontrado.</td></tr>';
         return;
     }
-    component.classList.remove('hidden');
 
-    component.innerHTML = `
-        <div class="card-header two-row-header">
-            <div class="card-header-top">
-                <h2><i class="fas fa-toolbox"></i> Gestão de Kits</h2>
-                <div class="header-top-actions">
-                    <div class="search-container">
-                        <input type="text" id="kit-search-input" class="search-input" placeholder="Buscar kits...">
-                        <button id="kit-search-btn-icon" class="btn btn-icon-only">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="kit-management" title="Ocultar painel">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="header-main-actions">
-                <button class="btn btn-primary" data-action="${ACTIONS.ADD_KIT}" title="Adicionar Novo Kit"><i class="fas fa-plus"></i> Adicionar Kit</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Kit</th>
-                            <th>Estoque / Emprestado</th>
-                            <th>Itens no Kit</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="kits-table-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="kit-pagination-container" class="card-footer"></div>
-        </div>
-    `;
+    filteredKits.forEach(k => {
+        const row = document.createElement('tr');
+        const itemsList = (k.items || []).map(i => `${i.quantity}x ${i.itemName}`).join(', ') || 'Vazio';
+        row.innerHTML = `
+            <td>${k.name}</td>
+            <td>${itemsList}</td>
+            <td>
+                <button class="edit-btn" data-id="${k.id}">Editar</button>
+                <button class="delete-btn" data-id="${k.id}">Excluir</button>
+            </td>
+        `;
+        kitsTableBody.appendChild(row);
+    });
 }
 
-function addKitTabEventListeners(componentId) {
-    const component = document.getElementById(componentId);
-    if (!component) return;
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const id = kitIdField.value;
+    const formData = new FormData(kitForm);
 
-    component.addEventListener('click', (event) => {
-        const clickableElement = event.target.closest('[data-action]');
-        if (!clickableElement) return;
+    const kitData = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        items: []
+    };
 
-        const action = clickableElement.dataset.action;
-        const id = clickableElement.dataset.id;
-
-        switch (action) {
-            case ACTIONS.ADD_KIT:
-                openItemFormModal({ defaultValues: { type: 'Kit' } });
-                break;
-            case ACTIONS.MANAGE_KIT:
-                openKitManagementModal(id);
-                break;
-            case ACTIONS.EDIT_ITEM:
-                openItemFormModal({ itemId: id });
-                break;
-            case ACTIONS.ITEM_EXIT:
-                openMovementModal(id);
-                break;
-            case ACTIONS.VIEW_ITEM_HISTORY:
-                openItemHistoryModal(id);
-                break;
-            case ACTIONS.GENERATE_LABEL:
-                openLabelPrintModal(id);
-                break;
-            case ACTIONS.MANAGE_ALLOCATIONS:
-                const itemToManage = getItemById(id);
-                if (itemToManage) {
-                    openAllocationModal(itemToManage);
-                }
-                break;
-            case ACTIONS.DELETE_ITEM:
-                const kitToDelete = getItemById(id);
-                if (kitToDelete) {
-                    openConfirmationModal({
-                        title: 'Excluir Kit',
-                        message: `Tem certeza que deseja excluir o kit "${kitToDelete.name}"? Esta ação não pode ser desfeita.`,
-                        onConfirm: () => {
-                            if (deleteItem(id)) {
-                                document.body.dispatchEvent(new CustomEvent('dataChanged'));
-                                closeModal('confirmation-modal');
-                            }
-                        }
-                    });
-                }
-                break;
+    const itemRows = itemsContainer.querySelectorAll('.kit-item-row');
+    itemRows.forEach(row => {
+        const itemId = row.querySelector('.kit-item-select').value;
+        const quantity = row.querySelector('.kit-item-quantity').value;
+        if (itemId && quantity > 0) {
+            kitData.items.push({
+                itemId: parseInt(itemId),
+                quantity: parseInt(quantity)
+            });
         }
     });
+
+    showToast('Salvando Kit...', 'info');
+
+    let success = false;
+    if (id) {
+        kitData.id = parseInt(id);
+        success = await updateKit(kitData);
+    } else {
+        success = await createKit(kitData);
+    }
+
+    if (success) {
+        renderKits();
+        closeModal(kitModal);
+    }
+}
+
+async function handleTableClick(e) {
+    const target = e.target;
+    const id = target.dataset.id;
+    if (!id) return;
+
+    if (target.classList.contains('edit-btn')) {
+        const kit = getKitById(id);
+        if (kit) {
+            populateForm(kit);
+            openModal(kitModal);
+        }
+    }
+
+    if (target.classList.contains('delete-btn')) {
+        if (confirm(`Tem certeza que deseja excluir o kit "${getKitById(id).name}"?`)) {
+            const success = await deleteKit(id);
+            if (success) {
+                renderKits();
+            }
+        }
+    }
+}
+
+function resetKitForm() {
+    kitForm.reset();
+    kitIdField.value = '';
+    itemsContainer.innerHTML = '';
+}
+
+function populateForm(kit) {
+    resetKitForm();
+    kitIdField.value = kit.id;
+    kitForm.querySelector('#kit-name').value = kit.name;
+    kitForm.querySelector('#kit-description').value = kit.description;
+
+    if (kit.items && kit.items.length > 0) {
+        kit.items.forEach(item => addKitItemRow(item));
+    } else {
+        addKitItemRow();
+    }
+}
+
+function addKitItemRow(item = null) {
+    const allItems = getAllItems();
+    const row = document.createElement('div');
+    row.className = 'kit-item-row';
+
+    const select = document.createElement('select');
+    select.className = 'kit-item-select';
+    select.innerHTML = '<option value="">Selecione um item</option>';
+    allItems.forEach(i => {
+        const option = document.createElement('option');
+        option.value = i.id;
+        option.textContent = i.name;
+        if (item && i.id === item.itemId) {
+            option.selected = true;
+        }
+        select.appendChild(option);
+    });
+
+    const quantityInput = document.createElement('input');
+    quantityInput.type = 'number';
+    quantityInput.className = 'kit-item-quantity';
+    quantityInput.value = item ? item.quantity : 1;
+    quantityInput.min = 1;
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = 'Remover';
+    removeBtn.onclick = () => row.remove();
+
+    row.appendChild(select);
+    row.appendChild(quantityInput);
+    row.appendChild(removeBtn);
+    itemsContainer.appendChild(row);
 }

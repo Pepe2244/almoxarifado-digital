@@ -1,100 +1,104 @@
-// almoxarifado-digital/js/components/collaboratorManagement.js
-function initializeCollaboratorManagement() {
-    renderCollaboratorManagementComponent();
-    addCollaboratorTabEventListeners('collaborator-management');
+import { getAllCollaborators, createCollaborator, updateCollaborator, deleteCollaborator, getCollaboratorById } from '../modules/collaboratorManager.js';
+import { showToast, openModal, closeModal } from '../modules/uiManager.js';
+
+let collaboratorForm, collaboratorModal, collaboratorsTableBody, filterCollaboratorsInput, collaboratorIdField;
+
+export function initializeCollaboratorManagement() {
+    collaboratorForm = document.getElementById('collaborator-form');
+    collaboratorModal = document.getElementById('collaborator-modal');
+    collaboratorsTableBody = document.getElementById('collaborators-table-body');
+    filterCollaboratorsInput = document.getElementById('filter-collaborators');
+    collaboratorIdField = document.getElementById('collaborator-id');
+
+    collaboratorForm.addEventListener('submit', handleFormSubmit);
+    filterCollaboratorsInput.addEventListener('input', renderCollaborators);
+    collaboratorsTableBody.addEventListener('click', handleTableClick);
+
+    renderCollaborators();
 }
 
-function renderCollaboratorManagementComponent() {
-    const component = document.getElementById('collaborator-management');
-    if (!component) return;
+function renderCollaborators() {
+    const filterText = filterCollaboratorsInput.value.toLowerCase();
+    const allCollaborators = getAllCollaborators();
 
-    const settings = getSettings();
-    if (settings.panelVisibility && settings.panelVisibility['collaborator-management'] === false) {
-        component.classList.add('hidden');
+    collaboratorsTableBody.innerHTML = '';
+
+    const filteredCollaborators = allCollaborators.filter(c =>
+        c.name.toLowerCase().includes(filterText) ||
+        (c.role && c.role.toLowerCase().includes(filterText))
+    );
+
+    if (filteredCollaborators.length === 0) {
+        collaboratorsTableBody.innerHTML = '<tr><td colspan="5">Nenhum colaborador encontrado.</td></tr>';
         return;
     }
-    component.classList.remove('hidden');
 
-    component.innerHTML = `
-        <div class="card-header two-row-header">
-            <div class="card-header-top">
-                <h2><i class="fas fa-users"></i> Gestão de Colaboradores</h2>
-                <div class="header-top-actions">
-                    <div class="search-container">
-                        <input type="text" id="collaborator-search-input" class="search-input" placeholder="Buscar colaborador...">
-                        <button id="collaborator-search-btn-icon" class="btn btn-icon-only">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="collaborator-management" title="Ocultar painel">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="header-main-actions">
-                <button class="btn btn-primary" data-action="${ACTIONS.ADD_COLLABORATOR}" title="Adicionar Novo Colaborador"><i class="fas fa-user-plus"></i> Adicionar</button>
-                <button class="btn btn-info" data-action="${ACTIONS.MASS_ADD_COLLABORATOR}" title="Adicionar Vários Colaboradores"><i class="fas fa-users"></i> Em Massa</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Matrícula</th>
-                            <th>Cargo</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="collaborators-table-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="collaborator-pagination-container" class="card-footer"></div>
-        </div>
-    `;
+    filteredCollaborators.forEach(c => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${c.id}</td>
+            <td>${c.name || 'N/A'}</td>
+            <td>${c.role || 'N/A'}</td>
+            <td>${c.status || 'N/A'}</td>
+            <td>
+                <button class="edit-btn" data-id="${c.id}">Editar</button>
+                <button class="delete-btn" data-id="${c.id}">Excluir</button>
+            </td>
+        `;
+        collaboratorsTableBody.appendChild(row);
+    });
 }
 
-function addCollaboratorTabEventListeners(componentId) {
-    const component = document.getElementById(componentId);
-    if (!component) return;
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const id = collaboratorIdField.value;
+    const formData = new FormData(collaboratorForm);
+    const collaboratorData = Object.fromEntries(formData.entries());
 
-    component.addEventListener('click', async (event) => {
-        const button = event.target.closest('button');
-        if (!button) return;
+    showToast('Salvando colaborador...', 'info');
 
-        const action = button.dataset.action;
-        const id = button.dataset.id;
+    let success = false;
+    if (id) {
+        collaboratorData.id = parseInt(id);
+        success = await updateCollaborator(collaboratorData);
+    } else {
+        success = await createCollaborator(collaboratorData);
+    }
 
-        switch (action) {
-            case ACTIONS.ADD_COLLABORATOR:
-                openCollaboratorModal();
-                break;
-            case ACTIONS.MASS_ADD_COLLABORATOR:
-                openMassAddCollaboratorModal();
-                break;
-            case ACTIONS.EDIT_COLLABORATOR:
-                const collaboratorToEdit = getCollaboratorById(id);
-                if (collaboratorToEdit) {
-                    openCollaboratorModal(collaboratorToEdit);
-                }
-                break;
-            case ACTIONS.DELETE_COLLABORATOR:
-                const collaboratorToDelete = getCollaboratorById(id);
-                if (collaboratorToDelete) {
-                    openConfirmationModal({
-                        title: 'Excluir Colaborador',
-                        message: `Tem certeza que deseja excluir o colaborador "${collaboratorToDelete.name}"? Isso é irreversível.`,
-                        onConfirm: () => {
-                            if (deleteCollaborator(id)) {
-                                document.body.dispatchEvent(new CustomEvent('dataChanged'));
-                                closeModal('confirmation-modal');
-                            }
-                        }
-                    });
-                }
-                break;
+    if (success) {
+        renderCollaborators();
+        closeModal(collaboratorModal);
+        collaboratorForm.reset();
+    }
+}
+
+async function handleTableClick(e) {
+    const target = e.target;
+    const id = target.dataset.id;
+
+    if (target.classList.contains('edit-btn')) {
+        const collaborator = getCollaboratorById(id);
+        if (collaborator) {
+            populateForm(collaborator);
+            openModal(collaboratorModal);
         }
-    });
+    }
+
+    if (target.classList.contains('delete-btn')) {
+        if (confirm(`Tem certeza que deseja excluir o colaborador com ID ${id}?`)) {
+            const success = await deleteCollaborator(id);
+            if (success) {
+                renderCollaborators();
+            }
+        }
+    }
+}
+
+function populateForm(collaborator) {
+    collaboratorForm.reset();
+    document.getElementById('collaborator-id').value = collaborator.id;
+    document.getElementById('collaborator-name').value = collaborator.name || '';
+    document.getElementById('collaborator-role').value = collaborator.role || '';
+    document.getElementById('collaborator-accessKey').value = collaborator.accessKey || '';
+    document.getElementById('collaborator-status').value = collaborator.status || 'ativo';
 }

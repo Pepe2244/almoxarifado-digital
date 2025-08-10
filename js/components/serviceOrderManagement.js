@@ -1,100 +1,143 @@
-function initializeServiceOrderManagement() {
-    renderServiceOrderManagementComponent();
-    addServiceOrderTabEventListeners('service-order-management');
+import { getAllServiceOrders, createServiceOrder, updateServiceOrder, deleteServiceOrder, getServiceOrderById } from '../modules/serviceOrderManager.js';
+import { getAllCollaborators } from '../modules/collaboratorManager.js';
+import { getAllItems } from '../modules/itemManager.js';
+import { showToast, openModal, closeModal } from '../modules/uiManager.js';
+
+let osForm, osModal, osTableBody, filterOsInput, osIdField, technicianSelect;
+
+export function initializeServiceOrderManagement() {
+    osForm = document.getElementById('os-form');
+    osModal = document.getElementById('os-modal');
+    osTableBody = document.getElementById('os-table-body');
+    filterOsInput = document.getElementById('filter-os');
+    osIdField = document.getElementById('os-id');
+    technicianSelect = document.getElementById('os-technicianId');
+
+    osForm.addEventListener('submit', handleFormSubmit);
+    filterOsInput.addEventListener('input', renderServiceOrders);
+    osTableBody.addEventListener('click', handleTableClick);
+
+    document.querySelector('[data-modal-target="os-modal"]').addEventListener('click', () => {
+        populateSelects();
+    });
+
+    renderServiceOrders();
 }
 
-function renderServiceOrderManagementComponent() {
-    const component = document.getElementById('service-order-management');
-    if (!component) return;
+function populateSelects() {
+    const collaborators = getAllCollaborators();
+    technicianSelect.innerHTML = '<option value="">Selecione um Técnico</option>';
+    collaborators.forEach(c => {
+        const option = document.createElement('option');
+        option.value = c.id;
+        option.textContent = c.name;
+        technicianSelect.appendChild(option);
+    });
+}
 
-    const settings = getSettings();
-    if (settings.panelVisibility && settings.panelVisibility['service-order-management'] === false) {
-        component.classList.add('hidden');
+function renderServiceOrders() {
+    const filterText = filterOsInput.value.toLowerCase();
+    const allServiceOrders = getAllServiceOrders();
+    osTableBody.innerHTML = '';
+
+    const filteredOS = allServiceOrders.filter(os =>
+        os.customer.toLowerCase().includes(filterText) ||
+        (os.technicianName && os.technicianName.toLowerCase().includes(filterText))
+    );
+
+    if (filteredOS.length === 0) {
+        osTableBody.innerHTML = '<tr><td colspan="5">Nenhuma Ordem de Serviço encontrada.</td></tr>';
         return;
     }
-    component.classList.remove('hidden');
 
-    component.innerHTML = `
-        <div class="card-header two-row-header">
-            <div class="card-header-top">
-                <h2><i class="fas fa-file-signature"></i> Ordens de Serviço</h2>
-                <div class="header-top-actions">
-                    <div class="search-container">
-                        <input type="text" id="os-search-input" class="search-input" placeholder="Buscar O.S....">
-                        <button id="os-search-btn-icon" class="btn btn-icon-only">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                    <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="service-order-management" title="Ocultar painel">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="header-main-actions">
-                <button class="btn btn-primary" data-action="${ACTIONS.ADD_SERVICE_ORDER}" title="Abrir Nova Ordem de Serviço"><i class="fas fa-plus"></i> Nova O.S.</button>
-            </div>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Número O.S.</th>
-                            <th>Cliente</th>
-                            <th>Técnico</th>
-                            <th>Data Abertura</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody id="os-table-body">
-                    </tbody>
-                </table>
-            </div>
-            <div id="os-pagination-container" class="card-footer"></div>
-        </div>
-    `;
+    filteredOS.forEach(os => {
+        const row = document.createElement('tr');
+        const itemsList = (os.items || []).map(i => `${i.quantity}x ${i.itemName}`).join(', ') || 'Nenhum';
+        row.innerHTML = `
+            <td>${os.id}</td>
+            <td>${os.customer}</td>
+            <td>${os.technicianName || 'N/A'}</td>
+            <td><span class="status status-${os.status.toLowerCase()}">${os.status}</span></td>
+            <td>
+                <button class="view-btn" data-id="${os.id}">Ver</button>
+                <button class="edit-btn" data-id="${os.id}">Editar</button>
+                <button class="delete-btn" data-id="${os.id}">Excluir</button>
+            </td>
+        `;
+        osTableBody.appendChild(row);
+    });
 }
 
-function addServiceOrderTabEventListeners(componentId) {
-    const component = document.getElementById(componentId);
-    if (!component) return;
+async function handleFormSubmit(e) {
+    e.preventDefault();
+    const id = osIdField.value;
+    const formData = new FormData(osForm);
+    const osData = {
+        customer: formData.get('customer'),
+        technicianId: parseInt(formData.get('technicianId')),
+        description: formData.get('description'),
+        status: formData.get('status'),
+        openDate: formData.get('openDate') ? new Date(formData.get('openDate')).toISOString() : null,
+        closeDate: formData.get('closeDate') ? new Date(formData.get('closeDate')).toISOString() : null,
+        items: [] // Lógica para adicionar itens deve ser implementada aqui
+    };
 
-    component.addEventListener('click', async (event) => {
-        const button = event.target.closest('button');
-        if (!button) return;
+    showToast('Salvando Ordem de Serviço...', 'info');
 
-        const action = button.dataset.action;
-        const id = button.dataset.id;
+    let success = false;
+    if (id) {
+        osData.id = parseInt(id);
+        success = await updateServiceOrder(osData);
+    } else {
+        success = await createServiceOrder(osData);
+    }
 
-        switch (action) {
-            case ACTIONS.ADD_SERVICE_ORDER:
-                openServiceOrderModal();
-                break;
-            case ACTIONS.EDIT_SERVICE_ORDER:
-                const osToEdit = getServiceOrderById(id);
-                if (osToEdit) {
-                    openServiceOrderModal(osToEdit);
-                }
-                break;
-            case ACTIONS.VIEW_SERVICE_ORDER:
-                openServiceOrderDetailsModal(id);
-                break;
-            case ACTIONS.DELETE_SERVICE_ORDER:
-                const osToDelete = getServiceOrderById(id);
-                if (osToDelete) {
-                    openConfirmationModal({
-                        title: 'Excluir Ordem de Serviço',
-                        message: `Tem certeza que deseja excluir a O.S. "${osToDelete.id}"?`,
-                        onConfirm: () => {
-                            if (deleteServiceOrder(id)) {
-                                document.body.dispatchEvent(new CustomEvent('dataChanged'));
-                                closeModal('confirmation-modal');
-                            }
-                        }
-                    });
-                }
-                break;
+    if (success) {
+        renderServiceOrders();
+        closeModal(osModal);
+        osForm.reset();
+    }
+}
+
+async function handleTableClick(e) {
+    const target = e.target;
+    const id = target.dataset.id;
+    if (!id) return;
+
+    if (target.classList.contains('edit-btn')) {
+        const os = getServiceOrderById(id);
+        if (os) {
+            populateSelects();
+            populateForm(os);
+            openModal(osModal);
         }
-    });
+    }
+
+    if (target.classList.contains('delete-btn')) {
+        if (confirm(`Tem certeza que deseja excluir a O.S. com ID ${id}?`)) {
+            const success = await deleteServiceOrder(id);
+            if (success) {
+                renderServiceOrders();
+            }
+        }
+    }
+
+    if (target.classList.contains('view-btn')) {
+        const os = getServiceOrderById(id);
+        if (os) {
+            alert(`Detalhes da O.S. ${os.id}:\nCliente: ${os.customer}\nTécnico: ${os.technicianName}\nDescrição: ${os.description}\nStatus: ${os.status}`);
+        }
+    }
+}
+
+function populateForm(os) {
+    osForm.reset();
+    osIdField.value = os.id;
+    osForm.querySelector('#os-customer').value = os.customer;
+    osForm.querySelector('#os-technicianId').value = os.technicianId;
+    osForm.querySelector('#os-description').value = os.description;
+    osForm.querySelector('#os-status').value = os.status;
+    osForm.querySelector('#os-openDate').value = os.openDate ? os.openDate.split('T')[0] : '';
+    osForm.querySelector('#os-closeDate').value = os.closeDate ? os.closeDate.split('T')[0] : '';
+    // Lógica para popular os itens da OS no formulário precisa ser adicionada.
 }

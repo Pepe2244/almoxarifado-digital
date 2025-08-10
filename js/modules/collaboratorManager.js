@@ -1,130 +1,65 @@
-// almoxarifado-digital/js/modules/collaboratorManager.js
-function initializeCollaborators() {
-    return loadDataFromLocal(DB_KEYS.COLLABORATORS);
-}
+import { apiClient } from './apiClient.js';
+import { showToast } from './uiManager.js';
 
-function generateCollaboratorId() {
-    return crypto.randomUUID();
-}
+let collaborators = [];
+const endpoint = 'collaborators';
 
-function addCollaborator(collaboratorDetails) {
-    clearFormErrors(document.getElementById('collaborator-form'));
-    const validationErrors = validateCollaboratorDetails(collaboratorDetails);
-    if (validationErrors.length > 0) {
-        showFormErrors(document.getElementById('collaborator-form'), validationErrors);
-        return false;
+export async function fetchCollaborators() {
+    try {
+        collaborators = await apiClient.get(endpoint);
+        console.log('Colaboradores carregados do banco de dados:', collaborators);
+        return collaborators;
+    } catch (error) {
+        showToast(`Erro ao carregar colaboradores: ${error.message}`, 'error');
+        collaborators = [];
+        return [];
     }
-    let collaborators = getAllCollaborators();
-    // Modificado para verificar unicidade por matrícula
-    const existingCollaborator = collaborators.find(c => c.registration.toLowerCase() === collaboratorDetails.registration.toLowerCase());
-    if (existingCollaborator) {
-        showToast(`Colaborador com a matrícula "${collaboratorDetails.registration}" já existe.`, "error");
-        return false;
-    }
-    const newCollaborator = {
-        id: generateCollaboratorId(),
-        name: collaboratorDetails.name.trim(),
-        role: (collaboratorDetails.role || '').trim(),
-        registration: (collaboratorDetails.registration || '').trim(),
-        createdAt: new Date().toISOString()
-    };
-    collaborators.push(newCollaborator);
-    saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
-    return newCollaborator;
 }
 
-function addMultipleCollaborators(collaboratorsToAdd) {
-    let collaborators = getAllCollaborators();
-    let addedCount = 0;
-    let ignoredCount = 0;
-    // Modificado para verificar unicidade por matrícula para adição em massa
-    const existingRegistrations = new Set(collaborators.map(c => c.registration.toLowerCase()));
+export function getAllCollaborators() {
+    return collaborators;
+}
 
-    collaboratorsToAdd.forEach(collaboratorDetails => {
-        if (!collaboratorDetails.name || collaboratorDetails.name.trim() === '' || !collaboratorDetails.registration || collaboratorDetails.registration.trim() === '' || existingRegistrations.has(collaboratorDetails.registration.toLowerCase())) {
-            ignoredCount++;
-            return;
-        }
-        const newCollaborator = {
-            id: generateCollaboratorId(),
-            name: collaboratorDetails.name.trim(),
-            role: (collaboratorDetails.role || '').trim(),
-            registration: (collaboratorDetails.registration || '').trim(),
-            createdAt: new Date().toISOString()
-        };
+export function getCollaboratorById(id) {
+    const numericId = parseInt(id, 10);
+    return collaborators.find(c => c.id === numericId);
+}
+
+export async function createCollaborator(collaboratorData) {
+    try {
+        const newCollaborator = await apiClient.post(endpoint, collaboratorData);
         collaborators.push(newCollaborator);
-        existingRegistrations.add(newCollaborator.registration.toLowerCase());
-        addedCount++;
-    });
-
-    if (addedCount > 0) {
-        saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
+        showToast('Colaborador criado com sucesso!', 'success');
+        return newCollaborator;
+    } catch (error) {
+        showToast(`Erro ao criar colaborador: ${error.message}`, 'error');
+        return null;
     }
-    return { added: addedCount, ignored: ignoredCount };
 }
 
-function getCollaboratorById(id) {
-    const collaborators = getAllCollaborators();
-    return collaborators.find(c => c.id === id);
+export async function updateCollaborator(collaboratorData) {
+    try {
+        const updatedCollaborator = await apiClient.put(endpoint, collaboratorData);
+        const index = collaborators.findIndex(c => c.id === updatedCollaborator.id);
+        if (index !== -1) {
+            collaborators[index] = updatedCollaborator;
+        }
+        showToast('Colaborador atualizado com sucesso!', 'success');
+        return updatedCollaborator;
+    } catch (error) {
+        showToast(`Erro ao atualizar colaborador: ${error.message}`, 'error');
+        return null;
+    }
 }
 
-function getAllCollaborators() {
-    return loadDataFromLocal(DB_KEYS.COLLABORATORS) || [];
-}
-
-function updateCollaborator(id, updatedDetails) {
-    clearFormErrors(document.getElementById('collaborator-form'));
-    const validationErrors = validateCollaboratorDetails(updatedDetails);
-    if (validationErrors.length > 0) {
-        showFormErrors(document.getElementById('collaborator-form'), validationErrors);
+export async function deleteCollaborator(id) {
+    try {
+        await apiClient.delete(endpoint, id);
+        collaborators = collaborators.filter(c => c.id !== parseInt(id, 10));
+        showToast('Colaborador excluído com sucesso!', 'success');
+        return true;
+    } catch (error) {
+        showToast(`Erro ao excluir colaborador: ${error.message}`, 'error');
         return false;
     }
-    let collaborators = getAllCollaborators();
-    const index = collaborators.findIndex(c => c.id === id);
-    if (index === -1) {
-        showToast("Colaborador não encontrado.", "error");
-        return false;
-    }
-    // Modificado para verificar unicidade por matrícula na atualização
-    const existingCollaboratorWithRegistration = collaborators.find(c => c.id !== id && c.registration.toLowerCase() === updatedDetails.registration.toLowerCase());
-    if (existingCollaboratorWithRegistration) {
-        showToast(`Colaborador com a matrícula "${updatedDetails.registration}" já existe.`, "error");
-        return false;
-    }
-    collaborators[index] = { ...collaborators[index],
-        name: updatedDetails.name.trim(),
-        role: (updatedDetails.role || '').trim(),
-        registration: (updatedDetails.registration || '').trim(),
-        updatedAt: new Date().toISOString()
-    };
-    saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
-    return true;
-}
-
-function deleteCollaborator(id) {
-    let collaborators = getAllCollaborators();
-    const collaborator = collaborators.find(c => c.id === id);
-    if (!collaborator) {
-        showToast("Colaborador não encontrado.", "error");
-        return false;
-    }
-    const itemsOnLoan = getAllItems().filter(item =>
-        item.allocations && item.allocations.some(alloc => alloc.collaboratorId === id)
-    );
-    if (itemsOnLoan.length > 0) {
-        const itemNames = itemsOnLoan.map(i => i.name).join(', ');
-        showToast(`Não é possível excluir ${collaborator.name} pois ele(a) possui itens emprestados: ${itemNames}.`, "error");
-        return false;
-    }
-    const pendingDebits = getAllDebits().filter(debit => debit.collaboratorId === id && !debit.isSettled);
-    if (pendingDebits.length > 0) {
-        const debitDetails = pendingDebits.map(d => `${d.itemName} (R$ ${d.amount.toFixed(2)})`).join(', ');
-        showToast(`Não é possível excluir ${collaborator.name} pois ele(a) possui débitos pendentes: ${debitDetails}.`, "error");
-        return false;
-    }
-    collaborators = collaborators.filter(c => c.id !== id);
-    saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
-    createLog('DELETE_COLLABORATOR', `Colaborador excluído: ${collaborator.name}.`, 'Usuário');
-    showToast(`Colaborador "${collaborator.name}" excluído com sucesso!`, "success");
-    return true;
 }
