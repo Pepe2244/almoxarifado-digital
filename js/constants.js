@@ -1,6 +1,3 @@
-// js/constants.js
-
-// Adicionamos a palavra 'export' para que outros módulos possam importar estas constantes.
 export const DB_NAME = 'AlmoxarifadoDB';
 export const DB_VERSION = 1;
 
