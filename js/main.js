@@ -12,6 +12,8 @@ import { initializeDebitManagement } from './components/debitManagement.js';
 import { initializeServiceOrderManagement } from './components/serviceOrderManagement.js';
 import { initializeKitManagement } from './components/kitManagement.js';
 import { initializeUI } from './modules/uiManager.js';
+import { updateDashboard } from './components/graphicDashboard.js';
+import { initializeReporting } from './components/reporting.js';
 
 /**
  * Função principal e assíncrona que orquestra a inicialização da aplicação.
@@ -20,46 +22,43 @@ import { initializeUI } from './modules/uiManager.js';
 async function main() {
     // 1. Mostra uma mensagem de carregamento para o usuário saber que algo está acontecendo.
     console.log("Iniciando aplicação... Carregando dados essenciais do servidor.");
-    // (Opcional) Você pode exibir um spinner de loading na tela aqui.
-    // document.getElementById('loading-spinner').style.display = 'block';
+    document.body.innerHTML += '<div id="loading-overlay"><h1>Carregando Almoxarifado Digital...</h1></div>';
 
     try {
-        // 2. Carrega os dados primários em paralelo para ganhar tempo.
-        // Itens e Colaboradores não dependem de ninguém, então podem ser buscados ao mesmo tempo.
+        // 2. Carrega todos os dados do backend em paralelo.
+        // Promise.all executa todas as buscas ao mesmo tempo, o que é mais rápido.
         await Promise.all([
             fetchItems(),
-            fetchCollaborators()
-        ]);
-
-        // 3. Carrega os dados secundários que dependem dos primários.
-        // Débitos, O.S. e Kits precisam que Itens e Colaboradores já existam no cache
-        // para popular os 'selects' e exibir os nomes corretamente.
-        console.log("Carregando dados secundários...");
-        await Promise.all([
+            fetchCollaborators(),
             fetchDebits(),
             fetchServiceOrders(),
             fetchKits()
         ]);
 
-        // 4. Com TODOS os dados carregados e em cache, inicializa todos os componentes da interface.
+        // 3. Com TODOS os dados carregados e em cache, inicializa todos os componentes da interface.
         console.log("Todos os dados carregados. Montando a interface do usuário...");
-        initializeUI(); // Inicializa modais, menus, etc.
+        initializeUI();
         initializeItemManagement();
         initializeCollaboratorManagement();
         initializeDebitManagement();
         initializeServiceOrderManagement();
         initializeKitManagement();
-        // ... inicialize outros componentes como relatórios, dashboard, etc.
+        initializeReporting();
+        updateDashboard();
 
-        // 5. Tudo pronto!
+
+        // 4. Tudo pronto! Remove a tela de carregamento.
+        const loadingOverlay = document.getElementById('loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.opacity = '0';
+            setTimeout(() => loadingOverlay.remove(), 500); // Remove após a transição
+        }
         console.log("Almoxarifado Digital totalmente operacional!");
-        // (Opcional) Esconde o spinner de loading.
-        // document.getElementById('loading-spinner').style.display = 'none';
 
     } catch (error) {
-        // Se qualquer uma das etapas de carregamento falhar, exibe uma mensagem de erro crítica.
+        // 5. Se qualquer uma das etapas de carregamento falhar, exibe uma mensagem de erro crítica.
         console.error("Falha crítica durante a inicialização:", error);
-        document.body.innerHTML = `<div class="error-screen"><h1>Erro ao carregar a aplicação</h1><p>Não foi possível conectar ao servidor. Por favor, tente recarregar a página.</p><p><small>${error.message}</small></p></div>`;
+        document.body.innerHTML = `<div class="critical-error"><h1>Erro ao Carregar a Aplicação</h1><p>Não foi possível conectar ao servidor. Por favor, tente recarregar a página.</p><p><small>${error.message}</small></p></div>`;
     }
 }
 
