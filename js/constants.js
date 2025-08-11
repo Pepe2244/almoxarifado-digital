@@ -76,3 +76,5 @@ export const ACTIONS = {
     REMOVE_ITEM_FROM_OS: 'remove-item-from-os',
     MASS_ADD_FROM_KIT: 'mass-add-from-kit'
 };
+
+// A CHAVE '}' EXTRA QUE ESTAVA AQUI FOI REMOVIDA
