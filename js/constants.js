@@ -1,3 +1,5 @@
+// VERSÃO ANTI-CACHE: 1.0
+
 export const DB_NAME = 'AlmoxarifadoDB';
 export const DB_VERSION = 1;
 
