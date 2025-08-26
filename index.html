@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almoxarifado Digital</title>
+    <meta name="theme-color" content="#343a40">
+    <meta name="msapplication-TileColor" content="#343a40">
+    <meta name="apple-mobile-web-app-status-bar-style" content="#343a40">
+    <meta name="description" content="Sistema de gestão de estoque e ativos para pequenos negócios.">
+
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css" rel="stylesheet"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+
+</head>
+
+<body class="light">
+
+    <noscript>
+        <div class="no-script-fallback">
+            <h1>JavaScript Desabilitado</h1>
+            <p>Este aplicativo requer JavaScript para funcionar corretamente. Por favor, habilite o JavaScript no seu
+                navegador e atualize a página.</p>
+        </div>
+    </noscript>
+
+    <header class="main-header" role="banner">
+        <div class="header-content">
+            <h1 id="warehouse-title"><i class="fas fa-warehouse" aria-hidden="true"></i> Almoxarifado Digital</h1>
+            <div class="header-actions">
+                <div id="notification-bell-container" class="notification-bell-container">
+                    <button id="notification-bell-btn" class="btn btn-icon-only" aria-label="Notificações"
+                        aria-haspopup="true" aria-expanded="false" aria-controls="notification-panel">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span id="notification-count-badge" class="notification-badge hidden"></span>
+                    </button>
+                    <div id="notification-panel" class="notification-panel hidden" role="region"
+                        aria-labelledby="notification-bell-btn"></div>
+                </div>
+                <button id="toggle-settings-btn" class="btn btn-icon-only" aria-label="Configurações">
+                    <i class="fas fa-cog" aria-hidden="true"></i>
+                </button>
+                <button id="theme-toggle-btn" class="btn btn-icon-only" aria-label="Alternar Tema">
+                    <i class="fas fa-moon" aria-hidden="true"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <main class="container" role="main">
+        <section id="service-order-management" class="card" aria-labelledby="service-order-management-title"></section>
+        <section id="item-management" class="card" aria-labelledby="item-management-title"></section>
+        <section id="kit-management" class="card" aria-labelledby="kit-management-title"></section>
+        <section id="collaborator-management" class="card" aria-labelledby="collaborator-management-title"></section>
+        <section id="debit-management" class="card" aria-labelledby="debit-management-title"></section>
+        <section id="reporting-section" class="card" aria-labelledby="reporting-section-title"></section>
+        <section id="unified-dashboard" class="card" aria-labelledby="unified-dashboard-title"></section>
+        <section id="log-viewer" class="card hidden" aria-labelledby="log-viewer-title"></section>
+        
+        <!-- Seção para exibir comprovantes assinados -->
+        <section id="signed-receipts-section" class="content-section" style="display: none;">
+            <div id="signed-receipts-list"></div>
+        </section>
+    </main>
+
+    <div id="floating-cart-button" class="floating-action-button hidden">
+        <i class="fas fa-shopping-cart"></i>
+        <span id="floating-cart-count" class="notification-badge">0</span>
+    </div>
+
+    <dialog id="settings-modal"></dialog>
+    <dialog id="item-form-modal"></dialog>
+    <dialog id="item-batches-modal"></dialog>
+    <dialog id="item-history-modal"></dialog>
+    <dialog id="item-maintenance-modal"></dialog>
+    <dialog id="movement-modal"></dialog>
+    <dialog id="mass-add-modal"></dialog>
+    <dialog id="allocation-modal"></dialog>
+    <dialog id="collaborator-modal"></dialog>
+    <dialog id="collaborator-dashboard-modal"></dialog>
+    <dialog id="receipt-generator-modal"></dialog>
+    <dialog id="loss-registration-modal"></dialog>
+    <dialog id="mass-add-collaborator-modal"></dialog>
+    <dialog id="confirmation-modal"></dialog>
+    <dialog id="quick-entry-modal"></dialog>
+    <dialog id="direct-loss-modal"></dialog>
+    <dialog id="adjustment-modal"></dialog>
+    <dialog id="barcode-action-modal"></dialog>
+    <dialog id="label-print-modal"></dialog>
+    <dialog id="item-kit-modal"></dialog>
+    <dialog id="kit-return-modal"></dialog>
+    <dialog id="service-order-modal"></dialog>
+    <dialog id="service-order-details-modal"></dialog>
+    <dialog id="cart-checkout-modal"></dialog>
+    <dialog id="return-cart-modal"></dialog>
+    <dialog id="kit-assembly-bulk-modal"></dialog>
+    <dialog id="signed-receipts-modal"></dialog>
+
+
+    <template id="settings-modal-template">
+        <form id="settings-form" class="modal-form" novalidate>
+            <div class="settings-header">
+                <h2><i class="fas fa-cogs" aria-hidden="true"></i> Configurações</h2>
+                <div class="settings-tabs" role="tablist" aria-label="Abas de Configurações">
+                    <button type="button" class="settings-tab-btn active" role="tab" aria-selected="true"
+                        aria-controls="settings-tab-geral"><i class="fas fa-sliders-h" aria-hidden="true"></i>
+                        Geral</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-tipos"><i class="fas fa-tags" aria-hidden="true"></i> Tipos e
+                        Níveis</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-mapeamento"><i class="fas fa-map-signs" aria-hidden="true"></i>
+                        Mapeamento</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-contagem"><i class="fas fa-calendar-check" aria-hidden="true"></i>
+                        Contagem</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-notificacoes"><i class="fas fa-bell" aria-hidden="true"></i>
+                        Notificações</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-email"><i class="fas fa-envelope" aria-hidden="true"></i>
+                        E-mail</button>
+                    <button type="button" class="settings-tab-btn" role="tab" aria-selected="false"
+                        aria-controls="settings-tab-dados"><i class="fas fa-database" aria-hidden="true"></i>
+                        Dados</button>
+                </div>
+            </div>
+            <div class="modal-body settings-body">
+                <div class="settings-tab-content active" id="settings-tab-geral" role="tabpanel">
+                    <fieldset>
+                        <legend>Geral</legend>
+                        <div class="form-row">
+                            <div class="form-group"><label for="setting-warehouse-name">Nome do Almoxarifado:</label><input
+                                    type="text" id="setting-warehouse-name" name="setting-warehouse-name"
+                                    maxlength="100"></div>
+                            <div class="form-group"><label for="setting-price-variation">Alerta de Variação de Preço
+                                    (%):</label><input type="number" id="setting-price-variation"
+                                    name="setting-price-variation" min="0"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="setting-debit-calculation">Cálculo de Débito por
+                                    Perda:</label><select id="setting-debit-calculation"
+                                    name="setting-debit-calculation">
+                                    <option value="depreciated">Valor Depreciado (Considera Vida Útil)</option>
+                                    <option value="replacement">Valor de Reposição (Preço do Item)</option>
+                                </select></div>
+                            <div class="form-group"><label for="setting-predictive-analysis-days">Período Análise
+                                    Preditiva (dias):</label><input type="number"
+                                    id="setting-predictive-analysis-days" name="setting-predictive-analysis-days"
+                                    min="1"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Interface e Dashboard</legend>
+                        <div class="form-row">
+                            <div class="form-group"><label for="setting-dashboard-analysis-days">Período Gráfico de
+                                    Análise (dias):</label><input type="number" id="setting-dashboard-analysis-days"
+                                    name="setting-dashboard-analysis-days" min="1"></div>
+                        </div>
+                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;"><input
+                                type="checkbox" id="setting-alert-returnables" name="setting-alert-returnables"
+                                style="width: auto;"><label for="setting-alert-returnables">Alertar Estoque Baixo para
+                                Itens Retornáveis?</label></div>
+                        <div id="panel-visibility-container" class="form-group">
+                            <label>Visibilidade dos Painéis:</label>
+                            <div class="checkbox-group"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Paginação</legend>
+                        <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px;">
+                            <input type="checkbox" id="setting-pagination-enabled" name="setting-pagination-enabled"
+                                style="width: auto;">
+                            <label for="setting-pagination-enabled">Habilitar paginação nas tabelas?</label>
+                        </div>
+                        <div class="form-group">
+                            <label for="setting-items-per-page">Itens por Página:</label>
+                            <input type="number" id="setting-items-per-page" name="setting-items-per-page" min="5"
+                                step="5">
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-tipos" role="tabpanel">
+                    <fieldset>
+                        <legend>Gerenciar Tipos de Item</legend>
+                        <div id="type-manager-container">
+                            <div class="form-group">
+                                <label for="new-item-type">Adicionar Novo Tipo:</label>
+                                <div class="add-type-wrapper">
+                                    <input type="text" id="new-item-type" name="new-item-type"
+                                        placeholder="Ex: Material de Escritório" maxlength="50">
+                                    <button type="button" class="btn btn-success" data-action="add-new-type"
+                                        aria-label="Adicionar novo tipo"><i class="fas fa-plus"
+                                            aria-hidden="true"></i> Adicionar</button>
+                                </div>
+                            </div>
+                            <div id="existing-types-list"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Personalização de Tipos (Retornáveis)</legend>
+                        <div class="form-group"><label>Marque os Tipos que são Retornáveis:</label>
+                            <div id="returnable-types-container" class="checkbox-group"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Níveis de Alerta de Estoque (Visual)</legend>
+                        <div class="form-row">
+                            <div class="form-group"><label for="level-ok">OK (Acima de %):</label><input type="number"
+                                    id="level-ok" name="level-ok" value="75" min="1" max="100"></div>
+                            <div class="form-group"><label for="level-medium">Médio (Acima de %):</label><input
+                                    type="number" id="level-medium" name="level-medium" value="50" min="1" max="100">
+                            </div>
+                            <div class="form-group"><label for="level-low">Baixo (Acima de %):</label><input
+                                    type="number" id="level-low" name="level-low" value="25" min="1" max="100"></div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-mapeamento" role="tabpanel">
+                    <fieldset>
+                        <legend>Mapeamento de Localização (Para Sugestão)</legend>
+                        <div class="form-group">
+                            <label for="setting-aisles">Corredores (separados por vírgula):</label>
+                            <input type="text" id="setting-aisles" name="setting-aisles"
+                                placeholder="A, B, C, Corredor 1" maxlength="200">
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="setting-shelves-per-aisle">Nº de Prateleiras por
+                                    Corredor:</label><input type="number" id="setting-shelves-per-aisle"
+                                    name="setting-shelves-per-aisle" min="1"></div>
+                            <div class="form-group"><label for="setting-boxes-per-shelf">Nº de Caixas por
+                                    Prateleira:</label><input type="number" id="setting-boxes-per-shelf"
+                                    name="setting-boxes-per-shelf" min="1"></div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-contagem" role="tabpanel">
+                    <fieldset>
+                        <legend>Contagem Cíclica (Avisos de Verificação)</legend>
+                        <div class="form-row" id="count-frequency-container">
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Verificação de Preços</legend>
+                        <div class="form-row" id="price-check-frequency-container">
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Frequência de Manutenção de Ativos (dias)</legend>
+                        <div class="form-row" id="maintenance-frequency-container">
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Níveis de Alerta Preditivo (dias)</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="setting-alert-critical">Crítico (Abaixo de x dias):</label>
+                                <input type="number" id="setting-alert-critical" name="setting-alert-critical" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="setting-alert-warning">Aviso (Abaixo de x dias):</label>
+                                <input type="number" id="setting-alert-warning" name="setting-alert-warning" min="1">
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-notificacoes" role="tabpanel">
+                    <fieldset>
+                        <legend>Comportamento das Notificações</legend>
+                        <p>Defina quais notificações exigem uma ação e não podem ser dispensadas em massa.</p>
+                        <div id="notification-behavior-container" class="notification-behavior-grid">
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-email" role="tabpanel">
+                    <fieldset>
+                        <legend>Notificações por Email (EmailJS)</legend>
+                        <div class="info-box">
+                            <p>Para usar esta função, crie uma conta gratuita no <a href="https://www.emailjs.com/"
+                                    target="_blank" rel="noopener noreferrer">EmailJS</a>, crie um template e preencha
+                                os campos abaixo. O template deve conter uma variável <code>{{email_body}}</code>.</p>
+                        </div>
+                        <div class="alert-box security-warning">
+                            <i class="fas fa-shield-alt" aria-hidden="true"></i>
+                            <div>
+                                <strong>Atenção:</strong> Suas chaves de API serão salvas no seu navegador. Embora a
+                                Public Key seja segura para exposição, configure as restrições de domínio e de template
+                                na sua conta EmailJS para evitar uso indevido.
+                            </div>
+                        </div>
+                        <div class="form-group"><label for="setting-email-public-key">Public Key:</label><input
+                                type="text" id="setting-email-public-key" name="setting-email-public-key"
+                                maxlength="50"></div>
+                        <div class="form-group"><label for="setting-email-service-id">Service ID:</label><input
+                                type="text" id="setting-email-service-id" name="setting-email-service-id"
+                                maxlength="50"></div>
+                        <div class="form-group"><label for="setting-email-template-id">Template ID:</label><input
+                                type="text" id="setting-email-template-id" name="setting-email-template-id"
+                                maxlength="50"></div>
+                        <div class="form-group"><label for="setting-recipient-email">Email Destinatário:</label><input
+                                type="email" id="setting-recipient-email" name="setting-recipient-email"
+                                maxlength="100"></div>
+                        <button type="button" class="btn btn-info" data-action="send-summary-email"
+                            style="align-self: flex-start; margin-top: 10px;"><i class="fas fa-paper-plane"
+                                aria-hidden="true"></i> Enviar Resumo Agora</button>
+                    </fieldset>
+                </div>
+                <div class="settings-tab-content" id="settings-tab-dados" role="tabpanel">
+                    <fieldset>
+                        <legend>Gerenciamento de Dados</legend>
+                        <div id="backup-restore-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <p>Faça backups regulares para garantir a segurança dos seus dados.</p>
+                            <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: flex-end;">
+                                <button type="button" id="backup-btn" class="btn btn-info"><i class="fas fa-download"
+                                        aria-hidden="true"></i> Fazer Backup (JSON)</button>
+                                <button type="button" id="restore-btn" class="btn btn-warning"><i class="fas fa-upload"
+                                        aria-hidden="true"></i> Restaurar Backup (JSON)</button>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="setting-backup-frequency"
+                                        style="margin-bottom: .25rem; font-size: .8rem;">Lembrar a cada
+                                        (dias):</label>
+                                    <input type="number" id="setting-backup-frequency" name="setting-backup-frequency"
+                                        min="1" style="padding: .5rem; width: 100px;">
+                                </div>
+                                <input type="file" id="restore-input" accept=".json" style="display: none;"
+                                    aria-hidden="true">
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Ferramentas</legend>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <button type="button" class="btn btn-secondary" data-action="view-logs"><i
+                                    class="fas fa-clipboard-list" aria-hidden="true"></i> Ver Logs de
+                                Atividade</button>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-settings">Cancelar</button>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save" aria-hidden="true"></i> Salvar
+                    Configurações</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="item-form-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="item-form-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <form id="item-form" novalidate>
+                    <input type="hidden" name="id">
+                    <fieldset>
+                        <legend>Informações Básicas</legend>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;"><label for="item-form-name">Nome do
+                                    Item:</label><input type="text" id="item-form-name" name="name" required
+                                    maxlength="100"></div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="item-form-barcode">Código de Barras:</label>
+                                <div class="input-with-button">
+                                    <input type="text" id="item-form-barcode" name="barcode" maxlength="100">
+                                    <button type="button" class="btn btn-icon-only" data-action="scan-for-input"
+                                        title="Escanear código de barras para este campo"
+                                        aria-label="Escanear código de barras para este campo">
+                                        <i class="fas fa-barcode" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="item-form-empresa">Empresa:</label>
+                                <select id="item-form-empresa" name="empresa" required>
+                                    <option value="Weldingpro">Weldingpro</option>
+                                    <option value="ALV">ALV</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="item-form-ca">CA (Certificado de Aprovação):</label>
+                                <input type="text" id="item-form-ca" name="ca" maxlength="50">
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="item-form-almoxarifado">Almoxarifado:</label>
+                                <select id="item-form-almoxarifado" name="almoxarifado" required>
+                                    <option value="equipamentos">Equipamentos de Colaboradores</option>
+                                    <option value="insumos">Insumos de Escritório</option>
+                                </select>
+                            </div>
+                            <div class="form-group"><label for="item-form-type">Tipo:</label><select
+                                    id="item-form-type" name="type" required></select></div>
+                            <div class="form-group"><label for="item-form-unit">Unidade:</label><input type="text"
+                                    id="item-form-unit" name="unit" placeholder="un, kg, L, cx" maxlength="20"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Estoque e Custo</legend>
+                        <div class="form-row">
+                            <div class="form-group"><label for="item-form-current-stock"
+                                    id="item-form-current-stock-label">Estoque Inicial:</label><input type="number"
+                                    id="item-form-current-stock" name="currentStock" value="0" min="0" required></div>
+                            <div class="form-group"><label for="item-form-min-stock">Estoque Mínimo:</label><input
+                                    type="number" id="item-form-min-stock" name="minStock" value="0" min="0"></div>
+                            <div class="form-group"><label for="item-form-max-stock">Estoque Máximo:</label><input
+                                    type="number" id="item-form-max-stock" name="maxStock" value="0" min="0"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="item-form-price">Preço de Custo (R$):</label><input
+                                    type="number" id="item-form-price" name="price" value="0" min="0" step="0.01">
+                            </div>
+                            <div class="form-group" data-group="item-form-shelfLife"><label
+                                    for="item-form-shelf-life">Vida Útil Padrão (dias):</label><input type="number"
+                                    id="item-form-shelf-life" name="shelfLifeDays" min="0" value="0"
+                                    placeholder="0 se não aplicável"></div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Localização e Aparência</legend>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 1.5;">
+                                <div class="image-upload-container">
+                                    <img id="item-form-image-preview" src="icons/placeholder.png"
+                                        alt="Pré-visualização da imagem">
+                                    <input type="file" id="item-form-image-upload" name="imageUpload"
+                                        accept="image/png, image/jpeg, image/webp"
+                                        aria-labelledby="item-form-image-upload-label">
+                                    <label for="item-form-image-upload" class="btn btn-secondary"
+                                        id="item-form-image-upload-label">
+                                        <i class="fas fa-upload" aria-hidden="true"></i> Enviar Imagem
+                                    </label>
+                                </div>
+                            </div>
+                            <div style="flex: 2; display: flex; flex-direction: column; gap: 1rem;">
+                                <div class="form-group"><label for="item-form-aisle">Corredor:</label><input
+                                        type="text" id="item-form-aisle" name="aisle" maxlength="20"></div>
+                                <div class="form-group"><label for="item-form-shelf">Prateleira:</label><input
+                                        type="text" id="item-form-shelf" name="shelf" maxlength="20"></div>
+                                <div class="form-group"><label for="item-form-box">Caixa:</label><input type="text"
+                                        id="item-form-box" name="box" maxlength="20"></div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset>
+                        <legend>Avançado</legend>
+                        <div class="form-group" data-group="item-form-status" style="display: none;">
+                            <label for="item-form-status">Status do Ativo:</label>
+                            <select id="item-form-status" name="status">
+                                <option value="Ativo">Ativo</option>
+                                <option value="Em Manutenção">Em Manutenção</option>
+                                <option value="Aposentado">Aposentado</option>
+                                <option value="N/A">Não Aplicável</option>
+                            </select>
+                        </div>
+                        <div class="form-group" id="item-form-id-display-group" style="display: none;">
+                            <label for="item-form-id-display">ID do Item (Não editável)</label>
+                            <input type="text" id="item-form-id-display" disabled readonly>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-item-form-modal">Cancelar</button>
+                <button type="button" class="btn btn-success" data-action="save-item"><i class="fas fa-save"
+                        aria-hidden="true"></i> Salvar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="item-batches-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="item-batches-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <input type="hidden" id="item-batches-item-id" name="itemId">
+                <form id="batch-form" novalidate>
+                    <fieldset>
+                        <legend>Adicionar Novo Lote</legend>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new-batch-quantity">Quantidade:</label>
+                                <input type="number" id="new-batch-quantity" name="quantity" min="1" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-batch-acquisition-date">Data de Aquisição:</label>
+                                <input type="date" id="new-batch-acquisition-date" name="acquisitionDate" required>
+                                <small>Data em que o lote foi recebido no almoxarifado.</small>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="new-batch-manufacturing-date">Data de Fabricação:</label>
+                                <input type="date" id="new-batch-manufacturing-date" name="manufacturingDate">
+                                <small>Data para o cálculo da vida útil. Se vazia, a Data de Aquisição será
+                                    usada.</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="new-batch-shelf-life">Vida Útil do Lote (dias):</label>
+                                <input type="number" id="new-batch-shelf-life" name="shelfLifeDays" min="0"
+                                    placeholder="Padrão do Item">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success form-action-button"><i class="fas fa-plus"
+                                aria-hidden="true"></i> Adicionar Lote</button>
+                    </fieldset>
+                    <fieldset style="margin-top: 1.5rem;">
+                        <legend>Lotes Existentes</legend>
+                        <div class="table-responsive">
+                            <table class="item-table" aria-label="Lotes Existentes">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Qtd.</th>
+                                        <th>Data Aquisição</th>
+                                        <th>Data Fabricação</th>
+                                        <th>Data Validade</th>
+                                        <th>Dias Rest.</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="batches-table-body"></tbody>
+                            </table>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-item-batches-modal">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="item-history-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="item-history-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <input type="hidden" id="item-history-item-id" name="itemId">
+                <fieldset>
+                    <legend>Histórico de Movimentações</legend>
+                    <div id="history-content" class="modal-body-content"></div>
+                </fieldset>
+                <fieldset style="margin-top: 1.5rem;">
+                    <legend>Evolução do Preço de Custo</legend>
+                    <div id="price-history-content" class="modal-body-content">
+                        <div class="price-chart-container">
+                            <canvas id="price-history-chart"></canvas>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset style="margin-top: 1.5rem;">
+                    <legend>Histórico de Manutenções</legend>
+                    <div id="maintenance-history-content-view" class="modal-body-content"></div>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-item-history-modal">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="item-maintenance-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="item-maintenance-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <form id="maintenance-form" novalidate>
+                    <input type="hidden" id="item-maintenance-item-id" name="itemId">
+                    <fieldset>
+                        <legend>Registrar Nova Manutenção</legend>
+                        <div class="form-group"><label for="maintenance-date">Data:</label><input type="date"
+                                id="maintenance-date" name="date" required></div>
+                        <div class="form-group"><label for="maintenance-description">Descrição:</label><textarea
+                                id="maintenance-description" name="description" rows="3"
+                                placeholder="Ex: Calibração, Reparo, Troca de bateria" maxlength="200"></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group"><label for="maintenance-responsible">Responsável:</label><input
+                                    type="text" id="maintenance-responsible" name="responsible" required
+                                    maxlength="100"></div>
+                            <div class="form-group"><label for="maintenance-cost">Custo (R$):</label><input
+                                    type="number" id="maintenance-cost" name="cost" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success form-action-button"><i class="fas fa-plus"
+                                aria-hidden="true"></i> Adicionar Manutenção</button>
+                    </fieldset>
+                    <fieldset style="margin-top: 1.5rem;">
+                        <legend>Histórico de Manutenções Recentes</legend>
+                        <div class="table-responsive">
+                            <table class="item-table" aria-label="Histórico de Manutenção">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Responsável</th>
+                                        <th>Custo (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="maintenance-history-table-body"></tbody>
+                            </table>
+                        </div>
+                    </fieldset>
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-item-maintenance-modal">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="movement-modal-template">
+        <form id="movement-form" class="modal-form">
+            <h2 id="movement-modal-title">Registrar Saída / Empréstimo</h2>
+            <div class="modal-body">
+                <input type="hidden" name="movement-item-id" id="movement-item-id">
+                <div class="info-box">Item: <strong id="movement-item-name"></strong></div>
+                <div class="form-group">
+                    <label for="movement-collaborator">Colaborador Responsável:</label>
+                    <select name="movement-collaborator" id="movement-collaborator" required></select>
+                </div>
+                <div class="form-group"><label for="movement-quantity">Quantidade:</label><input type="number"
+                        name="movement-quantity" id="movement-quantity" min="1" required></div>
+                <div class="form-group"><label for="allocation-location">Local de Alocação/Obra
+                        (Opcional):</label><input type="text" name="allocation-location" id="allocation-location"
+                        placeholder="Ex: Obra Agudos, Veículo Placa ABC-1234" maxlength="100"></div>
+            </div>
+            <div class="modal-actions"><button type="button" class="btn btn-secondary"
+                    data-action="cancel-movement">Cancelar</button><button type="submit" class="btn btn-success"
+                    id="movement-submit-button">Confirmar</button></div>
+        </form>
+    </template>
+
+    <template id="mass-add-modal-template">
+        <form id="mass-add-form" class="modal-form">
+            <h2>Cadastro Rápido de Itens</h2>
+            <div class="modal-body">
+                <div class="form-group"><label for="mass-add-data">Cole os nomes dos itens (um por linha):</label><textarea
+                        name="mass-add-data" id="mass-add-data" rows="10"
+                        placeholder="Parafuso Sextavado\nLuva de Raspa..." maxlength="5000"></textarea><small>Apenas o
+                        nome é necessário. Outros detalhes podem ser editados depois.</small></div>
+            </div>
+            <div class="modal-actions"><button type="button" class="btn btn-secondary"
+                    data-action="cancel-mass-add">Cancelar</button><button type="submit" class="btn btn-success">Cadastrar
+                    Itens</button></div>
+        </form>
+    </template>
+
+    <template id="allocation-modal-template">
+        <div class="modal-content">
+            <h2 id="allocation-modal-title">Gerenciar Itens com Colaboradores</h2>
+            <div id="allocations-content" class="modal-body"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-primary" data-action="close-allocation">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="collaborator-modal-template">
+        <form id="collaborator-form" class="modal-form">
+            <h2>Adicionar/Editar Colaborador</h2>
+            <div class="modal-body">
+                <input type="hidden" id="collaborator-id" name="collaborator-id">
+                <div class="form-group"><label for="collaborator-name">Nome Completo:</label><input type="text"
+                        id="collaborator-name" name="collaborator-name" required maxlength="100"></div>
+                <div class="form-row">
+                    <div class="form-group"><label for="collaborator-registration">Matrícula:</label><input type="text"
+                            id="collaborator-registration" name="collaborator-registration" maxlength="50"></div>
+                    <div class="form-group"><label for="collaborator-role">Cargo:</label><input type="text"
+                            id="collaborator-role" name="collaborator-role" maxlength="50"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-collaborator">Cancelar</button>
+                <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="collaborator-dashboard-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="collaborator-dashboard-title"></h2>
+            </div>
+            <div class="modal-body settings-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                <div id="collaborator-dashboard-summary" class="os-details-grid"></div>
+                <fieldset>
+                    <legend>Itens Atualmente Alocados</legend>
+                    <div id="collaborator-dashboard-items" class="table-responsive"></div>
+                </fieldset>
+                <fieldset>
+                    <legend>Débitos Pendentes</legend>
+                    <div id="collaborator-dashboard-debits" class="table-responsive"></div>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-collaborator-dashboard">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="receipt-generator-modal-template">
+        <form id="receipt-generator-form" class="modal-form">
+            <h2 id="receipt-generator-title">Gerar Comprovante de Recebimento</h2>
+            <div class="modal-body">
+                <input type="hidden" id="receipt-collaborator-id" name="collaboratorId">
+                <div class="info-box">Colaborador: <strong id="receipt-collaborator-name"></strong></div>
+                <fieldset>
+                    <legend>Selecione os Itens para o Comprovante</legend>
+                    <div id="receipt-items-list" class="table-responsive"></div>
+                </fieldset>
+                <div id="receipt-link-container" class="form-group" style="display: none;">
+                    <label for="receipt-link">Link Gerado (válido por 1 hora):</label>
+                    <input type="text" id="receipt-link" readonly>
+                    <button type="button" class="btn btn-secondary" id="copy-receipt-link-btn"
+                        style="margin-top: 0.5rem;"><i class="fas fa-copy"></i> Copiar Link</button>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-receipt-generator">Cancelar</button>
+                <button type="submit" class="btn btn-success" id="generate-receipt-link-btn"><i
+                        class="fas fa-link"></i> Gerar Link</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="signed-receipts-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="signed-receipts-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <div id="signed-receipts-list" class="table-responsive"></div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-signed-receipts">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="mass-add-collaborator-modal-template">
+        <form id="mass-add-collaborator-form" class="modal-form">
+            <h2>Cadastro Rápido de Colaboradores</h2>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="mass-add-collaborator-data">Cole os nomes dos colaboradores (um por linha):</label>
+                    <textarea name="mass-add-collaborator-data" id="mass-add-collaborator-data" rows="10"
+                        placeholder="João da Silva\nMaria Oliveira..." maxlength="5000"></textarea>
+                    <small>Apenas o nome é necessário. Outros detalhes podem ser editados depois.</small>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-mass-add-collaborator">Cancelar</button>
+                <button type="submit" class="btn btn-success">Cadastrar Colaboradores</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="loss-registration-modal-template">
+        <form id="loss-registration-form" class="modal-form">
+            <h2>Registrar Perda de Item (Empréstimo)</h2>
+            <div class="modal-body">
+                <input type="hidden" id="loss-item-id" name="loss-item-id">
+                <input type="hidden" id="loss-allocation-id" name="loss-allocation-id">
+                <div id="loss-info-box" class="info-box"></div>
+                <div class="form-group">
+                    <label for="loss-reason">Motivo da Perda:</label>
+                    <textarea id="loss-reason" name="loss-reason" rows="3" required
+                        placeholder="Ex: Perda em campo, dano irreversível, etc." maxlength="200"></textarea>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-loss">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Confirmar Perda e Gerar Débito</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="direct-loss-modal-template">
+        <form id="direct-loss-form" class="modal-form">
+            <h2>Registrar Perda Direta de Estoque</h2>
+            <div class="modal-body">
+                <input type="hidden" id="direct-loss-item-id" name="direct-loss-item-id">
+                <div class="info-box">Item: <strong id="direct-loss-item-name"></strong> | Estoque Total: <strong
+                        id="direct-loss-item-stock"></strong></div>
+                <div class="form-group">
+                    <label for="direct-loss-quantity">Quantidade Perdida:</label>
+                    <input type="number" id="direct-loss-quantity" name="direct-loss-quantity" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label for="direct-loss-reason">Motivo da Perda:</label>
+                    <textarea id="direct-loss-reason" name="direct-loss-reason" rows="3" required
+                        placeholder="Ex: Quebra no almoxarifado, descarte, etc." maxlength="200"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="direct-loss-collaborator">Colaborador Responsável pelo Débito (Opcional):</label>
+                    <select name="direct-loss-collaborator" id="direct-loss-collaborator"></select>
+                </div>
+                <div class="form-group">
+                    <label for="direct-loss-responsible">Quem registrou a perda:</label>
+                    <input type="text" id="direct-loss-responsible" name="direct-loss-responsible" required
+                        maxlength="100">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-direct-loss">Cancelar</button>
+                <button type="submit" class="btn btn-danger">Confirmar Perda e Gerar Débito</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="confirmation-modal-template">
+        <div class="modal-content">
+            <h2 id="confirmation-title">Confirmar Ação</h2>
+            <div class="modal-body">
+                <div class="modal-icon"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i></div>
+                <p id="confirmation-message">Você tem certeza?</p>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-confirmation">Cancelar</button>
+                <button type="button" id="confirm-action-btn" class="btn btn-danger">Confirmar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="quick-entry-modal-template">
+        <form id="quick-entry-form" class="modal-form">
+            <h2 id="quick-entry-modal-title">Entrada Rápida</h2>
+            <div class="modal-body">
+                <input type="hidden" id="quick-entry-item-id" name="item-id">
+                <input type="hidden" id="quick-entry-action-type" name="action-type">
+                <div class="info-box">Item: <strong id="quick-entry-item-name"></strong></div>
+                <div class="form-group">
+                    <label for="quick-entry-quantity" id="quick-entry-quantity-label">Quantidade:</label>
+                    <input type="number" id="quick-entry-quantity" name="quantity" min="1" required>
+                </div>
+                <div id="quick-entry-responsible-container" class="form-group">
+                    <label for="quick-entry-responsible">Responsável:</label>
+                    <input type="text" id="quick-entry-responsible" name="responsible" value="Entrada via Alerta"
+                        required maxlength="100">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-quick-entry">Cancelar</button>
+                <button type="submit" class="btn btn-success" id="quick-entry-submit-btn">Confirmar</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="adjustment-modal-template">
+        <form id="adjustment-form" class="modal-form" novalidate>
+            <h2><i class="fas fa-tasks" aria-hidden="true"></i> Contagem de Estoque</h2>
+            <div class="modal-body">
+                <input type="hidden" id="adjustment-item-id" name="itemId">
+                <div class="info-box">Item: <strong id="adjustment-item-name"></strong> | Estoque Físico no Sistema:
+                    <strong id="adjustment-system-stock"></strong></div>
+                <div class="form-group">
+                    <label for="physical-count">Nova Contagem Física (Itens na Prateleira):</label>
+                    <input type="number" id="physical-count" name="physicalCount" min="0" required>
+                </div>
+                <div id="adjustment-reason-group" class="form-group" style="display: none;">
+                    <label for="adjustment-reason">Motivo da Diferença:</label>
+                    <select id="adjustment-reason" name="reason" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="adjustment-responsible">Responsável pela Contagem:</label>
+                    <input type="text" id="adjustment-responsible" name="responsible" required maxlength="100"
+                        placeholder="Seu nome">
+                </div>
+                <small>Esta ação atualizará o estoque total do item para o novo valor e registrará um histórico
+                    detalhado.</small>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-adjustment">Cancelar</button>
+                <button type="submit" class="btn btn-info"><i class="fas fa-check-double" aria-hidden="true"></i>
+                    Confirmar Contagem</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="barcode-action-modal-template">
+        <div class="modal-content">
+            <h2 id="barcode-action-title"><i class="fas fa-barcode" aria-hidden="true"></i> Buscar Item por Código</h2>
+            <div class="modal-body">
+                <div id="barcode-initial-view">
+                    <div class="form-group">
+                        <label for="barcode-input">Leia o código, digite e pressione Enter, ou clique em
+                            Buscar:</label>
+                        <div class="barcode-input-wrapper">
+                            <input type="text" id="barcode-input" name="barcode-input" placeholder="Aguardando leitura...">
+                            <button class="btn btn-primary" data-action="process-barcode-manual"
+                                aria-label="Buscar item por código">
+                                <i class="fas fa-search" aria-hidden="true"></i> Buscar
+                            </button>
+                        </div>
+                    </div>
+                    <div class="barcode-scan-options">
+                        <span class="barcode-option-divider">OU</span>
+                        <button class="btn btn-secondary" data-action="scan-with-camera">
+                            <i class="fas fa-camera" aria-hidden="true"></i> Escanear com a Câmera
+                        </button>
+                    </div>
+                </div>
+
+                <div id="barcode-camera-view" style="display: none; text-align: center;">
+                    <video id="camera-video"
+                        style="width: 100%; max-width: 500px; border-radius: var(--border-radius-md);"
+                        aria-label="Visualização da câmera"></video>
+                    <div class="form-group" style="margin-top: 1rem;">
+                        <label for="camera-select">Selecionar Câmera:</label>
+                        <select id="camera-select" class="form-control"></select>
+                    </div>
+                    <button class="btn btn-danger" data-action="stop-camera-scan" style="margin-top: 1rem;">
+                        <i class="fas fa-stop-circle" aria-hidden="true"></i> Parar Câmera
+                    </button>
+                </div>
+
+                <div id="barcode-scan-feedback" class="info-box" style="display: none; margin-top: 1rem;" role="alert">
+                </div>
+
+                <div id="barcode-loading-view" class="loading-spinner" style="display: none;">
+                    <i class="fas fa-spinner fa-spin" aria-hidden="true"></i>
+                    <span>Buscando item...</span>
+                </div>
+
+                <div id="barcode-action-section" style="display: none;">
+                    <h3 id="barcode-item-name" style="margin-bottom: 1.5rem; text-align: center;"></h3>
+                    <p style="text-align: center; font-weight: 600;">O que você deseja fazer com este item?</p>
+                    <div class="barcode-action-buttons">
+                        <button class="btn btn-primary" data-action="exit"><i class="fas fa-sign-out-alt"
+                                aria-hidden="true"></i> Registrar Saída/Empréstimo</button>
+                        <button class="btn btn-success" data-action="adjust-stock"><i class="fas fa-sync-alt"
+                                aria-hidden="true"></i> Ajustar Estoque</button>
+                        <button class="btn btn-info" data-action="edit-item-batches"><i class="fas fa-boxes"
+                                aria-hidden="true"></i> Gerenciar Lotes</button>
+                        <button class="btn btn-secondary" data-action="view-item-history"><i class="fas fa-history"
+                                aria-hidden="true"></i> Ver Histórico</button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-barcode-action">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="label-print-modal-template">
+        <div class="modal-content">
+            <h2><i class="fas fa-print" aria-hidden="true"></i> Gerar Etiqueta</h2>
+            <div class="modal-body" id="label-content-area"
+                style="display: flex; justify-content: center; align-items: center; padding: 2rem;">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-label-print">Fechar</button>
+                <button type="button" class="btn btn-primary" data-action="print-label"><i class="fas fa-print"
+                        aria-hidden="true"></i> Imprimir</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="item-kit-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="kit-modal-title"><i class="fas fa-toolbox"></i> Gerenciar Kit</h2>
+            </div>
+            <div class="modal-body settings-body">
+                <input type="hidden" id="kit-item-id">
+                <fieldset>
+                    <legend>Itens no Kit</legend>
+                    <div class="table-responsive">
+                        <table class="item-table" aria-label="Itens no Kit">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Quantidade</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kit-items-table-body">
+                                <tr>
+                                    <td colspan="3" style="text-align:center;">Nenhum item neste kit.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </fieldset>
+                <fieldset style="margin-top: 1.5rem;">
+                    <legend>Adicionar Item ao Kit</legend>
+                    <form id="kit-item-add-form" novalidate>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 2;">
+                                <label for="kit-add-item-select">Selecione o Item:</label>
+                                <select id="kit-add-item-select" name="itemId" required></select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="kit-add-item-quantity">Quantidade:</label>
+                                <input type="number" id="kit-add-item-quantity" name="quantity" min="1" value="1"
+                                    required>
+                            </div>
+                        </div>
+                        <div class="form-action-button" style="justify-content: space-between;">
+                            <button type="button" class="btn btn-info" data-action="mass-add-from-kit">
+                                <i class="fas fa-plus-square"></i> Criar Itens em Massa
+                            </button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-plus" aria-hidden="true"></i> Adicionar ao Kit
+                            </button>
+                        </div>
+                    </form>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-kit-management">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="kit-return-modal-template">
+        <form id="kit-return-form" class="modal-form">
+            <h2 id="kit-return-modal-title">Registrar Devolução de Kit</h2>
+            <div class="modal-body">
+                <input type="hidden" id="kit-return-kit-id">
+                <input type="hidden" id="kit-return-allocation-id">
+                <div id="kit-return-info" class="info-box"></div>
+
+                <div id="kit-return-initial-view">
+                    <p>O kit foi devolvido completo e sem avarias?</p>
+                    <div class="barcode-action-buttons">
+                        <button type="button" class="btn btn-success" data-action="kit-return-complete">
+                            <i class="fas fa-check-circle"></i> Sim, Devolução Completa
+                        </button>
+                        <button type="button" class="btn btn-warning" data-action="kit-return-with-loss">
+                            <i class="fas fa-exclamation-triangle"></i> Não, Relatar Itens Faltantes/Danificados
+                        </button>
+                    </div>
+                </div>
+
+                <div id="kit-return-details-view" style="display: none;">
+                    <p>Informe a <strong>quantidade faltante</strong> de cada item. Itens não listados ou com
+                        quantidade "0" serão considerados totalmente devolvidos.</p>
+                    <div id="kit-return-items-list" class="table-responsive"></div>
+                    <div id="kit-return-total-debit" class="info-box"
+                        style="margin-top: 1rem; text-align: right; font-weight: bold;"></div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-kit-return">Cancelar</button>
+                <button type="submit" class="btn btn-primary" id="kit-return-submit-btn"
+                    style="display: none;">Confirmar Devolução com Perdas</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="service-order-modal-template">
+        <form id="service-order-form" class="modal-form">
+            <h2 id="os-form-modal-title"></h2>
+            <div class="modal-body">
+                <input type="hidden" name="os-id" id="os-id">
+                <fieldset>
+                    <legend>Informações da O.S.</legend>
+                    <div class="form-group">
+                        <label for="os-customer">Cliente / Local:</label>
+                        <input type="text" id="os-customer" name="customer" required maxlength="150">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="os-technician">Técnico Responsável:</label>
+                            <select id="os-technician" name="technicianId" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="os-status">Status:</label>
+                            <select id="os-status" name="status">
+                                <option value="Aberta">Aberta</option>
+                                <option value="Em Andamento">Em Andamento</option>
+                                <option value="Fechada">Fechada</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="os-description">Descrição do Serviço:</label>
+                        <textarea id="os-description" name="description" rows="4" maxlength="500"></textarea>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-service-order">Cancelar</button>
+                <button type="submit" class="btn btn-success">Salvar Ordem de Serviço</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="service-order-details-modal-template">
+        <div class="modal-content-wrapper">
+            <div class="settings-header">
+                <h2 id="os-details-modal-title"></h2>
+            </div>
+            <div class="modal-body settings-body">
+                <input type="hidden" id="os-details-id">
+                <div class="os-details-grid">
+                    <div id="os-details-info-card" class="info-card"></div>
+                    <div id="os-details-cost-card" class="info-card"></div>
+                </div>
+
+                <fieldset>
+                    <legend>Alocar Itens para a O.S.</legend>
+                    <form id="os-add-item-form" novalidate>
+                        <div class="form-row">
+                            <div class="form-group" style="flex: 3;">
+                                <label for="os-item-select">Item:</label>
+                                <select id="os-item-select" name="itemId" required></select>
+                            </div>
+                            <div class="form-group" style="flex: 1;">
+                                <label for="os-item-quantity">Quantidade:</label>
+                                <input type="number" id="os-item-quantity" name="quantity" min="1" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn btn-success form-action-button" data-action="add-item-to-os">
+                            <i class="fas fa-plus"></i> Alocar Item
+                        </button>
+                    </form>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Itens Alocados</legend>
+                    <div class="table-responsive">
+                        <table class="item-table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Tipo</th>
+                                    <th>Qtd. Alocada</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="os-items-table-body"></tbody>
+                        </table>
+                    </div>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-service-order-details">Fechar</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="cart-checkout-modal-template">
+        <form id="cart-checkout-form" class="modal-form">
+            <div class="settings-header">
+                <h2><i class="fas fa-shopping-cart"></i> Carrinho de Requisição</h2>
+            </div>
+            <div class="modal-body settings-body">
+                <div id="cart-items-container" class="table-responsive"></div>
+                <fieldset style="margin-top: 1.5rem;">
+                    <legend>Responsável pela Retirada</legend>
+                    <div class="form-group">
+                        <label for="cart-checkout-collaborator">Colaborador:</label>
+                        <select name="collaborator" id="cart-checkout-collaborator" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cart-checkout-location">Local de Alocação/Obra (Opcional):</label>
+                        <input type="text" name="location" id="cart-checkout-location" maxlength="100">
+                    </div>
+                </fieldset>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-checkout">Fechar</button>
+                <button type="button" class="btn btn-danger" data-action="cancel-checkout-session">Cancelar
+                    Requisição</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-check"></i> Confirmar
+                    Requisição</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="return-cart-modal-template">
+        <form id="return-cart-form" class="modal-form">
+            <div class="settings-header">
+                <h2><i class="fas fa-undo-alt"></i> Carrinho de Devolução</h2>
+            </div>
+            <div class="modal-body settings-body">
+                <fieldset>
+                    <legend>Colaborador</legend>
+                    <div class="form-group">
+                        <label for="return-cart-collaborator">Selecione o colaborador para ver os itens
+                            emprestados:</label>
+                        <select name="collaborator" id="return-cart-collaborator" required></select>
+                    </div>
+                </fieldset>
+                <div id="return-cart-items-container" class="table-responsive" style="margin-top: 1.5rem;"></div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-return-session">Fechar</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-check-double"></i> Processar
+                    Devoluções</button>
+            </div>
+        </form>
+    </template>
+
+    <template id="kit-assembly-bulk-modal-template">
+        <form id="kit-assembly-bulk-form" class="modal-form">
+            <div class="settings-header">
+                <h2><i class="fas fa-tools"></i> Montagem de Kit em Lote</h2>
+            </div>
+            <div class="modal-body settings-body">
+                <fieldset>
+                    <legend>Kit Alvo</legend>
+                    <div class="form-group">
+                        <label for="kit-assembly-bulk-select">Selecione o kit que deseja montar ou editar:</label>
+                        <select name="kitId" id="kit-assembly-bulk-select" required></select>
+                    </div>
+                </fieldset>
+                <div id="kit-assembly-bulk-items-container" class="table-responsive" style="margin-top: 1.5rem;">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary"
+                    data-action="cancel-kit-assembly-bulk">Fechar</button>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Salvar Composição</button>
+            </div>
+        </form>
+    </template>
+
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.3/dist/email.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@nlpjs/basic/dist/nlp.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/paparse.min.js"></script>
+
+    <script src="js/constants.js" defer></script>
+    <script src="js/modules/dataHandler.js" defer></script>
+    <script src="js/modules/settings.js" defer></script>
+    <script src="js/modules/logManager.js" defer></script>
+    <script src="js/modules/validator.js" defer></script>
+    <script src="js/modules/collaboratorManager.js" defer></script>
+    <script src="js/modules/itemManager.js" defer></script>
+    <script src="js/modules/debitManager.js" defer></script>
+    <script src="js/modules/analysisManager.js" defer></script>
+    <script src="js/modules/stockControl.js" defer></script>
+    <script src="js/modules/alertSystem.js" defer></script>
+    <script src="js/modules/mapping.js" defer></script>
+    <script src="js/modules/notificationManager.js" defer></script>
+    <script src="js/modules/backupManager.js" defer></script>
+    <script src="js/modules/exportManager.js" defer></script>
+    <script src="js/modules/serviceOrderManager.js" defer></script>
+    <script src="js/modules/batchOperationManager.js" defer></script>
+
+    <script src="js/modules/uiManager.js" defer></script>
+    <script src="js/modules/reporting.js" defer></script>
+    <script src="js/modules/remapping.js" defer></script>
+
+    <script src="js/components/graphicDashboard.js" defer></script>
+    <script src="js/components/itemManagement.js" defer></script>
+    <script src="js/components/kitManagement.js" defer></script>
+    <script src="js/components/collaboratorManagement.js" defer></script>
+    <script src="js/components/debitManagement.js" defer></script>
+    <script src="js/components/reporting.js" defer></script>
+    <script src="js/components/serviceOrderManagement.js" defer></script>
+
+    <script src="js/main.js" defer></script>
+</body>
+
+</html>

@@ -1,0 +1,155 @@
+const DB_KEYS = {
+    ITEMS: 'almoxarifado_items',
+    COLLABORATORS: 'almoxarifado_collaborators',
+    DEBITS: 'almoxarifado_debits',
+    LOGS: 'almoxarifado_logs',
+    SETTINGS: 'almoxarifado_settings',
+    THEME: 'almoxarifado_theme',
+    PERSISTENT_ALERTS: 'almoxarifado_persistent_alerts',
+    DISMISSED_TEMPORARY_ALERTS: 'almoxarifado_dismissed_temp_alerts',
+    SERVICE_ORDERS: 'almoxarifado_service_orders'
+};
+
+const ACTIONS = {
+    // Ações existentes...
+    TOGGLE_DASHBOARD: 'toggle-dashboard',
+    ADD_NEW_TYPE: 'add-new-type',
+    DELETE_TYPE: 'delete-type',
+    DO_COUNT: 'do-count',
+    QUICK_ADD_STOCK: 'quick-add-stock',
+    REPLACE_ITEM: 'replace-item',
+    DISMISS_MANUAL_ALERT: 'dismiss-manual-alert',
+    CLEAR_ALL_NOTIFICATIONS: 'clear-all-notifications',
+    SEND_SUMMARY_EMAIL: 'send-summary-email',
+    REGISTER_LOSS: 'register-loss',
+    RETURN_ALLOCATION: 'return-allocation',
+    ADD_ITEM: 'add-item',
+    ADD_KIT: 'add-kit',
+    EDIT_ITEM: 'edit-item',
+    EDIT_ITEM_BATCHES: 'edit-item-batches',
+    VIEW_ITEM_HISTORY: 'view-item-history',
+    MANAGE_MAINTENANCE: 'manage-maintenance',
+    MANAGE_KIT: 'manage-kit',
+    ADJUST_STOCK: 'adjust-stock',
+    DELETE_ITEM: 'delete-item',
+    ITEM_EXIT: 'exit',
+    MANAGE_ALLOCATIONS: 'manage-allocations',
+    MASS_ADD: 'mass-add',
+    MASS_ADD_FROM_KIT: 'mass-add-from-kit',
+    ADD_COLLABORATOR: 'add-collaborator',
+    MASS_ADD_COLLABORATOR: 'mass-add-collaborator',
+    EDIT_COLLABORATOR: 'edit-collaborator',
+    DELETE_COLLABORATOR: 'delete-collaborator',
+    VIEW_COLLABORATOR_DASHBOARD: 'view-collaborator-dashboard',
+    GENERATE_RECEIPT: 'generate-receipt',
+    VIEW_SIGNED_RECEIPTS: 'view-signed-receipts',
+    PRINT_RECEIPT: 'print-receipt',
+    SETTLE_DEBIT: 'settle-debit',
+    CLEAR_FILTERS: 'clear-filters',
+    DO_BACKUP: 'do-backup',
+    SCAN_BARCODE: 'scan-barcode',
+    SCAN_FOR_INPUT: 'scan-for-input',
+    GENERATE_LABEL: 'generate-label',
+    PRINT_LABEL: 'print-label',
+    ADD_SERVICE_ORDER: 'add-service-order',
+    EDIT_SERVICE_ORDER: 'edit-service-order',
+    DELETE_SERVICE_ORDER: 'delete-service-order',
+    VIEW_SERVICE_ORDER: 'view-service-order',
+    ADD_ITEM_TO_OS: 'add-item-to-os',
+    REMOVE_ITEM_FROM_OS: 'remove-item-from-os',
+    RETURN_ITEM_FROM_OS: 'return-item-from-os',
+
+    // Ações do carrinho de saída
+    START_CHECKOUT_SESSION: 'start-checkout-session',
+    ADD_TO_CART: 'add-to-cart',
+    CANCEL_CHECKOUT_SESSION: 'cancel-checkout-session',
+
+    // Ações do carrinho de devolução
+    START_RETURN_SESSION: 'start-return-session',
+    CANCEL_RETURN_SESSION: 'cancel-return-session',
+
+    // Novas ações para a montagem de kits em lote
+    OPEN_KIT_ASSEMBLY_BULK: 'open-kit-assembly-bulk',
+    CANCEL_KIT_ASSEMBLY_BULK: 'cancel-kit-assembly-bulk',
+
+    // Cancelamentos existentes...
+    CANCEL_BARCODE_ACTION: 'cancel-barcode-action',
+    CANCEL_SETTINGS: 'cancel-settings',
+    CANCEL_ITEM_FORM: 'cancel-item-form-modal',
+    CANCEL_ITEM_BATCHES: 'cancel-item-batches-modal',
+    CANCEL_ITEM_HISTORY: 'cancel-item-history-modal',
+    CANCEL_ITEM_MAINTENANCE: 'cancel-item-maintenance-modal',
+    CANCEL_ADJUSTMENT: 'cancel-adjustment',
+    CANCEL_MOVEMENT: 'cancel-movement',
+    CANCEL_MASS_ADD: 'cancel-mass-add',
+    CANCEL_MASS_ADD_COLLABORATOR: 'cancel-mass-add-collaborator',
+    CANCEL_LOSS: 'cancel-loss',
+    CANCEL_DIRECT_LOSS: 'cancel-direct-loss',
+    CANCEL_COLLABORATOR: 'cancel-collaborator',
+    CANCEL_COLLABORATOR_DASHBOARD: 'cancel-collaborator-dashboard',
+    CANCEL_QUICK_ENTRY: 'cancel-quick-entry',
+    CANCEL_CONFIRMATION: 'cancel-confirmation',
+    CLOSE_ALLOCATION: 'close-allocation',
+    CANCEL_KIT_MANAGEMENT: 'cancel-kit-management',
+    CANCEL_KIT_RETURN: 'cancel-kit-return',
+    CANCEL_SERVICE_ORDER: 'cancel-service-order',
+    CANCEL_SERVICE_ORDER_DETAILS: 'cancel-service-order-details',
+    CANCEL_SIGNED_RECEIPTS: 'cancel-signed-receipts',
+    HISTORY_ENTRY: 'entry',
+    HISTORY_EXIT: 'exit',
+    HISTORY_LOAN: 'loan',
+    HISTORY_RETURN: 'return',
+    HISTORY_ADJUSTMENT: 'adjustment',
+    HISTORY_LOSS: 'loss',
+    HISTORY_DISCARD: 'discard',
+    PRICE_CHECK_REMINDER: 'price_check_reminder',
+    KIT_RETURN_FAIL: 'kit_return_fail'
+};
+
+const MODAL_IDS = {
+    // IDs existentes...
+    SETTINGS: 'settings-modal',
+    ITEM_FORM: 'item-form-modal',
+    ITEM_BATCHES: 'item-batches-modal',
+    ITEM_HISTORY: 'item-history-modal',
+    ITEM_MAINTENANCE: 'item-maintenance-modal',
+    MOVEMENT: 'movement-modal',
+    MASS_ADD: 'mass-add-modal',
+    ALLOCATION: 'allocation-modal',
+    COLLABORATOR: 'collaborator-modal',
+    COLLABORATOR_DASHBOARD: 'collaborator-dashboard-modal',
+    RECEIPT_GENERATOR: 'receipt-generator-modal',
+    SIGNED_RECEIPTS: 'signed-receipts-modal',
+    MASS_ADD_COLLABORATOR: 'mass-add-collaborator-modal',
+    LOSS_REGISTRATION: 'loss-registration-modal',
+    CONFIRMATION: 'confirmation-modal',
+    QUICK_ENTRY: 'quick-entry-modal',
+    DIRECT_LOSS: 'direct-loss-modal',
+    ADJUSTMENT: 'adjustment-modal',
+    BARCODE_ACTION: 'barcode-action-modal',
+    LABEL_PRINT: 'label-print-modal',
+    ITEM_KIT: 'item-kit-modal',
+    KIT_RETURN: 'kit-return-modal',
+    SERVICE_ORDER: 'service-order-modal',
+    SERVICE_ORDER_DETAILS: 'service-order-details-modal',
+    CART_CHECKOUT: 'cart-checkout-modal',
+    RETURN_CART: 'return-cart-modal',
+
+    // Novo ID para o modal de montagem de kit
+    KIT_ASSEMBLY_BULK: 'kit-assembly-bulk-modal'
+};
+
+const ALERT_TYPES = {
+    LOW_STOCK: 'low_stock',
+    PRICE_VARIATION: 'price_variation',
+    PREDICTIVE: 'predictive',
+    PENDING_COUNT: 'pending_count',
+    VALIDITY_EXPIRED: 'validity_expired',
+    VALIDITY_WARNING: 'validity_warning',
+    PRICE_CHECK_REMINDER: 'price_check_reminder',
+    MAINTENANCE_NEEDED: 'maintenance_needed',
+    BACKUP_REMINDER: 'backup_reminder'
+};
+
+const ITEM_HISTORY_LIMIT = 50;
+const LOGS_LIMIT = 200;
