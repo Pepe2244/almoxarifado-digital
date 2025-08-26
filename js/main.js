@@ -991,7 +991,7 @@ document.addEventListener('DOMContentLoaded', () => {
             service_order_id: service_order_id
         };
 
-        const API_BASE_URL = 'http://localhost:3000/api';
+        const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
         try {
             const response = await fetch(`${API_BASE_URL}/generate-receipt`, {
                 method: 'POST',
@@ -1289,7 +1289,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     break;
                 }
 
-                const API_BASE_URL = 'http://localhost:3000/api';
+                const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
                 try {
                     const response = await fetch(`${API_BASE_URL}/receipts`);
                     if (!response.ok) {
