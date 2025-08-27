@@ -1,92 +1,57 @@
-function closeAllFixedDropdowns() {
-    document.querySelectorAll('.actions-dropdown-content:not(.hidden)').forEach(dropdown => {
-        dropdown.classList.add('hidden');
-    });
-    document.querySelectorAll('.filters-dropdown-content:not(.hidden)').forEach(dropdown => {
-        dropdown.classList.add('hidden');
-    });
-}
-
-const paginationState = {
-    item: {
-        currentPage: 1
-    },
-    kit: {
-        currentPage: 1
-    },
-    collaborator: {
-        currentPage: 1
-    },
-    debit: {
-        currentPage: 1
-    },
-    consumption: {
-        currentPage: 1
-    },
-    lifecycle: {
-        currentPage: 1
-    },
-    log: {
-        currentPage: 1
-    },
-    report: {
-        currentPage: 1
-    },
-    serviceOrder: {
-        currentPage: 1
-    }
-};
-
-const sortState = {
-    item: {
-        key: 'name',
-        direction: 'asc'
-    },
-    kit: {
-        key: 'name',
-        direction: 'asc'
-    },
-    collaborator: {
-        key: 'name',
-        direction: 'asc'
-    },
-    debit: {
-        key: 'date',
-        direction: 'desc'
-    },
-    log: {
-        key: 'timestamp',
-        direction: 'desc'
-    },
-    serviceOrder: {
-        key: 'openDate',
-        direction: 'desc'
-    }
-};
-
+// Variáveis globais para controle de estado da UI
+let lastScrollY = 0;
 let lastFocusedElement = null;
 let itemTypeFilterState = 'all';
 let almoxarifadoFilterState = 'todos';
 let empresaFilterState = 'todas';
 let priceHistoryChart = null;
 
+const paginationState = {
+    item: { currentPage: 1 },
+    kit: { currentPage: 1 },
+    collaborator: { currentPage: 1 },
+    debit: { currentPage: 1 },
+    consumption: { currentPage: 1 },
+    lifecycle: { currentPage: 1 },
+    log: { currentPage: 1 },
+    report: { currentPage: 1 },
+    serviceOrder: { currentPage: 1 }
+};
+
+const sortState = {
+    item: { key: 'name', direction: 'asc' },
+    kit: { key: 'name', direction: 'asc' },
+    collaborator: { key: 'name', direction: 'asc' },
+    debit: { key: 'date', direction: 'desc' },
+    log: { key: 'timestamp', direction: 'desc' },
+    serviceOrder: { key: 'openDate', direction: 'desc' }
+};
+
+/**
+ * Fecha todos os dropdowns de ações e filtros que estiverem abertos.
+ */
+function closeAllFixedDropdowns() {
+    document.querySelectorAll('.actions-dropdown-content:not(.hidden), .filters-dropdown-content:not(.hidden)').forEach(dropdown => {
+        dropdown.classList.add('hidden');
+    });
+}
+
+/**
+ * Armazena alertas dispensados temporariamente na sessão.
+ * @param {string} alertId - O ID do alerta a ser dispensado.
+ */
 function dismissTemporaryAlert(alertId) {
     const dismissedAlerts = loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS) || {};
-    dismissedAlerts[alertId] = {
-        dismissedAt: new Date().toISOString()
-    };
+    dismissedAlerts[alertId] = { dismissedAt: new Date().toISOString() };
     saveDataToLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS, dismissedAlerts);
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 }
 
+// Listener para eventos de paginação
 document.body.addEventListener('changePage', (event) => {
-    const {
-        table,
-        direction
-    } = event.detail;
+    const { table, direction, totalItems } = event.detail;
     if (!paginationState[table]) return;
 
-    const totalItems = event.detail.totalItems;
     const itemsPerPage = getSettings().itemsPerPage;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -98,15 +63,19 @@ document.body.addEventListener('changePage', (event) => {
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 });
 
+// Listener para resetar a paginação ao aplicar filtros
 document.body.addEventListener('resetPage', (event) => {
-    const {
-        table
-    } = event.detail;
+    const { table } = event.detail;
     if (paginationState[table]) {
         paginationState[table].currentPage = 1;
     }
 });
 
+/**
+ * Exibe uma notificação toast na tela.
+ * @param {string} message - A mensagem a ser exibida.
+ * @param {string} type - O tipo de toast ('info', 'success', 'error', 'warning').
+ */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -119,6 +88,66 @@ function showToast(message, type = 'info') {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 500);
     }, 4000);
+}
+
+/**
+ * Abre um modal, salvando o estado da rolagem e do foco.
+ * @param {string} modalId - O ID do elemento <dialog> a ser aberto.
+ * @param {function} [setupFunction] - Uma função opcional para ser executada após o modal ser encontrado, para configurá-lo.
+ */
+function openModal(modalId, setupFunction) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const isFirstModal = !document.querySelector('dialog[open]');
+    if (isFirstModal) {
+        lastScrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+    }
+
+    lastFocusedElement = document.activeElement;
+
+    if (setupFunction && typeof setupFunction === 'function') {
+        setupFunction(modal);
+    }
+
+    if (!modal.open) {
+        modal.showModal();
+    }
+
+    const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
+    closeButtons.forEach(button => {
+        // Remove listener antigo para evitar duplicação
+        if (button._closeModalHandler) {
+            button.removeEventListener('click', button._closeModalHandler);
+        }
+        // Define o novo handler
+        button._closeModalHandler = (event) => {
+            event.preventDefault();
+            closeModal(modalId);
+        };
+        // Adiciona o novo listener
+        button.addEventListener('click', button._closeModalHandler);
+    });
+}
+
+/**
+ * Fecha um modal, restaurando o estado da rolagem e do foco quando o último modal é fechado.
+ * @param {string} modalId - O ID do elemento <dialog> a ser fechado.
+ */
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.open) {
+        modal.close();
+
+        queueMicrotask(() => {
+            const anyModalOpen = document.querySelector('dialog[open]');
+            if (!anyModalOpen) {
+                document.body.style.overflow = '';
+                window.scrollTo(0, lastScrollY);
+            }
+        });
+    }
 }
 
 function renderMainLayout() {
@@ -241,10 +270,7 @@ function renderAllModals() {
 }
 
 function updateSortIndicators(tableType) {
-    const {
-        key,
-        direction
-    } = sortState[tableType];
+    const { key, direction } = sortState[tableType];
     const tableHeaders = document.querySelectorAll(`#${tableType}-management th[data-sort]`);
 
     tableHeaders.forEach(th => {
@@ -789,7 +815,7 @@ function renderServiceOrdersTable(serviceOrders, searchTerm = '') {
         cardBody.innerHTML = `
             <div class="table-responsive">
                 <table class="item-table">
-                     <thead>
+                    <thead>
                         <tr>
                             <th data-sort="id">Número O.S.</th>
                             <th data-sort="customer">Cliente</th>
@@ -1315,36 +1341,8 @@ function renderBatchValidityReport(reportData) {
 }
 
 
-function openModal(modalId, setupFunction) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-    lastFocusedElement = document.activeElement;
-    if (setupFunction) setupFunction(modal);
-    if (!modal.open) {
-        modal.showModal();
-    }
-    const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
-    closeButtons.forEach(button => {
-        button.removeEventListener('click', button._closeModalHandler);
-        button._closeModalHandler = (event) => {
-            event.preventDefault();
-            closeModal(modalId);
-        };
-        button.addEventListener('click', button._closeModalHandler);
-    });
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal && modal.open) {
-        modal.close();
-    }
-}
-
 function openItemFormModal(options = {}) {
-    const {
-        itemId = null, defaultValues = {}
-    } = options;
+    const { itemId = null, defaultValues = {} } = options;
     openModal(MODAL_IDS.ITEM_FORM, async (modal) => {
         const item = itemId ? getItemById(itemId) : null;
         const isEditing = !!item;
@@ -2094,9 +2092,6 @@ function openReceiptGeneratorModal(collaboratorId) {
     });
 }
 
-// ==================================================================
-// == FUNÇÃO CORRIGIDA PARA BUSCAR E EXIBIR COMPROVANTES ==
-// ==================================================================
 async function openSignedReceiptsModal(collaboratorId) {
     const collaborator = getCollaboratorById(collaboratorId);
     if (!collaborator) {
@@ -2109,10 +2104,8 @@ async function openSignedReceiptsModal(collaboratorId) {
         const listContainer = modal.querySelector('#signed-receipts-list');
         listContainer.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><span>Buscando comprovantes...</span></div>`;
 
-        // A constante API_BASE_URL deve ser definida globalmente ou importada
         const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
         try {
-            // 1. Busca TODOS os comprovantes da API
             const response = await fetch(`${API_BASE_URL}/receipts`);
             const allReceipts = await response.json();
 
@@ -2120,7 +2113,6 @@ async function openSignedReceiptsModal(collaboratorId) {
                 throw new Error(allReceipts.error || 'Falha ao buscar comprovantes.');
             }
 
-            // 2. Filtra os comprovantes no frontend para o colaborador específico
             const receipts = allReceipts.filter(receipt => receipt.collaborator_id === collaboratorId);
 
             if (receipts.length === 0) {
@@ -2342,7 +2334,6 @@ function openConfirmationModal(options) {
             if (details.customHTML) {
                 messageHtml += details.customHTML;
             }
-            // ✅ CORREÇÃO APLICADA AQUI
             if (details.addedCount > 0 && Array.isArray(details.addedNames)) {
                 messageHtml += `<h6>Adicionados (${details.addedCount}):</h6><ul class="feedback-list">`;
                 details.addedNames.forEach(name => {
@@ -2350,7 +2341,6 @@ function openConfirmationModal(options) {
                 });
                 messageHtml += '</ul>';
             }
-            // ✅ E AQUI TAMBÉM
             if (details.ignoredCount > 0 && Array.isArray(details.ignoredNames)) {
                 messageHtml += `<h6>Ignorados (${details.ignoredCount}):</h6><ul class="feedback-list">`;
                 details.ignoredNames.forEach(name => {
@@ -2675,10 +2665,7 @@ function renderPredictiveCards(containerId, predictiveData) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const settings = getSettings();
-    const {
-        critical,
-        warning
-    } = settings.predictiveAlertLevels;
+    const { critical, warning } = settings.predictiveAlertLevels;
 
     const renderCardGrid = (data, fragment) => {
         data.forEach(item => {
@@ -2890,10 +2877,7 @@ function checkBackupReminder() {
     const settings = getSettings();
     if (!settings.backupReminder) return;
 
-    const {
-        lastBackupDate,
-        frequencyDays
-    } = settings.backupReminder;
+    const { lastBackupDate, frequencyDays } = settings.backupReminder;
 
     if (!lastBackupDate) {
         openConfirmationModal({

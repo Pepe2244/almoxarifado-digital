@@ -15,10 +15,12 @@ function addCollaborator(collaboratorDetails) {
         return false;
     }
     let collaborators = getAllCollaborators();
-    const existingCollaborator = collaborators.find(c => c.registration.toLowerCase() === collaboratorDetails.registration.toLowerCase());
-    if (existingCollaborator) {
-        showToast(`Colaborador com a matrícula "${collaboratorDetails.registration}" já existe.`, "error");
-        return false;
+    if (collaboratorDetails.registration) {
+        const existingCollaborator = collaborators.find(c => c.registration && c.registration.toLowerCase() === collaboratorDetails.registration.toLowerCase());
+        if (existingCollaborator) {
+            showToast(`Colaborador com a matrícula "${collaboratorDetails.registration}" já existe.`, "error");
+            return false;
+        }
     }
     const newCollaborator = {
         id: generateCollaboratorId(),
@@ -31,6 +33,7 @@ function addCollaborator(collaboratorDetails) {
     saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
     return newCollaborator;
 }
+
 
 function addMultipleCollaborators(collaboratorsToAdd) {
     let collaborators = getAllCollaborators();

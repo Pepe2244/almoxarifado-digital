@@ -1,20 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ==================================================================
-    // == FUNÇÕES DE DADOS (Adicionadas para corrigir erro) ==
-    // ==================================================================
-
-    /**
-     * Retorna todos os comprovantes assinados salvos localmente.
-     * Esta função é necessária para a funcionalidade de impressão.
-     */
     function getAllSignedReceipts() {
         return loadDataFromLocal(DB_KEYS.SIGNED_RECEIPTS) || [];
     }
-
-    // ==================================================================
-    // == INICIALIZAÇÃO DO APLICATIVO ==
-    // ==================================================================
 
     async function initializeApp() {
         try {
@@ -587,7 +575,7 @@ document.addEventListener('DOMContentLoaded', () => {
         return success;
     }
 
-    function handleMassAddItemsForm(form) {
+    async function handleMassAddItemsForm(form) {
         const itemsRaw = form.elements['mass-add-data'].value.trim();
         const kitId = form.elements['kitId']?.value;
         if (!itemsRaw) {
@@ -597,17 +585,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const itemsToAdd = itemsRaw.split('\n')
             .map(name => ({
-                name: name.trim(),
-                type: 'Ferramenta'
+                name: name.trim()
             }))
             .filter(item => item.name);
 
         if (itemsToAdd.length > 0) {
-            const result = addMultipleItems(itemsToAdd);
+            const allItems = getAllItems();
+            const existingNames = new Set(allItems.map(i => i.name.toLowerCase()));
 
-            if (kitId && result.addedItems && result.addedItems.length > 0) {
+            let addedCount = 0;
+            let ignoredCount = 0;
+            let addedNames = [];
+            let ignoredNames = [];
+            let addedItemsForKit = [];
+
+            for (const itemDetails of itemsToAdd) {
+                if (existingNames.has(itemDetails.name.toLowerCase())) {
+                    ignoredCount++;
+                    ignoredNames.push(itemDetails.name);
+                } else {
+                    const newItem = await createItem({
+                        ...itemDetails,
+                        type: 'Ferramenta'
+                    });
+                    if (newItem) {
+                        addedCount++;
+                        addedNames.push(newItem.name);
+                        addedItemsForKit.push(newItem);
+                    } else {
+                        ignoredCount++;
+                        ignoredNames.push(`${itemDetails.name} (falha ao adicionar)`);
+                    }
+                }
+            }
+
+            if (kitId && addedItemsForKit.length > 0) {
                 let itemsAddedToKitCount = 0;
-                result.addedItems.forEach(newItem => {
+                addedItemsForKit.forEach(newItem => {
                     if (addItemToKit(kitId, newItem.id, 1)) {
                         itemsAddedToKitCount++;
                     }
@@ -618,21 +632,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            createLog('MASS_ADD_ITEMS', `${result.added} itens adicionados, ${result.ignored} ignorados.`, 'Usuário');
+            createLog('MASS_ADD_ITEMS', `${addedCount} itens adicionados, ${ignoredCount} ignorados.`, 'Usuário');
 
             let message = 'Operação concluída!';
-            if (kitId && result.added > 0) {
-                message += `\n${result.added} item(ns) foram criados e adicionados ao kit.`;
+            if (kitId && addedCount > 0) {
+                message += `\n${addedCount} item(ns) foram criados e adicionados ao kit.`;
             }
 
             openConfirmationModal({
                 title: 'Resultado do Cadastro em Massa',
                 message: message,
                 details: {
-                    addedCount: result.added,
-                    addedNames: result.addedNames,
-                    ignoredCount: result.ignored,
-                    ignoredNames: result.ignoredNames,
+                    addedCount: addedCount,
+                    addedNames: addedNames,
+                    ignoredCount: ignoredCount,
+                    ignoredNames: ignoredNames,
                 },
                 showConfirmButton: false,
                 cancelButtonText: 'Fechar'
@@ -653,22 +667,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const collaboratorsToAdd = collaboratorsRaw.split('\n')
             .map(name => ({
-                name: name.trim()
+                name: name.trim(),
+                registration: '', // Garante que a propriedade existe
+                role: '' // Garante que a propriedade existe
             }))
             .filter(c => c.name);
 
         if (collaboratorsToAdd.length > 0) {
-            const result = addMultipleCollaborators(collaboratorsToAdd);
-            createLog('MASS_ADD_COLLABORATORS', `${result.added} colaboradores adicionados, ${result.ignored} ignorados.`, 'Usuário');
+            const allCollaborators = getAllCollaborators();
+            const existingNames = new Set(allCollaborators.map(c => c.name.toLowerCase()));
+
+            let addedCount = 0;
+            let ignoredCount = 0;
+            let addedNames = [];
+            let ignoredNames = [];
+
+            for (const collaborator of collaboratorsToAdd) {
+                if (existingNames.has(collaborator.name.toLowerCase())) {
+                    ignoredCount++;
+                    ignoredNames.push(collaborator.name);
+                } else {
+                    if (addCollaborator(collaborator)) {
+                        addedCount++;
+                        addedNames.push(collaborator.name);
+                    } else {
+                        ignoredCount++;
+                        ignoredNames.push(`${collaborator.name} (falha ao adicionar)`);
+                    }
+                }
+            }
+
+            createLog('MASS_ADD_COLLABORATORS', `${addedCount} colaboradores adicionados, ${ignoredCount} ignorados.`, 'Usuário');
 
             openConfirmationModal({
                 title: 'Resultado do Cadastro em Massa',
                 message: `Operação concluída!`,
                 details: {
-                    addedCount: result.added,
-                    addedNames: result.addedNames,
-                    ignoredCount: result.ignored,
-                    ignoredNames: result.ignoredNames,
+                    addedCount: addedCount,
+                    addedNames: addedNames,
+                    ignoredCount: ignoredCount,
+                    ignoredNames: ignoredNames,
                 },
                 showConfirmButton: false,
                 cancelButtonText: 'Fechar'
