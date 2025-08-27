@@ -1,94 +1,149 @@
-// almoxarifado-digital/js/modules/notificationManager.js
-function initializeEmailJS() {
-    const settings = getSettings();
-    const publicKey = settings.emailSettings?.publicKey;
+import {
+    DB_KEYS,
+    ACTIONS,
+    ALERT_TYPES
+} from '../constants.js';
+import {
+    getData,
+    saveData
+} from './dataHandler.js';
+import {
+    settings
+} from './settings.js';
+import {
+    getItemById
+} from './itemManager.js';
+import {
+    formatCurrency
+} from './utils.js';
 
-    if (publicKey && typeof publicKey === 'string' && publicKey.trim() !== '') {
-        try {
-            emailjs.init(publicKey);
-            console.log("EmailJS inicializado com sucesso.");
-        } catch (e) {
-            console.error("Falha ao inicializar o EmailJS. Verifique a Public Key.", e);
-        }
+let notifications = [];
+
+function initializeNotificationManager() {
+    notifications = getData(DB_KEYS.PERSISTENT_ALERTS) || [];
+    renderNotifications();
+    updateBadge();
+}
+
+function add(type, message, relatedId, isActionable = false) {
+    const newNotification = {
+        id: `notif_${new Date().getTime()}_${Math.random()}`,
+        type,
+        message,
+        relatedId,
+        timestamp: new Date().toISOString(),
+        isRead: false,
+        isActionable: isActionable || (settings.notificationBehaviors && !settings.notificationBehaviors[type]?.dismissible)
+    };
+
+    notifications.unshift(newNotification);
+    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    renderNotifications();
+    updateBadge();
+}
+
+function remove(notificationId) {
+    notifications = notifications.filter(n => n.id !== notificationId);
+    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    renderNotifications();
+    updateBadge();
+}
+
+function clearAll() {
+    notifications = notifications.filter(n => n.isActionable);
+    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    renderNotifications();
+    updateBadge();
+}
+
+function updateBadge() {
+    const badge = document.getElementById('notification-count-badge');
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+    if (unreadCount > 0) {
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        badge.classList.remove('hidden');
     } else {
-        console.warn("EmailJS não foi inicializado: Chave Pública (Public Key) não encontrada ou inválida nas configurações.");
+        badge.classList.add('hidden');
     }
 }
 
-function buildEmailBodyHTML(settings) {
-    const lowStockItems = getLowStockItems();
-    const expiredItems = getShelfLifeAlerts().filter(a => a.type === 'validity_expired');
-    const debits = getAllDebits();
+function renderNotifications() {
+    const panel = document.getElementById('notification-panel');
+    if (!panel) return;
 
-    const formatListToHtml = (title, items, formatter) => {
-        if (!items || items.length === 0) return '';
-        let listHtml = `<h3>${title}</h3><ul>`;
-        items.forEach(item => {
-            listHtml += `<li>${formatter(item)}</li>`;
-        });
-        listHtml += '</ul>';
-        return listHtml;
-    };
+    if (notifications.length === 0) {
+        panel.innerHTML = '<div class="notification-item empty">Nenhuma notificação.</div>';
+        return;
+    }
 
-    const lowStockHtml = formatListToHtml('Itens com Estoque Baixo', lowStockItems, item => `${item.name} (Apenas ${item.currentStock} un.)`);
-    const expiredHtml = formatListToHtml('Itens Vencidos que Precisam de Substituição', expiredItems, alert => alert.message);
-    const debitsHtml = formatListToHtml('Débitos Pendentes', debits, debit => {
-        const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || 'Desconhecido';
-        return `${collaboratorName} - ${debit.itemName} - R$ ${debit.amount.toFixed(2)}`;
-    });
+    let html = notifications.map(notification => {
+        let icon, title, actionHtml = '',
+            action = null;
 
-    const warehouseName = settings.warehouseName || 'Almoxarifado Digital';
-    const generationDate = new Date().toLocaleDateString('pt-BR');
-
-    const emailBody = `
-        <h2>${warehouseName} - Resumo Automático</h2>
-        <p>Este é um resumo do estado atual do seu almoxarifado gerado em ${generationDate}.</p>
-        <hr>
-        ${lowStockHtml || '<p>Nenhum item com estoque baixo. Ótimo trabalho!</p>'}
-        <hr>
-        ${expiredHtml || '<p>Nenhum item vencido.</p>'}
-        <hr>
-        ${debitsHtml || '<p>Nenhum débito pendente.</p>'}
-        <br>
-        <p><em>E-mail gerado automaticamente pelo sistema Almoxarifado Digital.</em></p>
-    `;
-
-    return emailBody;
-}
-
-
-function sendSummaryEmail() {
-    return new Promise((resolve, reject) => {
-        const settings = getSettings();
-        const emailConfig = settings.emailSettings;
-
-        if (!emailConfig?.serviceId || !emailConfig?.templateId || !emailConfig?.recipientEmail) {
-            showToast("Configurações de e-mail incompletas. Verifique a seção de configurações.", "error");
-            createLog('EMAIL_FAIL', 'Tentativa de envio de e-mail falhou por falta de configuração.', 'Sistema');
-            return reject(new Error("Configurações de e-mail incompletas."));
+        switch (notification.type) {
+            case ALERT_TYPES.LOW_STOCK:
+                icon = 'fa-box-open';
+                title = 'Estoque Baixo';
+                action = ACTIONS.QUICK_ADD_STOCK;
+                break;
+            case ALERT_TYPES.PENDING_COUNT:
+                icon = 'fa-tasks';
+                title = 'Contagem Pendente';
+                action = ACTIONS.DO_COUNT;
+                break;
+            case ALERT_TYPES.BACKUP_REMINDER:
+                icon = 'fa-save';
+                title = 'Lembrete de Backup';
+                action = ACTIONS.DO_BACKUP;
+                break;
+            case ALERT_TYPES.SIGNED_RECEIPT:
+                icon = 'fa-signature';
+                title = 'Comprovante Assinado';
+                action = ACTIONS.PRINT_SIGNED_RECEIPT;
+                notification.isActionable = true;
+                break;
         }
-        
-        const emailBodyContent = buildEmailBodyHTML(settings);
 
-        const templateParams = {
-            warehouse_name: settings.warehouseName || 'Almoxarifado Digital',
-            recipient_email: emailConfig.recipientEmail,
-            email_body: emailBodyContent,
-        };
+        if (notification.isActionable && action) {
+            actionHtml = `<button class="btn btn-primary btn-sm notification-action" data-action="${action}" data-related-id="${notification.relatedId}" data-notification-id="${notification.id}">Verificar</button>`;
+        }
 
-        showToast("Enviando resumo por e-mail...", "info");
+        return `
+            <div class="notification-item ${notification.isRead ? 'read' : ''}" data-id="${notification.id}">
+                <div class="notification-icon"><i class="fas ${icon}"></i></div>
+                <div class="notification-content">
+                    <div class="notification-header">
+                        <strong>${title}</strong>
+                        <span class="notification-time">${new Date(notification.timestamp).toLocaleString('pt-BR')}</span>
+                    </div>
+                    <p class="notification-message">${notification.message}</p>
+                    <div class="notification-actions">
+                        ${actionHtml}
+                        ${!notification.isActionable ? `<button class="btn btn-secondary btn-sm" data-action="${ACTIONS.DISMISS_MANUAL_ALERT}" data-notification-id="${notification.id}">Dispensar</button>` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 
-        emailjs.send(emailConfig.serviceId, emailConfig.templateId, templateParams)
-            .then((response) => {
-                showToast("Resumo enviado com sucesso!", "success");
-                createLog('EMAIL_SUCCESS', 'Resumo por e-mail enviado com sucesso.', 'Sistema');
-                console.log('E-mail enviado com sucesso!', response.status, response.text);
-                resolve(response);
-            }, (error) => {
-                showToast("Falha ao enviar o e-mail. Verifique o console para detalhes.", "error");
-                createLog('EMAIL_FAIL', `Falha no envio do e-mail. Erro: ${error.text || 'desconhecido'}.`, 'Sistema');
-                console.error('Falha ao enviar e-mail:', error);
-                reject(error);
-            });
-    });
+    const clearButton = notifications.some(n => !n.isActionable) ?
+        `<div class="notification-footer"><button class="btn btn-link" data-action="${ACTIONS.CLEAR_ALL_NOTIFICATIONS}">Limpar não acionáveis</button></div>` :
+        '';
+
+    panel.innerHTML = `
+        <div class="notification-panel-header">
+            <h3>Notificações</h3>
+        </div>
+        <div class="notification-list">
+            ${html}
+        </div>
+        ${clearButton}
+    `;
 }
+
+export {
+    initializeNotificationManager,
+    add as addNotification,
+    remove as removeNotification,
+    clearAll as clearAllNotifications
+};

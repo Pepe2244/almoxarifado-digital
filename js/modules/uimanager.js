@@ -205,8 +205,8 @@ function renderUnifiedDashboardComponent() {
             <h2><i class="fas fa-tachometer-alt"></i> Dashboard de Análise</h2>
             <div class="header-actions">
                  <button class="btn btn-icon-only toggle-dashboard-btn" data-action="toggle-dashboard" data-target="unified-dashboard" title="Mostrar/Ocultar Painel">
-                    <i class="fas ${iconClass}"></i>
-                </button>
+                     <i class="fas ${iconClass}"></i>
+                 </button>
             </div>
         </div>
         <div class="card-body" style="padding-top: 0.5rem;">
@@ -238,7 +238,7 @@ function renderUnifiedDashboardComponent() {
                 </div>
                 <div id="lifecycle-tab-content" class="dashboard-tab-content ${activeTab === 'lifecycle' ? 'active' : ''}">
                      <div id="lifecycle-predictive-container" class="predictive-grid"></div>
-                     <div id="lifecycle-pagination-container" class="card-footer"></div>
+                       <div id="lifecycle-pagination-container" class="card-footer"></div>
                 </div>
             </div>
         </div>
@@ -2846,67 +2846,6 @@ function openCollaboratorDashboardModal(collaboratorId) {
     });
 }
 
-function showFormErrors(form, errors) {
-    clearFormErrors(form);
-    errors.forEach(error => {
-        const field = form.querySelector(`[name="${error.field}"]`);
-        if (field) {
-            field.classList.add('is-invalid');
-            let errorElement = field.nextElementSibling;
-            if (errorElement && errorElement.classList.contains('form-error-message')) {
-                errorElement.textContent = error.message;
-            } else {
-                errorElement = document.createElement('div');
-                errorElement.className = 'form-error-message';
-                errorElement.textContent = error.message;
-                field.parentNode.insertBefore(errorElement, field.nextSibling);
-            }
-        }
-    });
-    if (errors.length > 0) {
-        showToast(errors[0].message, 'error');
-    }
-}
-
-function clearFormErrors(form) {
-    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    form.querySelectorAll('.form-error-message').forEach(el => el.remove());
-}
-
-function checkBackupReminder() {
-    const settings = getSettings();
-    if (!settings.backupReminder) return;
-
-    const { lastBackupDate, frequencyDays } = settings.backupReminder;
-
-    if (!lastBackupDate) {
-        openConfirmationModal({
-            title: 'Lembrete de Backup',
-            message: 'Você ainda não fez nenhum backup. É altamente recomendável fazer um agora para garantir a segurança dos seus dados.',
-            onConfirm: () => {
-                backupData();
-                closeModal(MODAL_IDS.CONFIRMATION);
-            }
-        });
-        return;
-    }
-
-    const lastBackup = new Date(lastBackupDate);
-    const today = new Date();
-    const daysSinceLastBackup = Math.floor((today.getTime() - lastBackup.getTime()) / (1000 * 3600 * 24));
-
-    if (daysSinceLastBackup >= frequencyDays) {
-        openConfirmationModal({
-            title: 'Lembrete de Backup',
-            message: `Já se passaram ${daysSinceLastBackup} dia(s) desde o seu último backup. Que tal fazer um agora?`,
-            onConfirm: () => {
-                backupData();
-                closeModal(MODAL_IDS.CONFIRMATION);
-            }
-        });
-    }
-}
-
 function openKitReturnModal(kitId, allocationId) {
     const kit = getItemById(kitId);
     const allocation = kit?.allocations.find(a => a.id === allocationId);
@@ -3269,4 +3208,86 @@ function renderAvailableItemsForKitAssembly(kitId, modal) {
             checkbox.checked = selectAllCheckbox.checked;
         });
     };
+}
+
+async function printSignedReceipt(receiptId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/receipts`);
+        if (!response.ok) throw new Error('Falha ao buscar comprovantes');
+        const receipts = await response.json();
+        const receipt = receipts.find(r => r.id.toString() === receiptId);
+
+        if (!receipt) {
+            showToast('Comprovante não encontrado.', 'error');
+            return;
+        }
+
+        const items = JSON.parse(receipt.items);
+        const itemsHtml = items.map(item => `
+            <tr>
+                <td>${item.quantity}x ${item.name}</td>
+            </tr>
+        `).join('');
+
+        const printContent = `
+            <!DOCTYPE html>
+            <html lang="pt-BR">
+            <head>
+                <meta charset="UTF-8">
+                <title>Comprovante de Recebimento - ID ${receipt.id}</title>
+                <style>
+                    body { font-family: Arial, sans-serif; margin: 20px; }
+                    .receipt-container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #ccc; padding: 20px; }
+                    .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
+                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+                    .info-item { display: flex; flex-direction: column; }
+                    .info-item strong { font-size: 0.8em; color: #555; }
+                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    .items-table th, .items-table td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
+                    .proof-section { text-align: center; }
+                    .proof-section img { max-width: 250px; border: 1px solid #ddd; padding: 5px; }
+                    @media print {
+                        body { margin: 0; }
+                        .receipt-container { border: none; box-shadow: none; }
+                        button { display: none; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt-container">
+                    <div class="header">
+                        <h1>Comprovante de Recebimento</h1>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><strong>Colaborador:</strong> ${receipt.collaborator_name}</div>
+                        <div class="info-item"><strong>Data e Hora:</strong> ${new Date(receipt.created_at).toLocaleString('pt-BR')}</div>
+                        <div class="info-item"><strong>Cargo:</strong> ${receipt.collaborator_role || 'Não informado'}</div>
+                        <div class="info-item"><strong>Local/Cliente:</strong> ${receipt.delivery_location || 'Não especificado'}</div>
+                    </div>
+                    
+                    <h3>Itens Recebidos</h3>
+                    <table class="items-table">
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+
+                    <div class="proof-section">
+                        <h3>Comprovação Fotográfica</h3>
+                        <img src="${receipt.proof_image}" alt="Foto do colaborador">
+                    </div>
+                </div>
+            </body>
+            </html>
+        `;
+
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.onload = function () {
+            printWindow.print();
+        };
+
+    } catch (error) {
+        console.error('Erro ao gerar comprovante para impressão:', error);
+        showToast('Não foi possível gerar o comprovante para impressão.', 'error');
+    }
 }

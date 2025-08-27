@@ -11,7 +11,6 @@ const DB_KEYS = {
 };
 
 const ACTIONS = {
-    // Ações existentes...
     TOGGLE_DASHBOARD: 'toggle-dashboard',
     ADD_NEW_TYPE: 'add-new-type',
     DELETE_TYPE: 'delete-type',
@@ -58,21 +57,14 @@ const ACTIONS = {
     ADD_ITEM_TO_OS: 'add-item-to-os',
     REMOVE_ITEM_FROM_OS: 'remove-item-from-os',
     RETURN_ITEM_FROM_OS: 'return-item-from-os',
-
-    // Ações do carrinho de saída
     START_CHECKOUT_SESSION: 'start-checkout-session',
     ADD_TO_CART: 'add-to-cart',
     CANCEL_CHECKOUT_SESSION: 'cancel-checkout-session',
-
-    // Ações do carrinho de devolução
     START_RETURN_SESSION: 'start-return-session',
     CANCEL_RETURN_SESSION: 'cancel-return-session',
-
-    // Novas ações para a montagem de kits em lote
     OPEN_KIT_ASSEMBLY_BULK: 'open-kit-assembly-bulk',
     CANCEL_KIT_ASSEMBLY_BULK: 'cancel-kit-assembly-bulk',
-
-    // Cancelamentos existentes...
+    PRINT_SIGNED_RECEIPT: 'print-signed-receipt',
     CANCEL_BARCODE_ACTION: 'cancel-barcode-action',
     CANCEL_SETTINGS: 'cancel-settings',
     CANCEL_ITEM_FORM: 'cancel-item-form-modal',
@@ -107,7 +99,6 @@ const ACTIONS = {
 };
 
 const MODAL_IDS = {
-    // IDs existentes...
     SETTINGS: 'settings-modal',
     ITEM_FORM: 'item-form-modal',
     ITEM_BATCHES: 'item-batches-modal',
@@ -134,8 +125,6 @@ const MODAL_IDS = {
     SERVICE_ORDER_DETAILS: 'service-order-details-modal',
     CART_CHECKOUT: 'cart-checkout-modal',
     RETURN_CART: 'return-cart-modal',
-
-    // Novo ID para o modal de montagem de kit
     KIT_ASSEMBLY_BULK: 'kit-assembly-bulk-modal'
 };
 
@@ -148,7 +137,8 @@ const ALERT_TYPES = {
     VALIDITY_WARNING: 'validity_warning',
     PRICE_CHECK_REMINDER: 'price_check_reminder',
     MAINTENANCE_NEEDED: 'maintenance_needed',
-    BACKUP_REMINDER: 'backup_reminder'
+    BACKUP_REMINDER: 'backup_reminder',
+    SIGNED_RECEIPT: 'signed_receipt'
 };
 
 const ITEM_HISTORY_LIMIT = 50;
