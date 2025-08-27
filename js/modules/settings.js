@@ -1,4 +1,3 @@
-// almoxarifado-digital/js/modules/settings.js
 function getSettings() {
     let settings = loadDataFromLocal(DB_KEYS.SETTINGS);
     const defaultSettings = {
@@ -51,6 +50,7 @@ function getSettings() {
             frequencyDays: 7
         },
         notificationBehaviors: {
+            [ALERT_TYPES.SIGNED_RECEIPT]: 'info',
             [ALERT_TYPES.LOW_STOCK]: 'action',
             [ALERT_TYPES.VALIDITY_EXPIRED]: 'action',
             [ALERT_TYPES.PENDING_COUNT]: 'action',
@@ -145,6 +145,7 @@ function initializeSettings() {
             frequencyDays: 7
         },
         notificationBehaviors: {
+            [ALERT_TYPES.SIGNED_RECEIPT]: 'info',
             [ALERT_TYPES.LOW_STOCK]: 'action',
             [ALERT_TYPES.VALIDITY_EXPIRED]: 'action',
             [ALERT_TYPES.PENDING_COUNT]: 'action',

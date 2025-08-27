@@ -265,8 +265,10 @@ function getMaintenanceAlerts(predictiveData) {
 
 function getAllAlerts() {
     const predictiveData = generateUnifiedPredictiveAnalysis();
+    const persistentNotifications = loadDataFromLocal(DB_KEYS.PERSISTENT_ALERTS) || [];
 
     return [
+        ...persistentNotifications,
         ...getLowStockItems(),
         ...getPriceVariationAlerts(),
         ...getPredictiveAlerts(predictiveData),
@@ -298,7 +300,7 @@ function dismissAllNotifications() {
     let dismissedCount = 0;
     allCurrentAlerts.forEach(alert => {
         if (behaviors[alert.type] === 'info' && !dismissedAlerts[alert.id]) {
-            dismissedAlerts[alert.id] = {
+            dismissedAlerts[alertId] = {
                 dismissedAt: new Date().toISOString()
             };
             dismissedCount++;

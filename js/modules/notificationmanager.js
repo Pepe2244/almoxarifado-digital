@@ -86,7 +86,6 @@ function renderNotifications() {
                 icon = 'fa-signature';
                 title = 'Comprovante Assinado';
                 action = ACTIONS.PRINT_SIGNED_RECEIPT;
-                notification.isActionable = true;
                 break;
             default:
                 icon = 'fa-info-circle';
