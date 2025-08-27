@@ -2342,14 +2342,16 @@ function openConfirmationModal(options) {
             if (details.customHTML) {
                 messageHtml += details.customHTML;
             }
-            if (details.addedCount > 0) {
+            // ✅ CORREÇÃO APLICADA AQUI
+            if (details.addedCount > 0 && Array.isArray(details.addedNames)) {
                 messageHtml += `<h6>Adicionados (${details.addedCount}):</h6><ul class="feedback-list">`;
                 details.addedNames.forEach(name => {
                     messageHtml += `<li><i class="fas fa-check-circle success"></i> ${name}</li>`;
                 });
                 messageHtml += '</ul>';
             }
-            if (details.ignoredCount > 0) {
+            // ✅ E AQUI TAMBÉM
+            if (details.ignoredCount > 0 && Array.isArray(details.ignoredNames)) {
                 messageHtml += `<h6>Ignorados (${details.ignoredCount}):</h6><ul class="feedback-list">`;
                 details.ignoredNames.forEach(name => {
                     messageHtml += `<li><i class="fas fa-times-circle danger"></i> ${name}</li>`;
