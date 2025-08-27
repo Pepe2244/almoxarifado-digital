@@ -1,31 +1,13 @@
-import {
-    DB_KEYS,
-    ACTIONS,
-    ALERT_TYPES
-} from '../constants.js';
-import {
-    getData,
-    saveData
-} from './dataHandler.js';
-import {
-    settings
-} from './settings.js';
-import {
-    getItemById
-} from './itemManager.js';
-import {
-    formatCurrency
-} from './utils.js';
-
 let notifications = [];
 
 function initializeNotificationManager() {
-    notifications = getData(DB_KEYS.PERSISTENT_ALERTS) || [];
+    notifications = loadDataFromLocal(DB_KEYS.PERSISTENT_ALERTS) || [];
     renderNotifications();
     updateBadge();
 }
 
-function add(type, message, relatedId, isActionable = false) {
+function addNotification(type, message, relatedId, isActionable = false) {
+    const settings = getSettings();
     const newNotification = {
         id: `notif_${new Date().getTime()}_${Math.random()}`,
         type,
@@ -37,27 +19,29 @@ function add(type, message, relatedId, isActionable = false) {
     };
 
     notifications.unshift(newNotification);
-    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    saveDataToLocal(DB_KEYS.PERSISTENT_ALERTS, notifications);
     renderNotifications();
     updateBadge();
 }
 
-function remove(notificationId) {
+function removeNotification(notificationId) {
     notifications = notifications.filter(n => n.id !== notificationId);
-    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    saveDataToLocal(DB_KEYS.PERSISTENT_ALERTS, notifications);
     renderNotifications();
     updateBadge();
 }
 
-function clearAll() {
+function clearAllNotifications() {
     notifications = notifications.filter(n => n.isActionable);
-    saveData(DB_KEYS.PERSISTENT_ALERTS, notifications);
+    saveDataToLocal(DB_KEYS.PERSISTENT_ALERTS, notifications);
     renderNotifications();
     updateBadge();
 }
 
 function updateBadge() {
     const badge = document.getElementById('notification-count-badge');
+    if (!badge) return;
+
     const unreadCount = notifications.filter(n => !n.isRead).length;
     if (unreadCount > 0) {
         badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
@@ -72,12 +56,14 @@ function renderNotifications() {
     if (!panel) return;
 
     if (notifications.length === 0) {
-        panel.innerHTML = '<div class="notification-item empty">Nenhuma notificação.</div>';
+        panel.innerHTML = '<div class="notification-item empty" style="text-align: center; padding: 1rem;">Nenhuma notificação.</div>';
         return;
     }
 
     let html = notifications.map(notification => {
-        let icon, title, actionHtml = '',
+        let icon = '',
+            title = '',
+            actionHtml = '',
             action = null;
 
         switch (notification.type) {
@@ -102,6 +88,10 @@ function renderNotifications() {
                 action = ACTIONS.PRINT_SIGNED_RECEIPT;
                 notification.isActionable = true;
                 break;
+            default:
+                icon = 'fa-info-circle';
+                title = 'Aviso';
+                break;
         }
 
         if (notification.isActionable && action) {
@@ -114,7 +104,7 @@ function renderNotifications() {
                 <div class="notification-content">
                     <div class="notification-header">
                         <strong>${title}</strong>
-                        <span class="notification-time">${new Date(notification.timestamp).toLocaleString('pt-BR')}</span>
+                        <span class="notification-time">${new Date(notification.timestamp).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
                     </div>
                     <p class="notification-message">${notification.message}</p>
                     <div class="notification-actions">
@@ -127,23 +117,18 @@ function renderNotifications() {
     }).join('');
 
     const clearButton = notifications.some(n => !n.isActionable) ?
-        `<div class="notification-footer"><button class="btn btn-link" data-action="${ACTIONS.CLEAR_ALL_NOTIFICATIONS}">Limpar não acionáveis</button></div>` :
+        `<div class="notification-footer" style="padding: 0.5rem; text-align: center; border-top: 1px solid var(--border-color);">
+            <button class="btn btn-link" data-action="${ACTIONS.CLEAR_ALL_NOTIFICATIONS}" style="font-size: 0.8em;">Limpar dispensáveis</button>
+         </div>` :
         '';
 
     panel.innerHTML = `
         <div class="notification-panel-header">
             <h3>Notificações</h3>
         </div>
-        <div class="notification-list">
+        <div class="notification-list" style="max-height: 300px; overflow-y: auto;">
             ${html}
         </div>
         ${clearButton}
     `;
 }
-
-export {
-    initializeNotificationManager,
-    add as addNotification,
-    remove as removeNotification,
-    clearAll as clearAllNotifications
-};

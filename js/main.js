@@ -4,6 +4,22 @@ document.addEventListener('DOMContentLoaded', () => {
         return loadDataFromLocal(DB_KEYS.SIGNED_RECEIPTS) || [];
     }
 
+    function initializeEmailJS() {
+        const settings = getSettings();
+        if (settings.emailSettings && settings.emailSettings.publicKey) {
+            try {
+                emailjs.init(settings.emailSettings.publicKey);
+                console.log("EmailJS inicializado com sucesso.");
+            } catch (e) {
+                console.error("Falha ao inicializar o EmailJS. Verifique sua Public Key.", e);
+                showToast("EmailJS: Verifique sua Public Key.", "error");
+            }
+        } else {
+            console.warn("EmailJS Public Key não encontrada nas configurações. Funcionalidades de e-mail estarão desabilitadas.");
+        }
+    }
+
+
     async function initializeApp() {
         try {
             await initializeDB();
@@ -11,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const settings = getSettings();
 
             initializeEmailJS();
+            initializeNotificationManager();
 
             const warehouseTitle = document.querySelector('#warehouse-title');
             if (warehouseTitle) {
@@ -243,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 true;
         });
 
-        const filteredDebits = allDebits.filter(debit => {
+        const filteredDebits = getAllDebits().filter(debit => {
             const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || '';
             return debitSearchTerm ?
                 collaboratorName.toLowerCase().includes(debitSearchTerm) ||
