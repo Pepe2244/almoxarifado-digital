@@ -1,21 +1,26 @@
-// backend/server.js
-
 const express = require('express');
-// A usar o 'pg' em vez de 'mysql2' para conectar ao PostgreSQL
 const { Pool } = require('pg');
 const cors = require('cors');
-const crypto = require('crypto'); // Módulo nativo do Node.js para gerar o token
+const crypto = require('crypto');
 require('dotenv').config();
+const http = require('http');
+const { Server } = require("socket.io");
 
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+        methods: ["GET", "POST"]
+    }
+});
+
 app.use(cors());
-// Limite de payload aumentado para 25mb para acomodar o upload de fotos em base64
 app.use(express.json({ limit: '25mb' }));
 
-// Armazenamento em memória para os links de comprovante temporários
 const temporaryReceipts = new Map();
 
-// Configuração da conexão com o banco de dados PostgreSQL (Neon)
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -23,13 +28,12 @@ const pool = new Pool({
     }
 });
 
-// Testar a conexão
 pool.connect((err, client, release) => {
     if (err) {
         return console.error('Erro ao adquirir cliente da pool de conexão', err.stack);
     }
     client.query('SELECT NOW()', (err, result) => {
-        release(); // Liberar o cliente de volta para a pool
+        release();
         if (err) {
             return console.error('Erro ao executar a query de teste', err.stack);
         }
@@ -37,20 +41,12 @@ pool.connect((err, client, release) => {
     });
 });
 
-// Função auxiliar para executar queries de forma segura
 const query = (text, params) => pool.query(text, params);
 
-
-// Rota de teste
 app.get('/', (req, res) => {
     res.send('API do Almoxarifado Digital está no ar!');
 });
 
-// ==================================================================
-// == ROTAS PARA GERAR E BUSCAR COMPROVANTES (ATUALIZADAS) ==
-// ==================================================================
-
-// ROTA POST: Gerar um link único para um novo comprovante
 app.post('/api/generate-receipt', (req, res) => {
     const { collaboratorId, collaboratorName, collaboratorRole, collaboratorRegistration, deliveryLocation, items, service_order_id } = req.body;
 
@@ -75,12 +71,11 @@ app.post('/api/generate-receipt', (req, res) => {
     setTimeout(() => {
         temporaryReceipts.delete(token);
         console.log(`Comprovante com token ${token} expirou e foi removido.`);
-    }, 3600 * 1000); // 1 hora
+    }, 3600 * 1000);
 
     res.status(200).json({ token });
 });
 
-// ROTA GET: Obter os dados de um comprovante a partir de um token
 app.get('/api/receipt-data/:token', (req, res) => {
     const { token } = req.params;
     const receiptData = temporaryReceipts.get(token);
@@ -91,11 +86,6 @@ app.get('/api/receipt-data/:token', (req, res) => {
         res.status(404).json({ error: 'Comprovante não encontrado ou expirado. Por favor, gere um novo link.' });
     }
 });
-
-
-// ==================================================================
-// == ROTAS PARA ITENS (Adaptadas para PostgreSQL) ==
-// ==================================================================
 
 app.get('/api/items', async (req, res) => {
     try {
@@ -121,7 +111,6 @@ app.post('/api/items', async (req, res) => {
 
 app.put('/api/items/:id', async (req, res) => {
     const { id } = req.params;
-    // Extrair apenas os campos que podem ser atualizados para evitar erros
     const { name, description, quantity, location, patrimony, serial_number, is_active } = req.body;
     const sql = 'UPDATE items SET name = $1, description = $2, quantity = $3, location = $4, patrimony = $5, serial_number = $6, is_active = $7, updated_at = NOW() WHERE id = $8 RETURNING *';
     try {
@@ -136,22 +125,17 @@ app.put('/api/items/:id', async (req, res) => {
     }
 });
 
-// Desativar um item (soft delete)
 app.delete('/api/items/:id', async (req, res) => {
     const { id } = req.params;
     const sql = 'UPDATE items SET is_active = FALSE, updated_at = NOW() WHERE id = $1';
     try {
         await query(sql, [id]);
-        res.sendStatus(204); // Sem conteúdo, sucesso
+        res.sendStatus(204);
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
 });
-
-// ==================================================================
-// == ROTAS PARA COLABORADORES (Adaptadas para PostgreSQL) ==
-// ==================================================================
 
 app.get('/api/collaborators', async (req, res) => {
     try {
@@ -203,11 +187,6 @@ app.delete('/api/collaborators/:id', async (req, res) => {
     }
 });
 
-
-// ==================================================================
-// == ROTAS PARA ORDENS DE SERVIÇO (Adaptadas para PostgreSQL) ==
-// ==================================================================
-
 app.get('/api/service-orders', async (req, res) => {
     const sql = `
         SELECT so.*, c.name as collaborator_name
@@ -243,39 +222,32 @@ app.get('/api/service-orders/:id/items', async (req, res) => {
 
 app.post('/api/service-orders', async (req, res) => {
     const { collaborator_id, items, notes } = req.body;
-    const client = await pool.connect(); // Obter um cliente da pool para a transação
+    const client = await pool.connect();
 
     try {
-        await client.query('BEGIN'); // Iniciar transação
+        await client.query('BEGIN');
 
         const soSql = 'INSERT INTO service_orders (collaborator_id, notes) VALUES ($1, $2) RETURNING id';
         const soResult = await client.query(soSql, [collaborator_id, notes]);
         const serviceOrderId = soResult.rows[0].id;
 
-        // PostgreSQL é mais eficiente com um único INSERT com múltiplos valores
         const itemsSql = 'INSERT INTO service_order_items (service_order_id, item_id, quantity_requested) VALUES ($1, $2, $3)';
 
-        // Executar um INSERT para cada item
         for (const item of items) {
             await client.query(itemsSql, [serviceOrderId, item.id, item.quantity]);
         }
 
-        await client.query('COMMIT'); // Finalizar transação com sucesso
+        await client.query('COMMIT');
         res.status(201).json({ id: serviceOrderId, message: 'Ordem de serviço criada com sucesso!' });
 
     } catch (err) {
-        await client.query('ROLLBACK'); // Desfazer transação em caso de erro
+        await client.query('ROLLBACK');
         console.error(err);
         res.status(500).json({ error: err.message });
     } finally {
-        client.release(); // Liberar o cliente de volta para a pool
+        client.release();
     }
 });
-
-
-// ==================================================================
-// == ROTAS PARA COMPROVANTES ASSINADOS (ATUALIZADAS) ==
-// ==================================================================
 
 app.post('/api/receipts', async (req, res) => {
     const {
@@ -290,15 +262,12 @@ app.post('/api/receipts', async (req, res) => {
 
     try {
         if (service_order_id) {
-            // Se houver uma ordem de serviço, a verificação é por ela
             const checkSql = 'SELECT id FROM signed_receipts WHERE service_order_id = $1';
             const { rows } = await query(checkSql, [service_order_id]);
             if (rows.length > 0) {
                 return res.status(409).json({ error: 'Este comprovante (via Ordem de Serviço) já foi enviado.' });
             }
         } else {
-            // Se NÃO houver ordem de serviço, verifica por uma combinação de colaborador, itens e tempo
-            // para evitar duplicatas acidentais em um curto período.
             const checkSql = `
                 SELECT id FROM signed_receipts
                 WHERE collaborator_id = $1
@@ -311,24 +280,26 @@ app.post('/api/receipts', async (req, res) => {
             }
         }
 
-        // Se nenhuma duplicata for encontrada, insere o novo comprovante
         const insertSql = `
             INSERT INTO signed_receipts
             (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image)
             VALUES ($1, $2, $3, $4, $5, $6, $7)
-            RETURNING id
+            RETURNING *
         `;
         const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image];
 
         const result = await query(insertSql, values);
-        res.status(201).json({ id: result.rows[0].id, message: 'Comprovante salvo com sucesso!' });
+        const newReceipt = result.rows[0];
+
+        io.emit('new_receipt_signed', newReceipt);
+
+        res.status(201).json({ id: newReceipt.id, message: 'Comprovante salvo com sucesso!' });
 
     } catch (err) {
         console.error("Erro ao processar comprovante:", err);
         res.status(500).json({ error: 'Erro interno do servidor ao processar o comprovante.' });
     }
 });
-
 
 app.get('/api/receipts', async (req, res) => {
     const sql = 'SELECT * FROM signed_receipts ORDER BY created_at DESC';
@@ -341,9 +312,15 @@ app.get('/api/receipts', async (req, res) => {
     }
 });
 
+io.on('connection', (socket) => {
+    console.log('Um usuário se conectou via WebSocket');
 
-// Iniciar o servidor
+    socket.on('disconnect', () => {
+        console.log('Usuário desconectado');
+    });
+});
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
 });

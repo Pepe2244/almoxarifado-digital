@@ -36,6 +36,24 @@ document.addEventListener('DOMContentLoaded', () => {
             addEventListeners();
             initializeHeaderFunctionality();
 
+            const socket = io('https://almoxarifado-api.onrender.com');
+
+            socket.on('connect', () => {
+                console.log('Conectado ao servidor de notificações via WebSocket.');
+                createLog('WEBSOCKET_CONNECT', 'Conectado ao servidor de notificações.', 'Sistema');
+            });
+
+            socket.on('new_receipt_signed', (receiptData) => {
+                const message = `Comprovante assinado por ${receiptData.collaborator_name}.`;
+                showToast(message, 'info');
+                createLog('RECEIPT_SIGNED_NOTIFICATION', `Notificação recebida: ${message}`, 'Sistema');
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+            });
+
+            socket.on('disconnect', () => {
+                console.log('Desconectado do servidor de notificações.');
+                createLog('WEBSOCKET_DISCONNECT', 'Desconectado do servidor de notificações.', 'Sistema');
+            });
 
             document.body.dispatchEvent(new CustomEvent('dataChanged'));
             createLog('SESSION_START', 'Sistema iniciado.', 'Sistema');
@@ -668,8 +686,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const collaboratorsToAdd = collaboratorsRaw.split('\n')
             .map(name => ({
                 name: name.trim(),
-                registration: '', // Garante que a propriedade existe
-                role: '' // Garante que a propriedade existe
+                registration: '',
+                role: ''
             }))
             .filter(c => c.name);
 
