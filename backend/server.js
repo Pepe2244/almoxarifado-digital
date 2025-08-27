@@ -288,35 +288,44 @@ app.post('/api/receipts', async (req, res) => {
         proof_image
     } = req.body;
 
-    // Verifica se já existe um comprovante para esta ordem de serviço
-    if (service_order_id) {
-        const checkSql = 'SELECT id FROM signed_receipts WHERE service_order_id = $1';
-        try {
+    try {
+        if (service_order_id) {
+            // Se houver uma ordem de serviço, a verificação é por ela
+            const checkSql = 'SELECT id FROM signed_receipts WHERE service_order_id = $1';
             const { rows } = await query(checkSql, [service_order_id]);
             if (rows.length > 0) {
-                // Retorna um erro 409 (Conflict) se o comprovante já existir
-                return res.status(409).json({ error: 'Este comprovante já foi enviado.' });
+                return res.status(409).json({ error: 'Este comprovante (via Ordem de Serviço) já foi enviado.' });
             }
-        } catch (err) {
-            console.error("Erro ao verificar o comprovante existente:", err);
-            return res.status(500).json({ error: 'Erro interno do servidor ao verificar o comprovante.' });
+        } else {
+            // Se NÃO houver ordem de serviço, verifica por uma combinação de colaborador, itens e tempo
+            // para evitar duplicatas acidentais em um curto período.
+            const checkSql = `
+                SELECT id FROM signed_receipts
+                WHERE collaborator_id = $1
+                  AND items = $2
+                  AND created_at > NOW() - INTERVAL '5 minutes'
+            `;
+            const { rows } = await query(checkSql, [collaborator_id, JSON.stringify(items)]);
+            if (rows.length > 0) {
+                return res.status(409).json({ error: 'Um comprovante idêntico foi enviado há poucos instantes. Tente novamente em alguns minutos se esta for uma nova entrega.' });
+            }
         }
-    }
 
-    const sql = `
-        INSERT INTO signed_receipts
-        (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING id
-    `;
-    const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image];
+        // Se nenhuma duplicata for encontrada, insere o novo comprovante
+        const insertSql = `
+            INSERT INTO signed_receipts
+            (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image)
+            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            RETURNING id
+        `;
+        const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image];
 
-    try {
-        const result = await query(sql, values);
+        const result = await query(insertSql, values);
         res.status(201).json({ id: result.rows[0].id, message: 'Comprovante salvo com sucesso!' });
+
     } catch (err) {
-        console.error("Erro ao salvar comprovante:", err);
-        res.status(500).json({ error: 'Erro interno do servidor ao salvar o comprovante.' });
+        console.error("Erro ao processar comprovante:", err);
+        res.status(500).json({ error: 'Erro interno do servidor ao processar o comprovante.' });
     }
 });
 
