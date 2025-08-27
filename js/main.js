@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', () => {
             socket.on('new_receipt_signed', (receiptData) => {
                 const message = `Comprovante assinado por ${receiptData.collaborator_name}.`;
                 showToast(message, 'info');
+                addNotification(ALERT_TYPES.SIGNED_RECEIPT, message, receiptData.id, true);
                 createLog('RECEIPT_SIGNED_NOTIFICATION', `Notificação recebida: ${message}`, 'Sistema');
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
             });
