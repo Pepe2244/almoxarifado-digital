@@ -262,7 +262,20 @@
                         body: JSON.stringify(finalReceiptData)
                     });
                     const result = await response.json();
-                    if (!response.ok) throw new Error(result.error);
+                    if (!response.ok) {
+                        if (response.status === 409) {
+                            // Exibe uma mensagem de que o comprovante já foi enviado
+                            container.innerHTML = `
+                                <div class="error">
+                                    <h1><i class="fas fa-exclamation-triangle"></i> Comprovante já enviado</h1>
+                                    <p>Este comprovante de recebimento já foi registrado anteriormente.</p>
+                                </div>
+                            `;
+                        } else {
+                            throw new Error(result.error);
+                        }
+                        return; 
+                    }
 
                     container.innerHTML = `
                         <div class="success">

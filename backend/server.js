@@ -288,6 +288,21 @@ app.post('/api/receipts', async (req, res) => {
         proof_image
     } = req.body;
 
+    // Verifica se já existe um comprovante para esta ordem de serviço
+    if (service_order_id) {
+        const checkSql = 'SELECT id FROM signed_receipts WHERE service_order_id = $1';
+        try {
+            const { rows } = await query(checkSql, [service_order_id]);
+            if (rows.length > 0) {
+                // Retorna um erro 409 (Conflict) se o comprovante já existir
+                return res.status(409).json({ error: 'Este comprovante já foi enviado.' });
+            }
+        } catch (err) {
+            console.error("Erro ao verificar o comprovante existente:", err);
+            return res.status(500).json({ error: 'Erro interno do servidor ao verificar o comprovante.' });
+        }
+    }
+
     const sql = `
         INSERT INTO signed_receipts
         (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image)
