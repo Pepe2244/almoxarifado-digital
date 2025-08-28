@@ -1,3 +1,23 @@
+function clearFormErrors(form) {
+    const errorMessages = form.querySelectorAll('.error-message');
+    errorMessages.forEach(msg => msg.remove());
+    const errorInputs = form.querySelectorAll('.is-invalid');
+    errorInputs.forEach(input => input.classList.remove('is-invalid'));
+}
+
+function showFormErrors(form, errors) {
+    errors.forEach(error => {
+        const field = form.querySelector(`[name="${error.field}"]`);
+        if (field) {
+            field.classList.add('is-invalid');
+            const errorElement = document.createElement('div');
+            errorElement.className = 'error-message';
+            errorElement.textContent = error.message;
+            field.parentElement.appendChild(errorElement);
+        }
+    });
+    showToast('Por favor, corrija os erros no formulário.', 'error');
+}
 // Variáveis globais para controle de estado da UI
 let lastScrollY = 0;
 let lastFocusedElement = null;

@@ -1652,3 +1652,13 @@ body:not(.batch-mode-checkout) .actions-container button[data-action="add-to-car
     gap: 1rem;
     margin-top: 1.5rem;
 }
+
+.error-message {
+    color: var(--danger-color);
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+
+.is-invalid {
+    border-color: var(--danger-color) !important;
+}

@@ -8,20 +8,21 @@ function generateCollaboratorId() {
 }
 
 function addCollaborator(collaboratorDetails) {
-    clearFormErrors(document.getElementById('collaborator-form'));
     const validationErrors = validateCollaboratorDetails(collaboratorDetails);
     if (validationErrors.length > 0) {
-        showFormErrors(document.getElementById('collaborator-form'), validationErrors);
-        return false;
+        // A UI (quem chamou a função) será responsável por exibir os erros.
+        return { success: false, errors: validationErrors };
     }
+
     let collaborators = getAllCollaborators();
-    if (collaboratorDetails.registration) {
+    if (collaboratorDetails.registration && collaboratorDetails.registration.trim() !== '') {
         const existingCollaborator = collaborators.find(c => c.registration && c.registration.toLowerCase() === collaboratorDetails.registration.toLowerCase());
         if (existingCollaborator) {
             showToast(`Colaborador com a matrícula "${collaboratorDetails.registration}" já existe.`, "error");
-            return false;
+            return { success: false };
         }
     }
+
     const newCollaborator = {
         id: generateCollaboratorId(),
         name: collaboratorDetails.name.trim(),
@@ -31,7 +32,7 @@ function addCollaborator(collaboratorDetails) {
     };
     collaborators.push(newCollaborator);
     saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
-    return newCollaborator;
+    return { success: true, collaborator: newCollaborator };
 }
 
 
@@ -77,23 +78,26 @@ function getAllCollaborators() {
 }
 
 function updateCollaborator(id, updatedDetails) {
-    clearFormErrors(document.getElementById('collaborator-form'));
     const validationErrors = validateCollaboratorDetails(updatedDetails);
     if (validationErrors.length > 0) {
-        showFormErrors(document.getElementById('collaborator-form'), validationErrors);
-        return false;
+        return { success: false, errors: validationErrors };
     }
+
     let collaborators = getAllCollaborators();
     const index = collaborators.findIndex(c => c.id === id);
     if (index === -1) {
         showToast("Colaborador não encontrado.", "error");
-        return false;
+        return { success: false };
     }
-    const existingCollaboratorWithRegistration = collaborators.find(c => c.id !== id && c.registration.toLowerCase() === updatedDetails.registration.toLowerCase());
-    if (existingCollaboratorWithRegistration) {
-        showToast(`Colaborador com a matrícula "${updatedDetails.registration}" já existe.`, "error");
-        return false;
+
+    if (updatedDetails.registration && updatedDetails.registration.trim() !== '') {
+        const existingCollaboratorWithRegistration = collaborators.find(c => c.id !== id && c.registration.toLowerCase() === updatedDetails.registration.toLowerCase());
+        if (existingCollaboratorWithRegistration) {
+            showToast(`Colaborador com a matrícula "${updatedDetails.registration}" já existe.`, "error");
+            return { success: false };
+        }
     }
+
     collaborators[index] = {
         ...collaborators[index],
         name: updatedDetails.name.trim(),
@@ -102,7 +106,7 @@ function updateCollaborator(id, updatedDetails) {
         updatedAt: new Date().toISOString()
     };
     saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
-    return true;
+    return { success: true };
 }
 
 function deleteCollaborator(id) {
