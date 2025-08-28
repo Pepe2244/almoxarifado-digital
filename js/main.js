@@ -1530,9 +1530,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 break;
             }
-            case ACTIONS.MANAGE_KIT:
-                openKitManagementModal(id);
-                break;
             case ACTIONS.DISMISS_MANUAL_ALERT: {
                 const notificationItemToDismiss = button.closest('.notification-item');
                 if (notificationItemToDismiss && notificationItemToDismiss.dataset.alertData) {
@@ -1719,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        const debouncedSearch = debounce(() => {
+        const performSearch = () => {
             document.body.dispatchEvent(new CustomEvent('resetPage', {
                 detail: {
                     table: 'item'
@@ -1750,14 +1747,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     table: 'serviceOrder'
                 }
             }));
-            debouncedUpdateDashboard();
-        }, 300);
+            updateDashboard();
+        };
 
-        document.body.addEventListener('input', (event) => {
+        document.body.addEventListener('keydown', (event) => {
             if (event.target.matches('#search-input, #collaborator-search-input, #debit-search-input, #log-search-input, #kit-search-input, #os-search-input')) {
-                debouncedSearch();
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    performSearch();
+                }
             }
         });
+
 
         document.body.addEventListener('mouseover', (event) => {
             const searchContainer = event.target.closest('.search-container');
