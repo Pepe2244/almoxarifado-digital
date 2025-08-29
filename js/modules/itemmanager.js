@@ -65,9 +65,12 @@ function updateAffectedKits(componentId, allItemsList) {
 
 async function createItem(itemDetails) {
     const allItems = getAllItems();
-    const existingItemByName = allItems.find(item => item.name.toLowerCase() === itemDetails.name.toLowerCase());
-    if (existingItemByName) {
-        showToast(`Item com o nome "${itemDetails.name}" já existe.`, "error");
+    const existingItemByNameAndCompany = allItems.find(item =>
+        item.name.toLowerCase() === itemDetails.name.toLowerCase() &&
+        item.empresa === itemDetails.empresa
+    );
+    if (existingItemByNameAndCompany) {
+        showToast(`Item com o nome "${itemDetails.name}" já existe para a empresa "${itemDetails.empresa}".`, "error");
         return null;
     }
     if (itemDetails.barcode && itemDetails.barcode.trim() !== '') {
@@ -163,18 +166,6 @@ function addMultipleItems(itemsToAdd) {
     const existingNames = new Set(allItems.map(item => item.name.toLowerCase()));
     const settings = getSettings();
 
-    // Conjunto para rastrear localizações ocupadas para evitar duplicatas em massa
-    const occupiedLocations = new Set(
-        allItems
-            .map(item => {
-                if (item.location && item.location.aisle) {
-                    return `${item.location.aisle}-${item.location.shelf}-${item.location.box}`;
-                }
-                return null;
-            })
-            .filter(Boolean)
-    );
-
     itemsToAdd.forEach(itemDetails => {
         const trimmedName = itemDetails.name.trim();
         if (!trimmedName || existingNames.has(trimmedName.toLowerCase())) {
@@ -183,10 +174,6 @@ function addMultipleItems(itemsToAdd) {
             return;
         }
         const isReturnable = settings.returnableTypes.includes(itemDetails.type || 'Ferramenta');
-
-        // Obter uma localização sugerida para o novo item
-        const suggestedLocation = suggestLocation(itemDetails.type, occupiedLocations);
-
         const newItem = {
             id: generateItemId(),
             name: trimmedName,
@@ -201,7 +188,7 @@ function addMultipleItems(itemsToAdd) {
             price: 0,
             shelfLifeDays: 0,
             hasImage: false,
-            location: suggestedLocation || {
+            location: {
                 aisle: '',
                 shelf: '',
                 box: ''
@@ -218,12 +205,6 @@ function addMultipleItems(itemsToAdd) {
             kitItems: undefined,
             createdAt: new Date().toISOString()
         };
-
-        // Adicionar a nova localização ao conjunto de ocupadas para a próxima iteração
-        if (suggestedLocation) {
-            occupiedLocations.add(`${suggestedLocation.aisle}-${suggestedLocation.shelf}-${suggestedLocation.box}`);
-        }
-
         allItems.push(newItem);
         existingNames.add(newItem.name.toLowerCase());
         addedCount++;
