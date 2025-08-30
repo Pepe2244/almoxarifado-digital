@@ -261,13 +261,7 @@ app.post('/api/receipts', async (req, res) => {
     } = req.body;
 
     try {
-        if (service_order_id) {
-            const checkSql = 'SELECT id FROM signed_receipts WHERE service_order_id = $1';
-            const { rows } = await query(checkSql, [service_order_id]);
-            if (rows.length > 0) {
-                return res.status(409).json({ error: 'Este comprovante (via Ordem de Serviço) já foi enviado.' });
-            }
-        } else {
+        if (!service_order_id) {
             const checkSql = `
                 SELECT id FROM signed_receipts
                 WHERE collaborator_id = $1
