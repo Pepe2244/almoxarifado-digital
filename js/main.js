@@ -19,6 +19,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function sendSummaryEmail() {
+        const settings = getSettings();
+        if (!settings.emailSettings || !settings.emailSettings.serviceId || !settings.emailSettings.templateId || !settings.emailSettings.recipientEmail) {
+            showToast("Configurações de e-mail incompletas. Verifique as configurações.", "error");
+            return Promise.reject("Email settings incomplete.");
+        }
+
+        const allItems = getAllItems();
+        const lowStockItems = getLowStockItems();
+        const pendingDebits = getAllDebits().filter(d => !d.isSettled);
+
+        let emailBody = `<h2>Resumo do Almoxarifado Digital - ${new Date().toLocaleDateString('pt-BR')}</h2>`;
+
+        emailBody += `<h3><i class="fas fa-boxes"></i> Status Geral do Estoque</h3>
+                      <p>Total de Itens Cadastrados: ${allItems.length}</p>`;
+
+        if (lowStockItems.length > 0) {
+            emailBody += `<h3><i class="fas fa-exclamation-triangle"></i> Itens com Estoque Baixo (${lowStockItems.length})</h3><ul>`;
+            lowStockItems.forEach(alert => {
+                emailBody += `<li>${alert.message}</li>`;
+            });
+            emailBody += `</ul>`;
+        } else {
+            emailBody += `<p>Nenhum item com estoque baixo. Excelente!</p>`;
+        }
+
+        if (pendingDebits.length > 0) {
+            const totalDebitValue = pendingDebits.reduce((sum, debit) => sum + debit.amount, 0);
+            emailBody += `<h3><i class="fas fa-hand-holding-usd"></i> Débitos Pendentes (${pendingDebits.length})</h3>
+                          <p>Valor Total Pendente: <strong>R$ ${totalDebitValue.toFixed(2)}</strong></p><ul>`;
+            pendingDebits.forEach(debit => {
+                const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || 'Desconhecido';
+                emailBody += `<li>${collaboratorName}: R$ ${debit.amount.toFixed(2)} - ${debit.itemName}</li>`;
+            });
+            emailBody += `</ul>`;
+        } else {
+            emailBody += `<p>Nenhum débito pendente.</p>`;
+        }
+        emailBody += `<br><p><em>Este é um e-mail automático gerado pelo sistema Almoxarifado Digital.</em></p>`;
+
+
+        const templateParams = {
+            to_email: settings.emailSettings.recipientEmail,
+            warehouse_name: settings.warehouseName || 'Almoxarifado Digital',
+            email_body: emailBody,
+        };
+
+        return emailjs.send(settings.emailSettings.serviceId, settings.emailSettings.templateId, templateParams)
+            .then(() => {
+                showToast("E-mail de resumo enviado com sucesso!", "success");
+                createLog('SEND_SUMMARY_EMAIL_SUCCESS', 'E-mail de resumo enviado com sucesso.', 'Usuário');
+            }, (error) => {
+                console.error("Falha ao enviar e-mail:", error);
+                showToast(`Falha ao enviar e-mail: ${error.text}`, "error");
+                createLog('SEND_SUMMARY_EMAIL_FAILURE', `Falha ao enviar e-mail: ${error.text}`, 'Sistema');
+            });
+    }
+
 
     async function initializeApp() {
         try {
