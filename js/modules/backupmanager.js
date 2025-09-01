@@ -1,17 +1,43 @@
 // almoxarifado-digital/js/modules/backupManager.js
-function backupData() {
+async function backupData() {
     try {
+        const allItems = getAllItems();
+        const itemsWithImagesPromises = allItems.map(async item => {
+            if (item.hasImage) {
+                try {
+                    const imageData = await loadImage(item.id);
+                    return {
+                        ...item,
+                        imageDataUrl: imageData // Adiciona a imagem em Base64 ao objeto
+                    };
+                } catch (error) {
+                    console.error(`Falha ao carregar imagem para o item ${item.id}:`, error);
+                    return { ...item,
+                        imageDataUrl: null
+                    };
+                }
+            }
+            return item;
+        });
+
+        const itemsWithImages = await Promise.all(itemsWithImagesPromises);
+
         const data = {
-            items: loadDataFromLocal(DB_KEYS.ITEMS),
+            _version: '1.1.1',
+            items: itemsWithImages,
             collaborators: loadDataFromLocal(DB_KEYS.COLLABORATORS),
             debits: loadDataFromLocal(DB_KEYS.DEBITS),
             logs: loadDataFromLocal(DB_KEYS.LOGS),
             settings: loadDataFromLocal(DB_KEYS.SETTINGS),
             persistentAlerts: loadDataFromLocal(DB_KEYS.PERSISTENT_ALERTS),
-            dismissedTemporaryAlerts: loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS)
+            dismissedTemporaryAlerts: loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS),
+            serviceOrders: loadDataFromLocal(DB_KEYS.SERVICE_ORDERS)
         };
+
         const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
+        const blob = new Blob([jsonString], {
+            type: 'application/json'
+        });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -46,21 +72,33 @@ function restoreData(event) {
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
             if (data.items && data.collaborators && data.debits && data.settings) {
                 openConfirmationModal({
                     title: 'Restaurar Backup',
                     message: `Tem certeza que deseja restaurar este backup? Isso substituirá TODOS os seus dados atuais.`,
-                    onConfirm: () => {
-                        saveDataToLocal(DB_KEYS.ITEMS, data.items);
+                    onConfirm: async () => {
+                        const itemsToSave = data.items.map(item => {
+                            if (item.imageDataUrl) {
+                                saveImage(item.id, item.imageDataUrl).catch(err => {
+                                    console.error(`Falha ao restaurar imagem para o item ${item.id}`, err);
+                                    showToast(`Aviso: Falha ao restaurar imagem do item ${item.name}.`, 'warning');
+                                });
+                                delete item.imageDataUrl; // Remove a URL Base64 para não sobrecarregar o localStorage
+                            }
+                            return item;
+                        });
+
+                        saveDataToLocal(DB_KEYS.ITEMS, itemsToSave);
                         saveDataToLocal(DB_KEYS.COLLABORATORS, data.collaborators);
                         saveDataToLocal(DB_KEYS.DEBITS, data.debits);
                         saveDataToLocal(DB_KEYS.LOGS, data.logs || []);
                         saveDataToLocal(DB_KEYS.SETTINGS, data.settings);
                         saveDataToLocal(DB_KEYS.PERSISTENT_ALERTS, data.persistentAlerts || []);
                         saveDataToLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS, data.dismissedTemporaryAlerts || {});
+                        saveDataToLocal(DB_KEYS.SERVICE_ORDERS, data.serviceOrders || []);
 
                         showToast("Dados restaurados com sucesso! Recarregando a página...", "success");
                         createLog('RESTORE_DATA', 'Dados restaurados a partir de um backup.', 'Usuário');
