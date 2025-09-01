@@ -428,6 +428,7 @@ body {
 
 .item-table .role-col {
     width: 25%;
+    min-width: 150px; /* Adicionado para evitar que o texto do cargo esmague */
 }
 
 .item-table .actions-col {
@@ -438,7 +439,8 @@ body {
 /* Garante que o span do cargo seja um bloco para quebrar a linha */
 .item-table .role-col .status-badge {
     display: inline-block;
-    white-space: normal;
+    white-space: normal; /* Modificado para permitir a quebra de linha */
+    line-height: 1.2; /* Adicionado para melhorar o espaçamento entre as linhas */
 }
 
 .item-table thead th {
@@ -617,7 +619,8 @@ body {
     background-color: var(--border-color);
     margin-right: 5px;
     border: 1px solid transparent;
-    white-space: nowrap;
+    white-space: normal;
+    display: inline-block;
 }
 
 .status-badge.status-success {
