@@ -410,11 +410,35 @@ body {
     padding: 1rem;
     border: none;
     border-bottom: 1px solid var(--border-color);
-    vertical-align: middle;
+    vertical-align: top;
     text-align: left;
     word-wrap: break-word;
     -webkit-hyphens: auto;
     hyphens: auto;
+}
+
+/* Largura das colunas da tabela de colaboradores */
+.item-table .name-col {
+    width: 30%;
+}
+
+.item-table .registration-col {
+    width: 15%;
+}
+
+.item-table .role-col {
+    width: 25%;
+}
+
+.item-table .actions-col {
+    width: 30%;
+    text-align: right;
+}
+
+/* Garante que o span do cargo seja um bloco para quebrar a linha */
+.item-table .role-col .status-badge {
+    display: inline-block;
+    white-space: normal;
 }
 
 .item-table thead th {
