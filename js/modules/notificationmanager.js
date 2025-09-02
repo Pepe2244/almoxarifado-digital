@@ -83,7 +83,7 @@ function renderNotifications() {
                 action = ACTIONS.DO_BACKUP;
                 break;
             case ALERT_TYPES.SIGNED_RECEIPT:
-                icon = 'fa-signature';
+                icon = 'fa-gem';
                 title = 'Comprovante Assinado';
                 action = ACTIONS.PRINT_SIGNED_RECEIPT;
                 break;
