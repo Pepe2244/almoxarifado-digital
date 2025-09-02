@@ -1290,13 +1290,16 @@ document.addEventListener('DOMContentLoaded', () => {
                         const itemTypeFilter = document.getElementById('item-type-filter')?.value || itemTypeFilterState || 'all';
                         return allItems.filter(item => {
                             const isNotKit = item.type !== 'Kit';
+                            const matchesEmpresa = empresaFiltro === 'todas' ? true : item.empresa === empresaFiltro;
+                            const matchesAlmoxarifado = almoxarifadoFiltro === 'todos' ? true : item.almoxarifado === almoxarifadoFiltro;
                             const matchesSearch = itemSearchTerm ?
                                 item.name.toLowerCase().includes(itemSearchTerm) ||
+                                (item.ca || '').toLowerCase().includes(itemSearchTerm) ||
                                 item.type.toLowerCase().includes(itemSearchTerm) ||
                                 (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
                                 true;
                             const matchesType = itemTypeFilter === 'all' || !itemTypeFilter ? true : item.type === itemTypeFilter;
-                            return isNotKit && matchesSearch && matchesType;
+                            return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
                         }).length;
                     case 'kit':
                         const kitSearchTerm = document.getElementById('kit-search-input')?.value.trim().toLowerCase() || '';
