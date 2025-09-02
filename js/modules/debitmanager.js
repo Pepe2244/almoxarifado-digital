@@ -61,4 +61,4 @@ function settleDebit(debitId) {
 
 function getAllDebits() {
     return loadDataFromLocal(DB_KEYS.DEBITS) || [];
-} s
+} 
