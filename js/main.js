@@ -1831,20 +1831,27 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDashboard();
         };
 
-        const debouncedSearch = debounce(performSearch, 300);
+        // --- INÍCIO DA CORREÇÃO ---
+        // 1. Removemos a busca automática que acontecia a cada letra digitada.
+        // O event listener de 'input' foi removido.
 
-        document.body.addEventListener('input', (event) => {
-            if (event.target.matches('#search-input, #kit-search-input, #collaborator-search-input, #debit-search-input, #log-search-input, #os-search-input')) {
-                debouncedSearch();
-            }
-        });
-
+        // 2. Mantemos a busca ao pressionar "Enter", que você já tinha.
         document.body.addEventListener('keydown', (event) => {
             if (event.target.matches('.search-input') && event.key === 'Enter') {
-                event.preventDefault();
+                event.preventDefault(); // Impede o formulário de ser enviado, caso exista.
                 performSearch();
             }
         });
+
+        // 3. Adicionamos a busca ao clicar no ícone de lupa.
+        document.body.addEventListener('click', (event) => {
+            const searchButton = event.target.closest('#search-btn-icon, #collaborator-search-btn-icon, #kit-search-btn-icon, #debit-search-btn-icon, #os-search-btn-icon, #log-search-btn-icon');
+            if (searchButton) {
+                performSearch();
+            }
+        });
+        // --- FIM DA CORREÇÃO ---
+
 
         document.body.addEventListener('mouseover', (event) => {
             const searchContainer = event.target.closest('.search-container');
