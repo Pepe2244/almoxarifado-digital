@@ -485,6 +485,7 @@ body {
     align-items: center;
     gap: 15px;
     font-weight: 500;
+    word-break: break-word; /* Correção do problema do nome longo */
 }
 
 .item-thumbnail {
@@ -1570,6 +1571,10 @@ dialog#optionsModal {
     width: 20px;
     text-align: center;
     color: var(--text-muted);
+}
+
+.export-dropdown-content a:hover i {
+    color: var(--primary-color);
 }
 
 .chart-wrapper {

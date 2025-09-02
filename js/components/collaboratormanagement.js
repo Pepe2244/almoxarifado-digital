@@ -25,22 +25,6 @@ function renderCollaboratorManagementComponent() {
                             <i class="fas fa-search"></i>
                         </button>
                     </div>
-                    <div class="filters-dropdown-container">
-                        <button id="collaborator-filters-btn" class="btn btn-secondary" data-action="toggle-filters-dropdown">
-                            <i class="fas fa-filter"></i> Empresa
-                        </button>
-                        <div id="collaborator-filters-dropdown" class="filters-dropdown-content hidden">
-                            <div class="form-group">
-                                <label for="collaborator-empresa-filter">Empresa:</label>
-                                <select id="collaborator-empresa-filter" class="form-control">
-                                    <option value="todas">Todas</option>
-                                    <option value="WeldingPro">WeldingPro</option>
-                                    <option value="ALV">ALV</option>
-                                </select>
-                            </div>
-                            <button class="btn btn-sm btn-danger" data-action="clear-collaborator-filters" style="width: 100%;">Limpar Filtros</button>
-                        </div>
-                    </div>
                     <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="collaborator-management" title="Ocultar painel">
                         <i class="fas fa-times"></i>
                     </button>
@@ -61,8 +45,24 @@ function renderCollaboratorManagementComponent() {
                     </div>
                 </div>
                 <button class="btn btn-info" data-action="${ACTIONS.START_RETURN_SESSION}">
-                    <i class="fas fa-undo-alt"></i> Registrar Devolução
+                    <i class="fas fa-undo-alt"></i> Devolução
                 </button>
+                <div class="filters-dropdown-container">
+                    <button id="collaborator-filters-btn" class="btn btn-secondary" data-action="toggle-filters-dropdown">
+                        <i class="fas fa-filter"></i> Empresa
+                    </button>
+                    <div id="collaborator-filters-dropdown" class="filters-dropdown-content hidden">
+                        <div class="form-group">
+                            <label for="collaborator-empresa-filter">Empresa:</label>
+                            <select id="collaborator-empresa-filter" class="form-control">
+                                <option value="todas">Todas</option>
+                                <option value="WeldingPro">WeldingPro</option>
+                                <option value="ALV">ALV</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-danger" data-action="clear-collaborator-filters" style="width: 100%;">Limpar Filtros</button>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="card-body">
@@ -85,7 +85,6 @@ function renderCollaboratorManagementComponent() {
         </div>
     `;
 }
-
 
 function addCollaboratorTabEventListeners(componentId) {
     const component = document.getElementById(componentId);

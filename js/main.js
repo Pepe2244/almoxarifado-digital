@@ -445,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const formData = new FormData(form);
         const itemId = formData.get('id');
         const isUpdate = !!itemId;
+        const isKit = form.elements.type.value === 'Kit';
         const imagePreview = document.getElementById('item-form-image-preview');
         const imageUrl = imagePreview.src.startsWith('data:') ? imagePreview.src : null;
 
@@ -1231,10 +1232,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const submitButton = button;
                 toggleButtonLoading(submitButton, true);
                 try {
+                    const itemId = form.elements.id.value;
+                    const isUpdate = !!itemId;
+                    const isKit = form.elements.type.value === 'Kit';
+
                     if (await handleItemForm(form)) {
-                        const isKit = form.elements.type.value === 'Kit';
-                        const itemId = form.elements.id.value;
-                        if (!isKit || !itemId) {
+                        if (isUpdate || !isKit) {
                             closeModal(MODAL_IDS.ITEM_FORM);
                         }
                     }
