@@ -1276,90 +1276,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (action.includes('-prev') || action.includes('-next')) {
             const [table, direction] = action.split('-');
+            const pageState = paginationState[table];
 
-            const getFilteredDataLength = (tableType) => {
-                const allItems = getAllItems();
-                const allCollaborators = getAllCollaborators();
-                const allDebits = getAllDebits();
-                const allLogs = getAllLogs();
-                const allServiceOrders = getAllServiceOrders();
+            if (!pageState) return;
 
-                switch (tableType) {
-                    case 'item':
-                        const itemSearchTerm = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
-                        const itemTypeFilter = document.getElementById('item-type-filter')?.value || itemTypeFilterState || 'all';
-                        return allItems.filter(item => {
-                            const isNotKit = item.type !== 'Kit';
-                            const matchesEmpresa = empresaFiltro === 'todas' ? true : item.empresa === empresaFiltro;
-                            const matchesAlmoxarifado = almoxarifadoFiltro === 'todos' ? true : item.almoxarifado === almoxarifadoFiltro;
-                            const matchesSearch = itemSearchTerm ?
-                                item.name.toLowerCase().includes(itemSearchTerm) ||
-                                (item.ca || '').toLowerCase().includes(itemSearchTerm) ||
-                                item.type.toLowerCase().includes(itemSearchTerm) ||
-                                (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
-                                true;
-                            const matchesType = itemTypeFilter === 'all' || !itemTypeFilter ? true : item.type === itemTypeFilter;
-                            return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
-                        }).length;
-                    case 'kit':
-                        const kitSearchTerm = document.getElementById('kit-search-input')?.value.trim().toLowerCase() || '';
-                        return allItems.filter(item => {
-                            const isKit = item.type === 'Kit';
-                            const matchesSearch = kitSearchTerm ? item.name.toLowerCase().includes(kitSearchTerm) : true;
-                            return isKit && matchesSearch;
-                        }).length;
-                    case 'collaborator':
-                        const collaboratorSearchTerm = document.getElementById('collaborator-search-input')?.value.trim().toLowerCase() || '';
-                        const collaboratorEmpresaFiltro = document.getElementById('collaborator-empresa-filter')?.value || 'todas';
-                        return allCollaborators.filter(c => {
-                            const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
-                            const matchesSearch = collaboratorSearchTerm ?
-                                c.name.toLowerCase().includes(collaboratorSearchTerm) ||
-                                (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
-                                true;
-                            return matchesEmpresa && matchesSearch;
-                        }).length;
-                    case 'debit':
-                        const debitSearchTerm = document.getElementById('debit-search-input')?.value.trim().toLowerCase() || '';
-                        return allDebits.filter(debit => {
-                            const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || '';
-                            return debitSearchTerm ? collaboratorName.toLowerCase().includes(debitSearchTerm) || debit.itemName.toLowerCase().includes(debitSearchTerm) || debit.reason.toLowerCase().includes(debitSearchTerm) : true;
-                        }).length;
-                    case 'serviceOrder':
-                        const osSearchTerm = document.getElementById('os-search-input')?.value.trim().toLowerCase() || '';
-                        return allServiceOrders.filter(os => {
-                            const technicianName = getCollaboratorById(os.technicianId)?.name || '';
-                            return osSearchTerm ?
-                                os.id.toLowerCase().includes(osSearchTerm) ||
-                                os.customer.toLowerCase().includes(osSearchTerm) ||
-                                technicianName.toLowerCase().includes(osSearchTerm) :
-                                true;
-                        }).length;
-                    case 'log':
-                        const logSearchTerm = document.getElementById('log-search-input')?.value.trim().toLowerCase() || '';
-                        return allLogs.filter(log => logSearchTerm ? log.action.toLowerCase().includes(logSearchTerm) || log.details.toLowerCase().includes(logSearchTerm) || log.user.toLowerCase().includes(logSearchTerm) : true).length;
-                    case 'consumption': {
-                        const allPredictiveData = generateUnifiedPredictiveAnalysis();
-                        return allPredictiveData.filter(d => d.predictionType === 'consumption').length;
-                    }
-                    case 'lifecycle': {
-                        const allPredictiveData = generateUnifiedPredictiveAnalysis();
-                        const lifecycleData = allPredictiveData.filter(d => d.predictionType === 'lifecycle');
-                        const maintenanceData = allPredictiveData.filter(d => d.predictionType === 'maintenance');
-                        return lifecycleData.length + maintenanceData.length;
-                    }
-                    default:
-                        return 0;
-                }
-            };
+            const itemsPerPage = getSettings().itemsPerPage;
+            const totalItems = getFilteredDataLength(table);
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
 
-            document.body.dispatchEvent(new CustomEvent('changePage', {
-                detail: {
-                    table,
-                    direction,
-                    totalItems: getFilteredDataLength(table)
-                }
-            }));
+            let newPage = pageState.currentPage;
+            if (direction === 'next' && newPage < totalPages) {
+                newPage++;
+            } else if (direction === 'prev' && newPage > 1) {
+                newPage--;
+            }
+
+            if (newPage !== pageState.currentPage) {
+                pageState.currentPage = newPage;
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+            }
+
             return;
         }
 
