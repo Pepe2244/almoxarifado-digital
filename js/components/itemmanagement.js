@@ -51,7 +51,7 @@ function renderItemManagementComponent() {
                     <label for="empresa-filter">Empresa:</label>
                     <select id="empresa-filter" class="form-control">
                         <option value="todas">Todas</option>
-                        <option value="Weldingpro">Weldingpro</option>
+                        <option value="WeldingPro">WeldingPro</option>
                         <option value="ALV">ALV</option>
                     </select>
                 </div>

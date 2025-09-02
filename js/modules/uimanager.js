@@ -1396,7 +1396,7 @@ function openItemFormModal(options = {}) {
             idDisplayInput.value = item.id;
             form.elements.name.value = item.name;
             form.elements.barcode.value = item.barcode || '';
-            form.elements.empresa.value = item.empresa || 'Weldingpro';
+            form.elements.empresa.value = item.empresa || 'WeldingPro';
             form.elements.ca.value = item.ca || '';
             form.elements.almoxarifado.value = item.almoxarifado || 'equipamentos';
             form.elements.type.value = item.type;
@@ -2028,7 +2028,7 @@ function openCollaboratorModal(collaborator = null) {
         const empresaSelect = modal.querySelector('#collaborator-empresa');
         if (empresaSelect) {
             empresaSelect.innerHTML = `
-                <option value="Weldingpro">Weldingpro</option>
+                <option value="WeldingPro">WeldingPro</option>
                 <option value="ALV">ALV</option>
             `;
         }
@@ -2040,7 +2040,7 @@ function openCollaboratorModal(collaborator = null) {
             form.elements['collaborator-registration'].value = collaborator.registration;
             form.elements['collaborator-empresa'].value = collaborator.empresa;
         } else {
-            form.elements['collaborator-empresa'].value = 'Weldingpro';
+            form.elements['collaborator-empresa'].value = 'WeldingPro';
         }
     });
 }

@@ -53,7 +53,7 @@ function addMultipleCollaborators(collaboratorsToAdd) {
             name: collaboratorDetails.name.trim(),
             role: (collaboratorDetails.role || '').trim(),
             registration: (collaboratorDetails.registration || '').trim(),
-            empresa: (collaboratorDetails.empresa || 'Weldingpro').trim(),
+            empresa: (collaboratorDetails.empresa || 'WeldingPro').trim(),
             createdAt: new Date().toISOString()
         };
         collaborators.push(newCollaborator);
