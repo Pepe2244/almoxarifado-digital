@@ -71,7 +71,7 @@ app.post('/api/generate-receipt', (req, res) => {
     setTimeout(() => {
         temporaryReceipts.delete(token);
         console.log(`Comprovante com token ${token} expirou e foi removido.`);
-    }, 3600 * 1000);
+    }, 14400 * 1000);
 
     res.status(200).json({ token });
 });
