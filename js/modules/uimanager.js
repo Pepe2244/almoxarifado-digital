@@ -2103,6 +2103,17 @@ function openReceiptGeneratorModal(collaboratorId) {
             itemsListContainer.innerHTML = '<p>Nenhum item alocado para este colaborador.</p>';
         }
 
+        // Adicione este trecho
+        const observationsContainer = modal.querySelector('#receipt-observations-container');
+        observationsContainer.innerHTML = `
+            <fieldset>
+                <legend>Observações</legend>
+                <div class="form-group">
+                    <textarea id="receipt-observations" name="observations" rows="3" placeholder="Adicione informações extras aqui..."></textarea>
+                </div>
+            </fieldset>
+        `;
+
         modal.querySelector('#receipt-link-container').style.display = 'none';
         modal.querySelector('#generate-receipt-link-btn').style.display = 'inline-flex';
     });

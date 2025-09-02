@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
 });
 
 app.post('/api/generate-receipt', (req, res) => {
-    const { collaboratorId, collaboratorName, collaboratorRole, collaboratorRegistration, deliveryLocation, items, service_order_id } = req.body;
+    const { collaboratorId, collaboratorName, collaboratorRole, collaboratorRegistration, deliveryLocation, items, service_order_id, observations } = req.body; // Modifique esta linha
 
     if (!collaboratorId || !items || items.length === 0) {
         return res.status(400).json({ error: 'Dados insuficientes para gerar o comprovante.' });
@@ -63,6 +63,7 @@ app.post('/api/generate-receipt', (req, res) => {
         deliveryLocation,
         items,
         service_order_id,
+        observations, // Adicione esta linha
         deliveryDate: new Date()
     };
 
@@ -257,7 +258,8 @@ app.post('/api/receipts', async (req, res) => {
         collaborator_role,
         delivery_location,
         items,
-        proof_image
+        proof_image,
+        observations // Adicione esta linha
     } = req.body;
 
     try {
@@ -276,11 +278,11 @@ app.post('/api/receipts', async (req, res) => {
 
         const insertSql = `
             INSERT INTO signed_receipts
-            (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
+            (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image, observations)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
             RETURNING *
         `;
-        const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image];
+        const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image, observations]; // Modifique esta linha
 
         const result = await query(insertSql, values);
         const newReceipt = result.rows[0];

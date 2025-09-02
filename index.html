@@ -720,30 +720,31 @@
     </template>
 
     <template id="receipt-generator-modal-template">
-        <form id="receipt-generator-form" class="modal-form">
-            <h2 id="receipt-generator-title">Gerar Comprovante de Recebimento</h2>
-            <div class="modal-body">
-                <input type="hidden" id="receipt-collaborator-id" name="collaboratorId">
-                <div class="info-box">Colaborador: <strong id="receipt-collaborator-name"></strong></div>
-                <fieldset>
-                    <legend>Selecione os Itens para o Comprovante</legend>
-                    <div id="receipt-items-list" class="table-responsive"></div>
-                </fieldset>
-                <div id="receipt-link-container" class="form-group" style="display: none;">
-                    <label for="receipt-link">Link Gerado (válido por 1 hora):</label>
-                    <input type="text" id="receipt-link" readonly>
-                    <button type="button" class="btn btn-secondary" id="copy-receipt-link-btn"
-                        style="margin-top: 0.5rem;"><i class="fas fa-copy"></i> Copiar Link</button>
-                </div>
+    <form id="receipt-generator-form" class="modal-form">
+        <h2 id="receipt-generator-title">Gerar Comprovante de Recebimento</h2>
+        <div class="modal-body">
+            <input type="hidden" id="receipt-collaborator-id" name="collaboratorId">
+            <div class="info-box">Colaborador: <strong id="receipt-collaborator-name"></strong></div>
+            <fieldset>
+                <legend>Selecione os Itens para o Comprovante</legend>
+                <div id="receipt-items-list" class="table-responsive"></div>
+            </fieldset>
+            <div id="receipt-observations-container"></div>
+            <div id="receipt-link-container" class="form-group" style="display: none;">
+                <label for="receipt-link">Link Gerado (válido por 1 hora):</label>
+                <input type="text" id="receipt-link" readonly>
+                <button type="button" class="btn btn-secondary" id="copy-receipt-link-btn"
+                    style="margin-top: 0.5rem;"><i class="fas fa-copy"></i> Copiar Link</button>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn btn-secondary"
-                    data-action="cancel-receipt-generator">Cancelar</button>
-                <button type="submit" class="btn btn-success" id="generate-receipt-link-btn"><i
-                        class="fas fa-link"></i> Gerar Link</button>
-            </div>
-        </form>
-    </template>
+        </div>
+        <div class="modal-actions">
+            <button type="button" class="btn btn-secondary"
+                data-action="cancel-receipt-generator">Cancelar</button>
+            <button type="submit" class="btn btn-success" id="generate-receipt-link-btn"><i
+                    class="fas fa-link"></i> Gerar Link</button>
+        </div>
+    </form>
+</template>
 
     <template id="signed-receipts-modal-template">
         <div class="modal-content-wrapper">

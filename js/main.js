@@ -1090,6 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const collaboratorId = form.elements.collaboratorId.value;
         const collaborator = getCollaboratorById(collaboratorId);
         const selectedCheckboxes = form.querySelectorAll('input[name="selectedAllocations"]:checked');
+        const observations = form.elements.observations.value; // Adicione esta linha
 
         if (!collaborator) {
             showToast('Erro: Colaborador não encontrado.', 'error');
@@ -1132,7 +1133,8 @@ document.addEventListener('DOMContentLoaded', () => {
             collaboratorRegistration: collaborator.registration || '',
             deliveryLocation: deliveryLocation,
             items: itemsForReceipt,
-            service_order_id: service_order_id
+            service_order_id: service_order_id,
+            observations: observations // Adicione esta linha
         };
 
         const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
