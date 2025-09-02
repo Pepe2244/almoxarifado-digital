@@ -20,10 +20,19 @@ function showFormErrors(form, errors) {
 }
 let lastScrollY = 0;
 let lastFocusedElement = null;
+
 let itemTypeFilterState = 'all';
 let almoxarifadoFilterState = 'todos';
 let empresaFilterState = 'todas';
 let collaboratorEmpresaFilterState = 'todas';
+
+let itemSearchTermState = '';
+let kitSearchTermState = '';
+let collaboratorSearchTermState = '';
+let debitSearchTermState = '';
+let logSearchTermState = '';
+let osSearchTermState = '';
+
 let priceHistoryChart = null;
 
 const paginationState = {

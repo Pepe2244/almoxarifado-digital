@@ -239,19 +239,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const allServiceOrders = getAllServiceOrders();
 
         const itemSearchInput = document.getElementById('search-input');
-        const collaboratorSearchInput = document.getElementById('collaborator-search-input');
-        const debitSearchInput = document.getElementById('debit-search-input');
-        const logSearchInput = document.getElementById('log-search-input');
+        if (itemSearchInput) itemSearchInput.value = itemSearchTermState;
+
         const kitSearchInput = document.getElementById('kit-search-input');
+        if (kitSearchInput) kitSearchInput.value = kitSearchTermState;
+
+        const collaboratorSearchInput = document.getElementById('collaborator-search-input');
+        if (collaboratorSearchInput) collaboratorSearchInput.value = collaboratorSearchTermState;
+
+        const debitSearchInput = document.getElementById('debit-search-input');
+        if (debitSearchInput) debitSearchInput.value = debitSearchTermState;
+
+        const logSearchInput = document.getElementById('log-search-input');
+        if (logSearchInput) logSearchInput.value = logSearchTermState;
+
         const osSearchInput = document.getElementById('os-search-input');
+        if (osSearchInput) osSearchInput.value = osSearchTermState;
 
-
-        const itemSearchTerm = itemSearchInput?.value.trim().toLowerCase() || '';
-        const kitSearchTerm = kitSearchInput?.value.trim().toLowerCase() || '';
-        const collaboratorSearchTerm = collaboratorSearchInput?.value.trim().toLowerCase() || '';
-        const debitSearchTerm = debitSearchInput?.value.trim().toLowerCase() || '';
-        const logSearchTerm = logSearchInput?.value.trim().toLowerCase() || '';
-        const osSearchTerm = osSearchInput?.value.trim().toLowerCase() || '';
+        const itemSearchTerm = itemSearchTermState.trim().toLowerCase();
+        const kitSearchTerm = kitSearchTermState.trim().toLowerCase();
+        const collaboratorSearchTerm = collaboratorSearchTermState.trim().toLowerCase();
+        const debitSearchTerm = debitSearchTermState.trim().toLowerCase();
+        const logSearchTerm = logSearchTermState.trim().toLowerCase();
+        const osSearchTerm = osSearchTermState.trim().toLowerCase();
 
         itemSearchInput?.closest('.search-container')?.classList.toggle('filtering', itemSearchTerm !== '');
         kitSearchInput?.closest('.search-container')?.classList.toggle('filtering', kitSearchTerm !== '');
@@ -260,14 +270,10 @@ document.addEventListener('DOMContentLoaded', () => {
         logSearchInput?.closest('.search-container')?.classList.toggle('filtering', logSearchTerm !== '');
         osSearchInput?.closest('.search-container')?.classList.toggle('filtering', osSearchTerm !== '');
 
-        const empresaFiltro = empresaFilterState || 'todas';
-        const almoxarifadoFiltro = almoxarifadoFilterState || 'todos';
-        const itemTypeFilter = itemTypeFilterState || 'all';
-
         let activeFiltersCount = 0;
-        if (empresaFiltro !== 'todas') activeFiltersCount++;
-        if (almoxarifadoFiltro !== 'todos') activeFiltersCount++;
-        if (itemTypeFilter !== 'all') activeFiltersCount++;
+        if (empresaFilterState !== 'todas') activeFiltersCount++;
+        if (almoxarifadoFilterState !== 'todos') activeFiltersCount++;
+        if (itemTypeFilterState !== 'all') activeFiltersCount++;
 
         const activeFiltersBadge = document.getElementById('active-filters-count');
         if (activeFiltersBadge) {
@@ -281,15 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let filteredItems = allItems.filter(item => {
             const isNotKit = item.type !== 'Kit';
-            const matchesEmpresa = empresaFiltro === 'todas' ? true : item.empresa === empresaFiltro;
-            const matchesAlmoxarifado = almoxarifadoFiltro === 'todos' ? true : item.almoxarifado === almoxarifadoFiltro;
+            const matchesEmpresa = empresaFilterState === 'todas' ? true : item.empresa === empresaFilterState;
+            const matchesAlmoxarifado = almoxarifadoFilterState === 'todos' ? true : item.almoxarifado === almoxarifadoFilterState;
             const matchesSearch = itemSearchTerm ?
                 item.name.toLowerCase().includes(itemSearchTerm) ||
                 (item.ca || '').toLowerCase().includes(itemSearchTerm) ||
                 item.type.toLowerCase().includes(itemSearchTerm) ||
                 (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
                 true;
-            const matchesType = itemTypeFilter === 'all' || !itemTypeFilter ? true : item.type === itemTypeFilter;
+            const matchesType = itemTypeFilterState === 'all' ? true : item.type === itemTypeFilterState;
             return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
         });
 
@@ -312,10 +318,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return isKit && matchesSearch;
         });
 
-        const collaboratorEmpresaFiltro = collaboratorEmpresaFilterState || 'todas';
-
         const filteredCollaborators = allCollaborators.filter(c => {
-            const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
+            const matchesEmpresa = collaboratorEmpresaFilterState === 'todas' ? true : c.empresa === collaboratorEmpresaFilterState;
             const matchesSearch = collaboratorSearchTerm ?
                 c.name.toLowerCase().includes(collaboratorSearchTerm) ||
                 (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
@@ -1170,59 +1174,52 @@ document.addEventListener('DOMContentLoaded', () => {
         const allLogs = getAllLogs();
         const allServiceOrders = getAllServiceOrders();
 
-        const itemSearchTerm = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
-
         switch (tableType) {
             case 'item':
                 return allItems.filter(item => {
                     const isNotKit = item.type !== 'Kit';
                     const matchesEmpresa = empresaFilterState === 'todas' ? true : item.empresa === empresaFilterState;
                     const matchesAlmoxarifado = almoxarifadoFilterState === 'todos' ? true : item.almoxarifado === almoxarifadoFilterState;
-                    const matchesSearch = itemSearchTerm ?
-                        item.name.toLowerCase().includes(itemSearchTerm) ||
-                        (item.ca || '').toLowerCase().includes(itemSearchTerm) ||
-                        item.type.toLowerCase().includes(itemSearchTerm) ||
-                        (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
+                    const matchesSearch = itemSearchTermState ?
+                        item.name.toLowerCase().includes(itemSearchTermState) ||
+                        (item.ca || '').toLowerCase().includes(itemSearchTermState) ||
+                        item.type.toLowerCase().includes(itemSearchTermState) ||
+                        (item.location?.aisle || '').toLowerCase().includes(itemSearchTermState) :
                         true;
                     const matchesType = itemTypeFilterState === 'all' || !itemTypeFilterState ? true : item.type === itemTypeFilterState;
                     return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
                 }).length;
             case 'kit':
-                const kitSearchTerm = document.getElementById('kit-search-input')?.value.trim().toLowerCase() || '';
                 return allItems.filter(item => {
                     const isKit = item.type === 'Kit';
-                    const matchesSearch = kitSearchTerm ? item.name.toLowerCase().includes(kitSearchTerm) : true;
+                    const matchesSearch = kitSearchTermState ? item.name.toLowerCase().includes(kitSearchTermState) : true;
                     return isKit && matchesSearch;
                 }).length;
             case 'collaborator':
-                const collaboratorSearchTerm = document.getElementById('collaborator-search-input')?.value.trim().toLowerCase() || '';
                 return allCollaborators.filter(c => {
                     const matchesEmpresa = collaboratorEmpresaFilterState === 'todas' ? true : c.empresa === collaboratorEmpresaFilterState;
-                    const matchesSearch = collaboratorSearchTerm ?
-                        c.name.toLowerCase().includes(collaboratorSearchTerm) ||
-                        (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
+                    const matchesSearch = collaboratorSearchTermState ?
+                        c.name.toLowerCase().includes(collaboratorSearchTermState) ||
+                        (c.registration || '').toLowerCase().includes(collaboratorSearchTermState) :
                         true;
                     return matchesEmpresa && matchesSearch;
                 }).length;
             case 'debit':
-                const debitSearchTerm = document.getElementById('debit-search-input')?.value.trim().toLowerCase() || '';
                 return allDebits.filter(debit => {
                     const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || '';
-                    return debitSearchTerm ? collaboratorName.toLowerCase().includes(debitSearchTerm) || debit.itemName.toLowerCase().includes(debitSearchTerm) || debit.reason.toLowerCase().includes(debitSearchTerm) : true;
+                    return debitSearchTermState ? collaboratorName.toLowerCase().includes(debitSearchTermState) || debit.itemName.toLowerCase().includes(debitSearchTermState) || debit.reason.toLowerCase().includes(debitSearchTermState) : true;
                 }).length;
             case 'serviceOrder':
-                const osSearchTerm = document.getElementById('os-search-input')?.value.trim().toLowerCase() || '';
                 return allServiceOrders.filter(os => {
                     const technicianName = getCollaboratorById(os.technicianId)?.name || '';
-                    return osSearchTerm ?
-                        os.id.toLowerCase().includes(osSearchTerm) ||
-                        os.customer.toLowerCase().includes(osSearchTerm) ||
-                        technicianName.toLowerCase().includes(osSearchTerm) :
+                    return osSearchTermState ?
+                        os.id.toLowerCase().includes(osSearchTermState) ||
+                        os.customer.toLowerCase().includes(osSearchTermState) ||
+                        technicianName.toLowerCase().includes(osSearchTermState) :
                         true;
                 }).length;
             case 'log':
-                const logSearchTerm = document.getElementById('log-search-input')?.value.trim().toLowerCase() || '';
-                return allLogs.filter(log => logSearchTerm ? log.action.toLowerCase().includes(logSearchTerm) || log.details.toLowerCase().includes(logSearchTerm) || log.user.toLowerCase().includes(logSearchTerm) : true).length;
+                return allLogs.filter(log => logSearchTermState ? log.action.toLowerCase().includes(logSearchTermState) || log.details.toLowerCase().includes(logSearchTermState) || log.user.toLowerCase().includes(logSearchTermState) : true).length;
             case 'consumption': {
                 const allPredictiveData = generateUnifiedPredictiveAnalysis();
                 return allPredictiveData.filter(d => d.predictionType === 'consumption').length;
@@ -1537,14 +1534,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
             }
             case 'clear-item-filters':
-                document.getElementById('empresa-filter').value = 'todas';
-                document.getElementById('almoxarifado-filter').value = 'todos';
-                document.getElementById('item-type-filter').value = 'all';
+                empresaFilterState = 'todas';
+                almoxarifadoFilterState = 'todos';
                 itemTypeFilterState = 'all';
+                itemSearchTermState = '';
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
                 break;
             case 'clear-collaborator-filters':
-                document.getElementById('collaborator-empresa-filter').value = 'todas';
+                collaboratorEmpresaFilterState = 'todas';
+                collaboratorSearchTermState = '';
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
                 break;
             case ACTIONS.REMOVE_ITEM_FROM_OS: {
@@ -1742,7 +1740,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function addEventListeners() {
-        const debouncedUpdateDashboard = debounce((event) => updateDashboard(event), 50);
+        const debouncedUpdateDashboard = debounce((event) => updateDashboard(event), 250);
         document.body.addEventListener('dataChanged', debouncedUpdateDashboard);
         document.body.addEventListener('submit', handleFormSubmit);
         document.body.addEventListener('click', handleBodyClick);
@@ -1819,48 +1817,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const performSearch = () => {
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'item'
-                }
-            }));
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'kit'
-                }
-            }));
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'collaborator'
-                }
-            }));
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'debit'
-                }
-            }));
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'log'
-                }
-            }));
-            document.body.dispatchEvent(new CustomEvent('resetPage', {
-                detail: {
-                    table: 'serviceOrder'
-                }
-            }));
+            itemSearchTermState = document.getElementById('search-input')?.value || '';
+            kitSearchTermState = document.getElementById('kit-search-input')?.value || '';
+            collaboratorSearchTermState = document.getElementById('collaborator-search-input')?.value || '';
+            debitSearchTermState = document.getElementById('debit-search-input')?.value || '';
+            logSearchTermState = document.getElementById('log-search-input')?.value || '';
+            osSearchTermState = document.getElementById('os-search-input')?.value || '';
+            Object.keys(paginationState).forEach(table => {
+                document.body.dispatchEvent(new CustomEvent('resetPage', { detail: { table } }));
+            });
             updateDashboard();
         };
 
-        document.body.addEventListener('keydown', (event) => {
-            if (event.target.matches('#search-input, #collaborator-search-input, #debit-search-input, #log-search-input, #kit-search-input, #os-search-input')) {
-                if (event.key === 'Enter') {
-                    event.preventDefault();
-                    performSearch();
-                }
+        const debouncedSearch = debounce(performSearch, 300);
+
+        document.body.addEventListener('input', (event) => {
+            if (event.target.matches('#search-input, #kit-search-input, #collaborator-search-input, #debit-search-input, #log-search-input, #os-search-input')) {
+                debouncedSearch();
             }
         });
 
+        document.body.addEventListener('keydown', (event) => {
+            if (event.target.matches('.search-input') && event.key === 'Enter') {
+                event.preventDefault();
+                performSearch();
+            }
+        });
 
         document.body.addEventListener('mouseover', (event) => {
             const searchContainer = event.target.closest('.search-container');
