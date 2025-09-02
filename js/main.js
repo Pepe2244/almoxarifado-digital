@@ -260,9 +260,9 @@ document.addEventListener('DOMContentLoaded', () => {
         logSearchInput?.closest('.search-container')?.classList.toggle('filtering', logSearchTerm !== '');
         osSearchInput?.closest('.search-container')?.classList.toggle('filtering', osSearchTerm !== '');
 
-        const empresaFiltro = document.getElementById('empresa-filter')?.value || 'todas';
-        const almoxarifadoFiltro = document.getElementById('almoxarifado-filter')?.value || 'todos';
-        const itemTypeFilter = document.getElementById('item-type-filter')?.value || itemTypeFilterState || 'all';
+        const empresaFiltro = empresaFilterState || 'todas';
+        const almoxarifadoFiltro = almoxarifadoFilterState || 'todos';
+        const itemTypeFilter = itemTypeFilterState || 'all';
 
         let activeFiltersCount = 0;
         if (empresaFiltro !== 'todas') activeFiltersCount++;
@@ -312,7 +312,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return isKit && matchesSearch;
         });
 
-        const collaboratorEmpresaFiltro = document.getElementById('collaborator-empresa-filter')?.value || 'todas';
+        const collaboratorEmpresaFiltro = collaboratorEmpresaFilterState || 'todas';
 
         const filteredCollaborators = allCollaborators.filter(c => {
             const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
@@ -1171,23 +1171,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const allServiceOrders = getAllServiceOrders();
 
         const itemSearchTerm = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
-        const almoxarifadoFiltro = document.getElementById('almoxarifado-filter')?.value || 'todos';
-        const empresaFiltro = document.getElementById('empresa-filter')?.value || 'todas';
 
         switch (tableType) {
             case 'item':
-                const itemTypeFilter = document.getElementById('item-type-filter')?.value || itemTypeFilterState || 'all';
                 return allItems.filter(item => {
                     const isNotKit = item.type !== 'Kit';
-                    const matchesEmpresa = empresaFiltro === 'todas' ? true : item.empresa === empresaFiltro;
-                    const matchesAlmoxarifado = almoxarifadoFiltro === 'todos' ? true : item.almoxarifado === almoxarifadoFiltro;
+                    const matchesEmpresa = empresaFilterState === 'todas' ? true : item.empresa === empresaFilterState;
+                    const matchesAlmoxarifado = almoxarifadoFilterState === 'todos' ? true : item.almoxarifado === almoxarifadoFilterState;
                     const matchesSearch = itemSearchTerm ?
                         item.name.toLowerCase().includes(itemSearchTerm) ||
                         (item.ca || '').toLowerCase().includes(itemSearchTerm) ||
                         item.type.toLowerCase().includes(itemSearchTerm) ||
                         (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
                         true;
-                    const matchesType = itemTypeFilter === 'all' || !itemTypeFilter ? true : item.type === itemTypeFilter;
+                    const matchesType = itemTypeFilterState === 'all' || !itemTypeFilterState ? true : item.type === itemTypeFilterState;
                     return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
                 }).length;
             case 'kit':
@@ -1199,9 +1196,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }).length;
             case 'collaborator':
                 const collaboratorSearchTerm = document.getElementById('collaborator-search-input')?.value.trim().toLowerCase() || '';
-                const collaboratorEmpresaFiltro = document.getElementById('collaborator-empresa-filter')?.value || 'todas';
                 return allCollaborators.filter(c => {
-                    const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
+                    const matchesEmpresa = collaboratorEmpresaFilterState === 'todas' ? true : c.empresa === collaboratorEmpresaFilterState;
                     const matchesSearch = collaboratorSearchTerm ?
                         c.name.toLowerCase().includes(collaboratorSearchTerm) ||
                         (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
@@ -1788,6 +1784,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 debouncedUpdateDashboard();
             }
             if (event.target.id === 'collaborator-empresa-filter') {
+                collaboratorEmpresaFilterState = event.target.value;
                 document.body.dispatchEvent(new CustomEvent('resetPage', {
                     detail: {
                         table: 'collaborator'
