@@ -1,3 +1,4 @@
+// js/components/collaboratormanagement.js
 function initializeCollaboratorManagement() {
     renderCollaboratorManagementComponent();
     addCollaboratorTabEventListeners('collaborator-management');
@@ -84,11 +85,30 @@ function renderCollaboratorManagementComponent() {
             <div id="collaborator-pagination-container" class="card-footer"></div>
         </div>
     `;
+    // Adiciona esta linha para garantir que o valor do filtro seja mantido na UI
+    const filterSelect = component.querySelector('#collaborator-empresa-filter');
+    if (filterSelect) {
+        filterSelect.value = collaboratorEmpresaFilterState;
+    }
 }
 
 function addCollaboratorTabEventListeners(componentId) {
     const component = document.getElementById(componentId);
     if (!component) return;
+
+    // Novo listener para o filtro de empresa
+    const filterSelect = component.querySelector('#collaborator-empresa-filter');
+    if (filterSelect) {
+        filterSelect.addEventListener('change', (event) => {
+            collaboratorEmpresaFilterState = event.target.value;
+            document.body.dispatchEvent(new CustomEvent('resetPage', {
+                detail: {
+                    table: 'collaborator'
+                }
+            }));
+            document.body.dispatchEvent(new CustomEvent('dataChanged'));
+        });
+    }
 
     component.addEventListener('click', async (event) => {
         const clickableElement = event.target.closest('[data-action]');
@@ -103,6 +123,7 @@ function addCollaboratorTabEventListeners(componentId) {
 
         switch (action) {
             case 'clear-collaborator-filters':
+                collaboratorEmpresaFilterState = 'todas';
                 document.getElementById('collaborator-empresa-filter').value = 'todas';
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
                 break;
