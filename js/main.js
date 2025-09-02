@@ -312,11 +312,15 @@ document.addEventListener('DOMContentLoaded', () => {
             return isKit && matchesSearch;
         });
 
+        const collaboratorEmpresaFiltro = document.getElementById('collaborator-empresa-filter')?.value || 'todas';
+
         const filteredCollaborators = allCollaborators.filter(c => {
-            return collaboratorSearchTerm ?
+            const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
+            const matchesSearch = collaboratorSearchTerm ?
                 c.name.toLowerCase().includes(collaboratorSearchTerm) ||
                 (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
                 true;
+            return matchesEmpresa && matchesSearch;
         });
 
         const filteredDebits = getAllDebits().filter(debit => {
@@ -781,9 +785,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ignoredCount++;
                     ignoredNames.push(collaborator.name);
                 } else {
-                    if (addCollaborator(collaborator)) {
+                    const result = addCollaborator(collaborator);
+                    if (result.success) {
                         addedCount++;
-                        addedNames.push(collaborator.name);
+                        addedNames.push(result.collaborator.name);
                     } else {
                         ignoredCount++;
                         ignoredNames.push(`${collaborator.name} (falha ao adicionar)`);
@@ -819,20 +824,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const collaboratorDetails = {
             name: form.elements['collaborator-name'].value,
             role: form.elements['collaborator-role'].value,
-            registration: form.elements['collaborator-registration'].value
+            registration: form.elements['collaborator-registration'].value,
+            empresa: form.elements['collaborator-empresa'].value
         };
         const nameForLog = collaboratorDetails.name;
 
         let success = false;
         if (collaboratorId) {
-            success = updateCollaborator(collaboratorId, collaboratorDetails);
-            if (success) {
+            const result = updateCollaborator(collaboratorId, collaboratorDetails);
+            if (result.success) {
                 createLog('UPDATE_COLLABORATOR', `Colaborador atualizado: ${nameForLog}`, 'Usuário');
                 showToast('Colaborador atualizado!', 'success');
+                success = true;
             }
         } else {
             const result = addCollaborator(collaboratorDetails);
-            if (result) {
+            if (result.success) {
                 createLog('CREATE_COLLABORATOR', `Novo colaborador: ${nameForLog}`, 'Usuário');
                 openConfirmationModal({
                     title: 'Sucesso!',
@@ -1297,7 +1304,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         }).length;
                     case 'collaborator':
                         const collaboratorSearchTerm = document.getElementById('collaborator-search-input')?.value.trim().toLowerCase() || '';
-                        return allCollaborators.filter(c => collaboratorSearchTerm ? c.name.toLowerCase().includes(collaboratorSearchTerm) || (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) : true).length;
+                        const collaboratorEmpresaFiltro = document.getElementById('collaborator-empresa-filter')?.value || 'todas';
+                        return allCollaborators.filter(c => {
+                            const matchesEmpresa = collaboratorEmpresaFiltro === 'todas' ? true : c.empresa === collaboratorEmpresaFiltro;
+                            const matchesSearch = collaboratorSearchTerm ?
+                                c.name.toLowerCase().includes(collaboratorSearchTerm) ||
+                                (c.registration || '').toLowerCase().includes(collaboratorSearchTerm) :
+                                true;
+                            return matchesEmpresa && matchesSearch;
+                        }).length;
                     case 'debit':
                         const debitSearchTerm = document.getElementById('debit-search-input')?.value.trim().toLowerCase() || '';
                         return allDebits.filter(debit => {
@@ -1510,6 +1525,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('almoxarifado-filter').value = 'todos';
                 document.getElementById('item-type-filter').value = 'all';
                 itemTypeFilterState = 'all';
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+                break;
+            case 'clear-collaborator-filters':
+                document.getElementById('collaborator-empresa-filter').value = 'todas';
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
                 break;
             case ACTIONS.REMOVE_ITEM_FROM_OS: {
@@ -1744,6 +1763,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.dispatchEvent(new CustomEvent('resetPage', {
                     detail: {
                         table: 'item'
+                    }
+                }));
+                debouncedUpdateDashboard();
+            }
+            if (event.target.id === 'collaborator-empresa-filter') {
+                document.body.dispatchEvent(new CustomEvent('resetPage', {
+                    detail: {
+                        table: 'collaborator'
                     }
                 }));
                 debouncedUpdateDashboard();

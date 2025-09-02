@@ -684,6 +684,10 @@
                     <div class="form-group"><label for="collaborator-role">Cargo:</label><input type="text"
                             id="collaborator-role" name="collaborator-role" maxlength="50"></div>
                 </div>
+                <div class="form-group">
+                    <label for="collaborator-empresa">Empresa:</label>
+                    <select id="collaborator-empresa" name="collaborator-empresa" required></select>
+                </div>
             </div>
             <div class="modal-actions">
                 <button type="button" class="btn btn-secondary" data-action="cancel-collaborator">Cancelar</button>
@@ -912,13 +916,6 @@
                             </button>
                         </div>
                     </div>
-                    <div class="barcode-scan-options">
-                        <span class="barcode-option-divider">OU</span>
-                        <button class="btn btn-secondary" data-action="scan-with-camera">
-                            <i class="fas fa-camera" aria-hidden="true"></i> Escanear com a Câmera
-                        </button>
-                    </div>
-                </div>
 
                 <div id="barcode-camera-view" style="display: none; text-align: center;">
                     <video id="camera-video"
@@ -1239,13 +1236,38 @@
         </form>
     </template>
 
+    <template id="collaborator-modal-template">
+        <form id="collaborator-form" class="modal-form">
+            <h2>Adicionar/Editar Colaborador</h2>
+            <div class="modal-body">
+                <input type="hidden" id="collaborator-id" name="collaborator-id">
+                <div class="form-group"><label for="collaborator-name">Nome Completo:</label><input type="text"
+                        id="collaborator-name" name="collaborator-name" required maxlength="100"></div>
+                <div class="form-row">
+                    <div class="form-group"><label for="collaborator-registration">Matrícula:</label><input type="text"
+                            id="collaborator-registration" name="collaborator-registration" maxlength="50"></div>
+                    <div class="form-group"><label for="collaborator-role">Cargo:</label><input type="text"
+                            id="collaborator-role" name="collaborator-role" maxlength="50"></div>
+                </div>
+                <div class="form-group">
+                    <label for="collaborator-empresa">Empresa:</label>
+                    <select id="collaborator-empresa" name="collaborator-empresa" required></select>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" data-action="cancel-collaborator">Cancelar</button>
+                <button type="submit" class="btn btn-success">Salvar</button>
+            </div>
+        </form>
+    </template>
+
     <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4.3.3/dist/email.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@nlpjs/basic/dist/nlp.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/paparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 
     <script src="js/constants.js" defer></script>

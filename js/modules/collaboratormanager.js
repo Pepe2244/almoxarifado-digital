@@ -28,6 +28,7 @@ function addCollaborator(collaboratorDetails) {
         name: collaboratorDetails.name.trim(),
         role: (collaboratorDetails.role || '').trim(),
         registration: (collaboratorDetails.registration || '').trim(),
+        empresa: (collaboratorDetails.empresa || '').trim(),
         createdAt: new Date().toISOString()
     };
     collaborators.push(newCollaborator);
@@ -52,6 +53,7 @@ function addMultipleCollaborators(collaboratorsToAdd) {
             name: collaboratorDetails.name.trim(),
             role: (collaboratorDetails.role || '').trim(),
             registration: (collaboratorDetails.registration || '').trim(),
+            empresa: (collaboratorDetails.empresa || 'Weldingpro').trim(),
             createdAt: new Date().toISOString()
         };
         collaborators.push(newCollaborator);
@@ -103,6 +105,7 @@ function updateCollaborator(id, updatedDetails) {
         name: updatedDetails.name.trim(),
         role: (updatedDetails.role || '').trim(),
         registration: (updatedDetails.registration || '').trim(),
+        empresa: (updatedDetails.empresa || '').trim(),
         updatedAt: new Date().toISOString()
     };
     saveDataToLocal(DB_KEYS.COLLABORATORS, collaborators);
@@ -151,7 +154,7 @@ function renderCollaboratorsTable(collaborators, searchTerm = '') {
     const paginatedCollaborators = collaborators.slice(start, end);
 
     if (paginatedCollaborators.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="4" style="text-align: center;">Nenhum colaborador encontrado.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="5" style="text-align: center;">Nenhum colaborador encontrado.</td></tr>`;
         renderPagination('collaborator-pagination-container', 'collaborator', collaborators.length);
         return;
     }
@@ -161,7 +164,8 @@ function renderCollaboratorsTable(collaborators, searchTerm = '') {
             id,
             name,
             registration,
-            role
+            role,
+            empresa
         } = collaborator;
         const onLoanCount = getAllItems().reduce((acc, item) => {
             return acc + (item.allocations ? item.allocations.filter(a => a.collaboratorId === id).reduce((sum, a) => sum + a.quantity, 0) : 0);
@@ -181,6 +185,7 @@ function renderCollaboratorsTable(collaborators, searchTerm = '') {
                 </td>
                 <td>${registration || 'N/A'}</td>
                 <td>${role || 'N/A'}</td>
+                <td>${empresa || 'N/A'}</td>
                 <td class="actions-cell">
                     <div class="actions-container">
                         <button class="btn btn-success btn-sm" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${id}" title="Gerar Comprovante de Entrega">

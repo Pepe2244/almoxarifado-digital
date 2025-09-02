@@ -1,4 +1,3 @@
-// almoxarifado-digital/js/components/collaboratorManagement.js
 function initializeCollaboratorManagement() {
     renderCollaboratorManagementComponent();
     addCollaboratorTabEventListeners('collaborator-management');
@@ -25,6 +24,22 @@ function renderCollaboratorManagementComponent() {
                         <button id="collaborator-search-btn-icon" class="btn btn-icon-only">
                             <i class="fas fa-search"></i>
                         </button>
+                    </div>
+                    <div class="filters-dropdown-container">
+                        <button id="collaborator-filters-btn" class="btn btn-secondary" data-action="toggle-filters-dropdown">
+                            <i class="fas fa-filter"></i> Empresa
+                        </button>
+                        <div id="collaborator-filters-dropdown" class="filters-dropdown-content hidden">
+                            <div class="form-group">
+                                <label for="collaborator-empresa-filter">Empresa:</label>
+                                <select id="collaborator-empresa-filter" class="form-control">
+                                    <option value="todas">Todas</option>
+                                    <option value="Weldingpro">Weldingpro</option>
+                                    <option value="ALV">ALV</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-sm btn-danger" data-action="clear-collaborator-filters" style="width: 100%;">Limpar Filtros</button>
+                        </div>
                     </div>
                     <button class="btn btn-icon-only btn-sm hide-panel-btn" data-action="hide-panel" data-panel-id="collaborator-management" title="Ocultar painel">
                         <i class="fas fa-times"></i>
@@ -58,6 +73,7 @@ function renderCollaboratorManagementComponent() {
                             <th>Nome</th>
                             <th>Matrícula</th>
                             <th>Cargo</th>
+                            <th>Empresa</th>
                             <th class="actions-cell">Ações</th>
                         </tr>
                     </thead>
@@ -87,6 +103,10 @@ function addCollaboratorTabEventListeners(componentId) {
         const id = clickableElement.dataset.id;
 
         switch (action) {
+            case 'clear-collaborator-filters':
+                document.getElementById('collaborator-empresa-filter').value = 'todas';
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+                break;
             case ACTIONS.START_RETURN_SESSION:
                 openReturnCartModal();
                 break;

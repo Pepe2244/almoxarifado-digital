@@ -18,12 +18,12 @@ function showFormErrors(form, errors) {
     });
     showToast('Por favor, corrija os erros no formulário.', 'error');
 }
-// Variáveis globais para controle de estado da UI
 let lastScrollY = 0;
 let lastFocusedElement = null;
 let itemTypeFilterState = 'all';
 let almoxarifadoFilterState = 'todos';
 let empresaFilterState = 'todas';
+let collaboratorEmpresaFilterState = 'todas';
 let priceHistoryChart = null;
 
 const paginationState = {
@@ -47,19 +47,12 @@ const sortState = {
     serviceOrder: { key: 'openDate', direction: 'desc' }
 };
 
-/**
- * Fecha todos os dropdowns de ações e filtros que estiverem abertos.
- */
 function closeAllFixedDropdowns() {
     document.querySelectorAll('.actions-dropdown-content:not(.hidden), .filters-dropdown-content:not(.hidden)').forEach(dropdown => {
         dropdown.classList.add('hidden');
     });
 }
 
-/**
- * Armazena alertas dispensados temporariamente na sessão.
- * @param {string} alertId - O ID do alerta a ser dispensado.
- */
 function dismissTemporaryAlert(alertId) {
     const dismissedAlerts = loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS) || {};
     dismissedAlerts[alertId] = { dismissedAt: new Date().toISOString() };
@@ -67,7 +60,6 @@ function dismissTemporaryAlert(alertId) {
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 }
 
-// Listener para eventos de paginação
 document.body.addEventListener('changePage', (event) => {
     const { table, direction, totalItems } = event.detail;
     if (!paginationState[table]) return;
@@ -83,7 +75,6 @@ document.body.addEventListener('changePage', (event) => {
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 });
 
-// Listener para resetar a paginação ao aplicar filtros
 document.body.addEventListener('resetPage', (event) => {
     const { table } = event.detail;
     if (paginationState[table]) {
@@ -91,11 +82,6 @@ document.body.addEventListener('resetPage', (event) => {
     }
 });
 
-/**
- * Exibe uma notificação toast na tela.
- * @param {string} message - A mensagem a ser exibida.
- * @param {string} type - O tipo de toast ('info', 'success', 'error', 'warning').
- */
 function showToast(message, type = 'info') {
     const container = document.getElementById('toast-container');
     if (!container) return;
@@ -110,11 +96,6 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
-/**
- * Abre um modal, salvando o estado da rolagem e do foco.
- * @param {string} modalId - O ID do elemento <dialog> a ser aberto.
- * @param {function} [setupFunction] - Uma função opcional para ser executada após o modal ser encontrado, para configurá-lo.
- */
 function openModal(modalId, setupFunction) {
     const modal = document.getElementById(modalId);
     if (!modal) return;
@@ -137,24 +118,17 @@ function openModal(modalId, setupFunction) {
 
     const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
     closeButtons.forEach(button => {
-        // Remove listener antigo para evitar duplicação
         if (button._closeModalHandler) {
             button.removeEventListener('click', button._closeModalHandler);
         }
-        // Define o novo handler
         button._closeModalHandler = (event) => {
             event.preventDefault();
             closeModal(modalId);
         };
-        // Adiciona o novo listener
         button.addEventListener('click', button._closeModalHandler);
     });
 }
 
-/**
- * Fecha um modal, restaurando o estado da rolagem e do foco quando o último modal é fechado.
- * @param {string} modalId - O ID do elemento <dialog> a ser fechado.
- */
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal && modal.open) {
@@ -685,7 +659,8 @@ function createCollaboratorRow(collaborator) {
     row.innerHTML = `
         <td>${collaborator.name}</td>
         <td>${collaborator.registration || 'N/A'}</td>
-        <td><span class="status-badge">${collaborator.role || 'N/A'}</span></td>
+        <td>${collaborator.role || 'N/A'}</td>
+        <td>${collaborator.empresa || 'N/A'}</td>
         <td class="actions-cell">
             <div class="actions-container">
                 <button class="btn btn-sm btn-success" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${collaborator.id}" title="Gerar Comprovante de Entrega">
@@ -732,6 +707,7 @@ function renderCollaboratorsTable(collaborators) {
                             <th>Nome</th>
                             <th>Matrícula</th>
                             <th>Cargo</th>
+                            <th>Empresa</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -1913,11 +1889,11 @@ function renderBatchControlForm(item, modal) {
     form.elements.manufacturingDate.valueAsDate = new Date();
     form.elements.shelfLifeDays.value = item.shelfLifeDays || '';
 
-    renderBatchesTable(item, form);
+    renderBatchesTable(item, modal);
 }
 
-function renderBatchesTable(item, form) {
-    const tableBody = form.querySelector('#batches-table-body');
+function renderBatchesTable(item, modal) {
+    const tableBody = modal.querySelector('#batches-table-body');
     if (!tableBody) {
         return;
     }
@@ -1994,7 +1970,7 @@ function openMovementModal(itemId) {
         modal.querySelector('#movement-quantity').max = item.currentStock;
 
         const settings = getSettings();
-        const isReturnable = settings.returnableTypes.includes(item.type);
+        const isReturnable = settings.returnableTypes.includes(item.type) || item.type === 'Kit';
         modal.querySelector('#movement-modal-title').textContent = isReturnable ? 'Registrar Empréstimo' : 'Registrar Saída de Consumo';
 
         const collaboratorSelect = modal.querySelector('#movement-collaborator');
@@ -2049,11 +2025,22 @@ function openCollaboratorModal(collaborator = null) {
         const collabIdInput = document.getElementById('collaborator-id');
         if (collabIdInput) collabIdInput.value = '';
 
+        const empresaSelect = modal.querySelector('#collaborator-empresa');
+        if (empresaSelect) {
+            empresaSelect.innerHTML = `
+                <option value="Weldingpro">Weldingpro</option>
+                <option value="ALV">ALV</option>
+            `;
+        }
+
         if (collaborator) {
             form.elements['collaborator-id'].value = collaborator.id;
             form.elements['collaborator-name'].value = collaborator.name;
             form.elements['collaborator-role'].value = collaborator.role;
             form.elements['collaborator-registration'].value = collaborator.registration;
+            form.elements['collaborator-empresa'].value = collaborator.empresa;
+        } else {
+            form.elements['collaborator-empresa'].value = 'Weldingpro';
         }
     });
 }
@@ -2413,7 +2400,7 @@ function openQuickEntryModal(actionType, itemId, quantity = null) {
         form.elements['item-id'].value = itemId;
         form.elements['action-type'].value = actionType;
 
-        if (actionType === ACTIONS.QUICK_ADD_STOCK) {
+        if (action === ACTIONS.QUICK_ADD_STOCK) {
             if (title) title.textContent = 'Entrada Rápida de Estoque';
             if (quantityLabel) quantityLabel.textContent = 'Quantidade que chegou:';
             if (responsibleContainer) responsibleContainer.style.display = 'block';
@@ -2421,7 +2408,7 @@ function openQuickEntryModal(actionType, itemId, quantity = null) {
                 submitBtn.textContent = 'Adicionar Estoque';
                 submitBtn.className = 'btn btn-success';
             }
-        } else if (actionType === ACTIONS.REPLACE_ITEM) {
+        } else if (action === ACTIONS.REPLACE_ITEM) {
             if (title) title.textContent = 'Substituir Item Vencido';
             if (quantityLabel) quantityLabel.textContent = `Quantidade a ser substituída (vencido: ${quantity}):`;
             if (form.elements['quantity']) form.elements['quantity'].value = quantity;
@@ -2557,7 +2544,7 @@ function openBarcodeActionModal(mode = 'action', onScanComplete = null) {
                     showView(feedback);
                 }
             } catch (err) {
-                feedback.textContent = 'Erro ao acessar dispositivos de câmera.';
+                feedback.textContent = 'Erro ao acessar dispositivos de câmera:';
                 showView(feedback);
             }
         };
