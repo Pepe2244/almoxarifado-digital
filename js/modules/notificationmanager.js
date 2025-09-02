@@ -88,7 +88,7 @@ function renderNotifications() {
                 action = ACTIONS.PRINT_SIGNED_RECEIPT;
                 break;
             default:
-                icon = 'fa-info-circle';
+                icon = 'fa-gem';
                 title = 'Aviso';
                 break;
         }
