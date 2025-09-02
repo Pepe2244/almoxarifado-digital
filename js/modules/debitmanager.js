@@ -9,8 +9,8 @@ function generateDebitId() {
 function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason) {
     const finalAmount = Math.round(amount * 100) / 100;
 
-    if (typeof finalAmount !== 'number' || finalAmount <= 0) {
-        showToast("O valor do débito deve ser um número positivo maior que zero.", "error");
+    if (typeof finalAmount !== 'number' || finalAmount < 0) {
+        showToast("O valor do débito não pode ser um número negativo.", "error");
         return null;
     }
 
@@ -31,7 +31,7 @@ function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason) {
     saveDataToLocal(DB_KEYS.DEBITS, debits);
     const collaboratorName = getCollaboratorById(collaboratorId)?.name || 'Desconhecido';
     createLog('ADD_DEBIT', `Débito de R$ ${finalAmount.toFixed(2)} gerado para ${collaboratorName} (Item: ${itemName}). Motivo: ${reason}.`, 'Sistema');
-    
+
     // Dispara o evento para notificar a UI sobre a mudança nos dados
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 
@@ -61,4 +61,4 @@ function settleDebit(debitId) {
 
 function getAllDebits() {
     return loadDataFromLocal(DB_KEYS.DEBITS) || [];
-}
+} s

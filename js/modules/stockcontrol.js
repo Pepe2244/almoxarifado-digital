@@ -202,7 +202,7 @@ function returnAllocation(itemId, allocationId, lossDetails = null) {
                     const componentItem = allItems.find(i => i.id === componentId);
                     if (componentItem) {
                         const debitAmount = lossQty * (componentItem.price || 0);
-                        if (debitAmount > 0) {
+                        if (debitAmount >= 0) {
                             addDebit(allocation.collaboratorId, componentItem.id, componentItem.name, lossQty, debitAmount, `Perda de componente do kit ${item.name}.`);
                         }
                         distributeStockFromBatches(componentItem, lossQty);
@@ -358,7 +358,7 @@ function registerLoss(itemId, allocationId, reason) {
     const allocation = item.allocations[allocationIndex];
     const collaborator = getCollaboratorById(allocation.collaboratorId);
     const historyTimestamp = new Date().toISOString();
-    let debitAmount = 0;
+    let debitAmount = calculateDebitValue(item, allocation);
 
     item.onLoanCount = Math.max(0, item.onLoanCount - allocation.quantity);
 
@@ -388,7 +388,6 @@ function registerLoss(itemId, allocationId, reason) {
             return total;
         }, 0);
     } else {
-        debitAmount = calculateDebitValue(item, allocation);
         distributeStockFromBatches(item, allocation.quantity);
         updateAffectedKits(item.id, allItems);
     }
@@ -405,7 +404,7 @@ function registerLoss(itemId, allocationId, reason) {
     }
     item.allocations.splice(allocationIndex, 1);
 
-    if (debitAmount > 0 && collaborator) {
+    if (debitAmount >= 0 && collaborator) {
         addDebit(collaborator.id, item.id, item.name, allocation.quantity, debitAmount, reason);
     }
 
@@ -449,7 +448,7 @@ function registerDirectLoss(itemId, quantity, reason, responsible, collaboratorI
         item.history.length = ITEM_HISTORY_LIMIT;
     }
 
-    if (debitAmount > 0 && collaboratorId) {
+    if (debitAmount >= 0 && collaboratorId) {
         addDebit(collaboratorId, item.id, item.name, lossQuantity, debitAmount, `Perda/Descarte Direto: ${reason}`);
     }
 
