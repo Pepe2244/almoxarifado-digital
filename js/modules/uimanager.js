@@ -923,7 +923,7 @@ function renderNotificationPanel(allAlerts) {
             item.innerHTML = `
                 <div class="notification-item-content">
                     <div class="notification-message">
-                        <i class="fas ${iconMap[alertData.type] || 'fa-info-circle'}"></i>
+                        <i class="fas ${iconMap[alertData.type] || 'fa-gem'}"></i>
                         <span>${alertData.message}</span>
                     </div>
                     ${buttonsHTML ? `<div class="notification-actions">${buttonsHTML}</div>` : ''}
