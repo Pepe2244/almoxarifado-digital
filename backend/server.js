@@ -9,14 +9,40 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
+// --- CORREÇÃO INICIA AQUI ---
+
+// 1. Defina as origens permitidas.
+//    Isso informa ao servidor para aceitar requisições APENAS do seu site Netlify.
+const allowedOrigins = [
+    'https://almoxarifado-digital.netlify.app',
+    // Adicione aqui outros domínios se precisar, como 'http://localhost:3000' para testes locais.
+];
+
+// 2. Configure as opções do CORS para Express e Socket.IO.
+const corsOptions = {
+    origin: function (origin, callback) {
+        // Permite requisições sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na lista.
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "PUT", "DELETE"], // Adicione outros métodos se necessário
+    credentials: true // Permite o envio de cookies, se aplicável
+};
+
+// 3. Aplique as opções de CORS ao Socket.IO
 const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
-    }
+    cors: corsOptions
 });
 
-app.use(cors());
+// 4. Aplique as opções de CORS ao Express.
+//    Isso deve vir ANTES de qualquer definição de rota.
+app.use(cors(corsOptions));
+
+// --- FIM DA CORREÇÃO ---
+
 app.use(express.json({ limit: '25mb' }));
 
 const temporaryReceipts = new Map();
