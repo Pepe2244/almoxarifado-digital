@@ -1470,7 +1470,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const printWindow = window.open('', '_blank');
                     printWindow.document.write('<html><head><title>Comprovante de Recebimento</title>');
-                    printWindow.document.write('<style>body{font-family:sans-serif;margin:2rem;}h1,h2{color:#333;}ul{list-style:none;padding:0;}li{padding:.5rem;border-bottom:1px solid #eee;} .proof-image { max-width: 200px; margin-top: 1.5rem; border: 1px solid #ccc; padding: 5px; border-radius: 4px; } .signature-section { margin-top: 3rem; text-align: center; } </style>');
+                    printWindow.document.write('<style>body{font-family:sans-serif;margin:2rem;}h1,h2{color:#333;}ul{list-style:none;padding:0;}li{padding:.5rem;border-bottom:1px solid #eee;} .proof-image { max-width: 200px; margin-top: 1.5rem; border: 1px solid #ccc; padding: 5px; border-radius: 4px; } .signature-section { margin-top: 3rem; text-align: center; } .observations-section { margin-top: 1.5rem; padding: 1rem; border: 1px solid #eee; border-radius: 4px; background-color: #f9f9f9; }</style>');
                     printWindow.document.write('</head><body>');
                     printWindow.document.write(`<h1>Comprovante de Recebimento</h1>`);
                     printWindow.document.write(`<p><strong>Colaborador:</strong> ${receipt.collaborator_name}</p>`);
@@ -1493,6 +1493,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     itemsHtml += '</ul>';
                     printWindow.document.write(itemsHtml);
+
+                    if (receipt.observations) {
+                        printWindow.document.write('<div class="observations-section">');
+                        printWindow.document.write('<h2>Observações:</h2>');
+                        printWindow.document.write(`<p>${receipt.observations}</p>`);
+                        printWindow.document.write('</div>');
+                    }
 
                     printWindow.document.write('<div class="signature-section">');
                     printWindow.document.write('<p><strong>Prova de Recebimento:</strong></p>');
