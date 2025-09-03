@@ -1090,8 +1090,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const collaboratorId = form.elements.collaboratorId.value;
         const collaborator = getCollaboratorById(collaboratorId);
         const selectedCheckboxes = form.querySelectorAll('input[name="selectedAllocations"]:checked');
-        const observations = form.elements.observations.value; // Adicione esta linha
-
+        const observations = form.elements.observations.value;
         if (!collaborator) {
             showToast('Erro: Colaborador não encontrado.', 'error');
             return false;
@@ -1134,7 +1133,7 @@ document.addEventListener('DOMContentLoaded', () => {
             deliveryLocation: deliveryLocation,
             items: itemsForReceipt,
             service_order_id: service_order_id,
-            observations: observations // Adicione esta linha
+            observations: observations
         };
 
         const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
@@ -1838,26 +1837,22 @@ document.addEventListener('DOMContentLoaded', () => {
             updateDashboard();
         };
 
-        // --- INÍCIO DA CORREÇÃO ---
-        // 1. Removemos a busca automática que acontecia a cada letra digitada.
-        // O event listener de 'input' foi removido.
 
-        // 2. Mantemos a busca ao pressionar "Enter", que você já tinha.
         document.body.addEventListener('keydown', (event) => {
             if (event.target.matches('.search-input') && event.key === 'Enter') {
-                event.preventDefault(); // Impede o formulário de ser enviado, caso exista.
+                event.preventDefault();
                 performSearch();
             }
         });
 
-        // 3. Adicionamos a busca ao clicar no ícone de lupa.
+
         document.body.addEventListener('click', (event) => {
             const searchButton = event.target.closest('#search-btn-icon, #collaborator-search-btn-icon, #kit-search-btn-icon, #debit-search-btn-icon, #os-search-btn-icon, #log-search-btn-icon');
             if (searchButton) {
                 performSearch();
             }
         });
-        // --- FIM DA CORREÇÃO ---
+
 
 
         document.body.addEventListener('mouseover', (event) => {
