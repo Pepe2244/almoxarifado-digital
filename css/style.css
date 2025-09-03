@@ -944,7 +944,7 @@ dialog > .modal-content-wrapper {
     position: fixed;
     bottom: 20px;
     right: 20px;
-    z-index: 9999;
+    z-index: 99999; /* Valor bem alto para garantir que fique sobre o modal */
 }
 
 .toast {
