@@ -2009,6 +2009,7 @@ function renderAllocationModalContent(item, modal) {
                 <td>${alloc.location}</td>
                 <td>${new Date(alloc.date).toLocaleDateString('pt-BR')}</td>
                 <td class="actions-cell">
+                    <button class="btn btn-sm btn-info" data-action="exchange-item" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Trocar Item"><i class="fas fa-exchange-alt"></i></button>
                     <button class="btn btn-sm btn-success" data-action="${ACTIONS.RETURN_ALLOCATION}" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Devolver Item"><i class="fas fa-undo"></i></button>
                     <button class="btn btn-sm btn-danger" data-action="${ACTIONS.REGISTER_LOSS}" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Registrar Perda"><i class="fas fa-exclamation-triangle"></i></button>
                 </td>
@@ -2103,7 +2104,6 @@ function openReceiptGeneratorModal(collaboratorId) {
             itemsListContainer.innerHTML = '<p>Nenhum item alocado para este colaborador.</p>';
         }
 
-        // Adicione este trecho
         const observationsContainer = modal.querySelector('#receipt-observations-container');
         observationsContainer.innerHTML = `
             <fieldset>
@@ -3317,4 +3317,35 @@ async function printSignedReceipt(receiptId) {
         console.error('Erro ao gerar comprovante para impressão:', error);
         showToast('Não foi possível gerar o comprovante para impressão.', 'error');
     }
+}
+
+function openExchangeModal(returnedItemId, allocationId) {
+    const item = getItemById(returnedItemId);
+    const allocation = item?.allocations.find(a => a.id === allocationId);
+    if (!item || !allocation) {
+        showToast('Erro ao encontrar item ou alocação para troca.', 'error');
+        return;
+    }
+
+    openModal(MODAL_IDS.EXCHANGE, (modal) => {
+        const form = modal.querySelector('form');
+        form.reset();
+
+        const collaborator = getCollaboratorById(allocation.collaboratorId);
+
+        modal.querySelector('#exchange-returned-item-id').value = returnedItemId;
+        modal.querySelector('#exchange-allocation-id').value = allocationId;
+        modal.querySelector('#exchange-collaborator-id').value = allocation.collaboratorId;
+        modal.querySelector('#exchange-returned-item-name').textContent = item.name;
+        modal.querySelector('#exchange-collaborator-name').textContent = collaborator.name;
+        modal.querySelector('#exchange-quantity').value = allocation.quantity;
+        modal.querySelector('#exchange-quantity').max = allocation.quantity;
+
+        const newItemSelect = modal.querySelector('#exchange-new-item-select');
+        const availableItems = getAllItems().filter(i => i.type === item.type && i.id !== item.id && i.currentStock > 0);
+        newItemSelect.innerHTML = '<option value="" disabled selected>Selecione o novo item...</option>';
+        availableItems.forEach(i => {
+            newItemSelect.innerHTML += `<option value="${i.id}">${i.name} (Estoque: ${i.currentStock})</option>`;
+        });
+    });
 }

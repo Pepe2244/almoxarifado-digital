@@ -57,7 +57,6 @@ function registerMovement(itemId, quantity, collaboratorId, allocationLocation =
                 }
             }
         }
-        // Não mostra toast individual aqui para não poluir a tela no modo carrinho
     } else {
         distributeStockFromBatches(item, movementQuantity);
         item.history.unshift({
@@ -68,7 +67,6 @@ function registerMovement(itemId, quantity, collaboratorId, allocationLocation =
             details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`
         });
         updateAffectedKits(item.id, allItems);
-        // Não mostra toast individual aqui
     }
 
     if (item.history.length > ITEM_HISTORY_LIMIT) {
@@ -81,14 +79,13 @@ function registerMovement(itemId, quantity, collaboratorId, allocationLocation =
 }
 
 function registerMultipleMovements(itemsToMove, collaboratorId, location) {
-    let allItems = getAllItems(); // Carrega todos os itens uma vez para performance
+    let allItems = getAllItems();
     const collaborator = getCollaboratorById(collaboratorId);
     if (!collaborator) {
         showToast("Colaborador não encontrado.", "error");
         return false;
     }
 
-    // Validação prévia: verifica se há estoque para todos os itens antes de começar
     for (const cartItem of itemsToMove) {
         const item = allItems.find(i => i.id === cartItem.id);
         if (!item || item.currentStock < cartItem.quantity) {
@@ -100,10 +97,9 @@ function registerMultipleMovements(itemsToMove, collaboratorId, location) {
     let successCount = 0;
     const historyTimestamp = new Date().toISOString();
 
-    // Processamento: agora que sabemos que há estoque, processamos cada item
     for (const cartItem of itemsToMove) {
         const itemIndex = allItems.findIndex(i => i.id === cartItem.id);
-        if (itemIndex === -1) continue; // Item não encontrado, pula
+        if (itemIndex === -1) continue;
 
         const item = allItems[itemIndex];
         const movementQuantity = cartItem.quantity;
@@ -150,7 +146,6 @@ function registerMultipleMovements(itemsToMove, collaboratorId, location) {
         successCount++;
     }
 
-    // Recalcula o estoque de todos os itens afetados e seus kits dependentes DEPOIS de todos os débitos.
     const affectedItemIds = new Set(itemsToMove.map(i => i.id));
     allItems.forEach(item => {
         if (affectedItemIds.has(item.id) || item.type === 'Kit') {
@@ -324,8 +319,6 @@ function returnMultipleAllocations(allocationIds) {
     for (const allocId of allocationIds) {
         const item = allItems.find(i => i.allocations && i.allocations.some(a => a.id === allocId));
         if (item) {
-            // Reutiliza a lógica da função `returnAllocation` para cada item
-            // Passamos `allItems` para evitar recarregamentos múltiplos do localStorage
             if (returnAllocation(item.id, allocId)) {
                 successCount++;
             }
@@ -333,7 +326,6 @@ function returnMultipleAllocations(allocationIds) {
     }
 
     if (successCount > 0) {
-        // A função `returnAllocation` já salva os dados, então não precisamos salvar aqui de novo.
         createLog('BATCH_RETURN', `${successCount} itens devolvidos em lote.`, 'Usuário');
     }
 
@@ -529,7 +521,7 @@ function adjustStockCount(itemId, newPhysicalCount, responsible, reason, batchId
             if (existingBatch) {
                 existingBatch.quantity += difference;
             } else {
-                batchId = 'new'; // Lote não encontrado, criar um novo
+                batchId = 'new';
             }
         }
 
@@ -749,5 +741,59 @@ function allocateItemToServiceOrder(osId, itemId, quantity, allocationId) {
 
     recalculateStockFromBatches(item, allItems);
     saveDataToLocal(DB_KEYS.ITEMS, allItems);
+    return true;
+}
+
+function registerExchange(returnedItemId, allocationId, newItemId, quantity, collaboratorId) {
+    let allItems = getAllItems();
+    const returnedItem = allItems.find(item => item.id === returnedItemId);
+    const newItem = allItems.find(item => item.id === newItemId);
+    const collaborator = getCollaboratorById(collaboratorId);
+
+    if (!returnedItem || !newItem || !collaborator) {
+        showToast("Item ou colaborador não encontrado.", "error");
+        return false;
+    }
+
+    const returnSuccess = returnAllocation(returnedItemId, allocationId);
+    if (!returnSuccess) {
+        return false;
+    }
+
+    const movementSuccess = registerMovement(newItemId, quantity, collaboratorId, `Troca por ${returnedItem.name}`);
+    if (!movementSuccess) {
+        showToast(`Erro ao retirar o novo item (${newItem.name}). A devolução do item antigo foi processada.`, "error");
+        return false;
+    }
+
+    createLog('EXCHANGE', `Troca realizada por ${collaborator.name}: devolveu ${returnedItem.name} e retirou ${newItem.name}.`, 'Usuário');
+
+    const historyTimestamp = new Date().toISOString();
+
+    const updatedReturnedItem = getItemById(returnedItemId);
+    if (updatedReturnedItem) {
+        updatedReturnedItem.history.unshift({
+            type: ACTIONS.HISTORY_EXCHANGE,
+            quantity: quantity,
+            timestamp: historyTimestamp,
+            responsible: collaborator.name,
+            details: `Trocado por ${newItem.name}.`
+        });
+    }
+
+    const updatedNewItem = getItemById(newItemId);
+    if (updatedNewItem) {
+        updatedNewItem.history.unshift({
+            type: ACTIONS.HISTORY_EXCHANGE,
+            quantity: quantity,
+            timestamp: historyTimestamp,
+            responsible: collaborator.name,
+            details: `Recebido na troca por ${returnedItem.name}.`
+        });
+    }
+
+    saveDataToLocal(DB_KEYS.ITEMS, getAllItems());
+
+    showToast("Troca realizada com sucesso!", "success");
     return true;
 }

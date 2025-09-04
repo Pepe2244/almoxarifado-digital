@@ -87,6 +87,7 @@ const ACTIONS = {
     CANCEL_SERVICE_ORDER: 'cancel-service-order',
     CANCEL_SERVICE_ORDER_DETAILS: 'cancel-service-order-details',
     CANCEL_SIGNED_RECEIPTS: 'cancel-signed-receipts',
+    CANCEL_EXCHANGE: 'cancel-exchange',
     HISTORY_ENTRY: 'entry',
     HISTORY_EXIT: 'exit',
     HISTORY_LOAN: 'loan',
@@ -94,6 +95,7 @@ const ACTIONS = {
     HISTORY_ADJUSTMENT: 'adjustment',
     HISTORY_LOSS: 'loss',
     HISTORY_DISCARD: 'discard',
+    HISTORY_EXCHANGE: 'exchange',
     PRICE_CHECK_REMINDER: 'price_check_reminder',
     KIT_RETURN_FAIL: 'kit_return_fail'
 };
@@ -125,7 +127,8 @@ const MODAL_IDS = {
     SERVICE_ORDER_DETAILS: 'service-order-details-modal',
     CART_CHECKOUT: 'cart-checkout-modal',
     RETURN_CART: 'return-cart-modal',
-    KIT_ASSEMBLY_BULK: 'kit-assembly-bulk-modal'
+    KIT_ASSEMBLY_BULK: 'kit-assembly-bulk-modal',
+    EXCHANGE: 'exchange-modal'
 };
 
 const ALERT_TYPES = {

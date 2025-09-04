@@ -398,6 +398,25 @@ document.addEventListener('DOMContentLoaded', () => {
         return success;
     }
 
+    function handleExchangeForm(form) {
+        const returnedItemId = form.elements['exchange-returned-item-id'].value;
+        const allocationId = form.elements['exchange-allocation-id'].value;
+        const newItemId = form.elements['newItemId'].value;
+        const quantity = parseInt(form.elements.quantity.value, 10);
+        const collaboratorId = form.elements['exchange-collaborator-id'].value;
+
+        if (!newItemId) {
+            showToast("Selecione o novo item para a troca.", "error");
+            return false;
+        }
+
+        const success = registerExchange(returnedItemId, allocationId, newItemId, quantity, collaboratorId);
+        if (success) {
+            closeModal(MODAL_IDS.ALLOCATION);
+        }
+        return success;
+    }
+
     const formHandlers = {
         'settings-form': handleSettingsForm,
         'batch-form': handleBatchForm,
@@ -418,6 +437,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'return-cart-form': handleReturnCartForm,
         'kit-assembly-bulk-form': handleKitAssemblyBulkForm,
         'receipt-generator-form': handleReceiptGeneratorForm,
+        'exchange-form': handleExchangeForm,
     };
 
     async function handleFormSubmit(event) {
@@ -1428,7 +1448,8 @@ document.addEventListener('DOMContentLoaded', () => {
             [ACTIONS.CANCEL_SERVICE_ORDER_DETAILS]: MODAL_IDS.SERVICE_ORDER_DETAILS,
             'cancel-checkout': MODAL_IDS.CART_CHECKOUT,
             [ACTIONS.CANCEL_RETURN_SESSION]: MODAL_IDS.RETURN_CART,
-            [ACTIONS.CANCEL_KIT_ASSEMBLY_BULK]: MODAL_IDS.KIT_ASSEMBLY_BULK
+            [ACTIONS.CANCEL_KIT_ASSEMBLY_BULK]: MODAL_IDS.KIT_ASSEMBLY_BULK,
+            [ACTIONS.CANCEL_EXCHANGE]: MODAL_IDS.EXCHANGE
         };
 
         if (typeof modalActions[action] === 'function') {
@@ -1443,6 +1464,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = button.dataset.id;
         const allocId = button.dataset.allocId;
         switch (action) {
+            case 'exchange-item':
+                openExchangeModal(id, allocId);
+                break;
             case ACTIONS.PRINT_RECEIPT: {
                 const receiptId = button.dataset.id;
                 if (!receiptId) {
