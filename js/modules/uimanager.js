@@ -3261,7 +3261,7 @@ async function printSignedReceipt(receiptId) {
             <html lang="pt-BR">
             <head>
                 <meta charset="UTF-8">
-                <title>Comprovante de Recebimento - ID ${receipt.id}</title>
+                <title>COMPROVANTE DE RECEBIMENTO - ID ${receipt.id}</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 20px; }
                     .receipt-container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #ccc; padding: 20px; }
