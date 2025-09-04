@@ -114,6 +114,11 @@
                 grid-template-columns: 1fr 1fr;
             }
         }
+        #expiration-timer {
+            margin-top: 1rem;
+            font-weight: bold;
+            color: #dc3545;
+        }
     </style>
 </head>
 <body>
@@ -128,6 +133,8 @@
             let receiptData = null;
             let photoBase64 = null;
             let stream = null;
+            let expirationInterval;
+
 
             container.innerHTML = `<div class="loading"><h2><i class="fas fa-spinner fa-spin"></i> Carregando comprovante...</h2></div>`;
 
@@ -142,9 +149,38 @@
                 receiptData = await response.json();
                 if (!response.ok) throw new Error(receiptData.error);
                 renderReceipt(receiptData);
+                startExpirationTimer(receiptData.deliveryDate);
             } catch (error) {
                 container.innerHTML = `<div class="error"><h1>Erro ao Carregar</h1><p>${error.message}</p></div>`;
             }
+
+            function startExpirationTimer(creationDate) {
+                const expirationTime = new Date(creationDate).getTime() + (28800 * 1000);
+                const timerElement = document.getElementById('expiration-timer');
+
+                if(!timerElement) return;
+
+                expirationInterval = setInterval(() => {
+                    const now = new Date().getTime();
+                    const distance = expirationTime - now;
+
+                    if (distance < 0) {
+                        clearInterval(expirationInterval);
+                        timerElement.innerHTML = "Este comprovante expirou!";
+                        // Optionally disable the form/buttons
+                        document.getElementById('submit-receipt').disabled = true;
+                        document.getElementById('start-camera-btn').disabled = true;
+                        return;
+                    }
+
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    timerElement.innerHTML = `Este comprovante expira em: ${hours}h ${minutes}m ${seconds}s`;
+                }, 1000);
+            }
+
 
             function renderReceipt(data) {
                 const formattedDate = new Date(data.deliveryDate).toLocaleString('pt-BR');
@@ -165,7 +201,10 @@
                 }
 
                 container.innerHTML = `
-                    <div class="receipt-header"><h1>Comprovante de Recebimento</h1></div>
+                    <div class="receipt-header">
+                        <h1>Comprovante de Recebimento</h1>
+                        <div id="expiration-timer"></div>
+                    </div>
                     <div class="info-grid">
                         <div class="info-item"><strong>Colaborador:</strong> ${data.collaboratorName}</div>
                         <div class="info-item"><strong>Matrícula:</strong> ${data.collaboratorRegistration || 'Não informada'}</div>
