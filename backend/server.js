@@ -9,43 +9,30 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
-// --- CORREÇÃO INICIA AQUI ---
-
-// 1. Defina as origens permitidas.
-//    Isso informa ao servidor para aceitar requisições APENAS do seu site Netlify.
+// --- SUAS CONFIGURAÇÕES DE CORS (MANTENHA COMO ESTÁ) ---
 const allowedOrigins = [
     'https://almoxarifado-digital.netlify.app',
-    // Adicione aqui outros domínios se precisar, como 'http://localhost:3000' para testes locais.
 ];
-
-// 2. Configure as opções do CORS para Express e Socket.IO.
 const corsOptions = {
     origin: function (origin, callback) {
-        // Permite requisições sem 'origin' (como apps mobile ou Postman) ou se a origem estiver na lista.
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
     },
-    methods: ["GET", "POST", "PUT", "DELETE"], // Adicione outros métodos se necessário
-    credentials: true // Permite o envio de cookies, se aplicável
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true
 };
-
-// 3. Aplique as opções de CORS ao Socket.IO
 const io = new Server(server, {
     cors: corsOptions
 });
-
-// 4. Aplique as opções de CORS ao Express.
-//    Isso deve vir ANTES de qualquer definição de rota.
 app.use(cors(corsOptions));
-
-// --- FIM DA CORREÇÃO ---
+// --- FIM DAS CONFIGURAÇÕES DE CORS ---
 
 app.use(express.json({ limit: '25mb' }));
 
-const temporaryReceipts = new Map();
+// REMOVIDO: const temporaryReceipts = new Map();
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
@@ -69,11 +56,26 @@ pool.connect((err, client, release) => {
 
 const query = (text, params) => pool.query(text, params);
 
+// Função para limpar tokens expirados (pode ser executada periodicamente)
+async function clearExpiredReceiptTokens() {
+    try {
+        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+        await query("DELETE FROM temporary_receipts WHERE created_at < $1", [eightHoursAgo]);
+        console.log("Tokens de comprovante expirados foram limpos.");
+    } catch (err) {
+        console.error("Erro ao limpar tokens expirados:", err);
+    }
+}
+
+// Executa a limpeza a cada hora
+setInterval(clearExpiredReceiptTokens, 60 * 60 * 1000);
+
+
 app.get('/', (req, res) => {
     res.send('API do Almoxarifado Digital está no ar!');
 });
 
-app.post('/api/generate-receipt', (req, res) => {
+app.post('/api/generate-receipt', async (req, res) => {
     const { collaboratorId, collaboratorName, collaboratorRole, collaboratorRegistration, deliveryLocation, items, service_order_id, observations } = req.body;
 
     if (!collaboratorId || !items || items.length === 0) {
@@ -93,27 +95,48 @@ app.post('/api/generate-receipt', (req, res) => {
         deliveryDate: new Date()
     };
 
-    temporaryReceipts.set(token, receiptData);
-
-    setTimeout(() => {
-        temporaryReceipts.delete(token);
-        console.log(`Comprovante com token ${token} expirou e foi removido.`);
-    }, 28800 * 1000);
-
-    res.status(200).json({ token });
-});
-
-app.get('/api/receipt-data/:token', (req, res) => {
-    const { token } = req.params;
-    const receiptData = temporaryReceipts.get(token);
-
-    if (receiptData) {
-        res.status(200).json(receiptData);
-    } else {
-        res.status(404).json({ error: 'Comprovante não encontrado ou expirado. Por favor, gere um novo link.' });
+    try {
+        const sql = 'INSERT INTO temporary_receipts (token, receipt_data) VALUES ($1, $2)';
+        await query(sql, [token, JSON.stringify(receiptData)]);
+        res.status(200).json({ token });
+    } catch (err) {
+        console.error("Erro ao salvar token no banco de dados:", err);
+        res.status(500).json({ error: 'Erro interno do servidor ao gerar o link.' });
     }
 });
 
+
+app.get('/api/receipt-data/:token', async (req, res) => {
+    const { token } = req.params;
+    
+    try {
+        const sql = "SELECT receipt_data, created_at FROM temporary_receipts WHERE token = $1";
+        const { rows } = await query(sql, [token]);
+
+        if (rows.length === 0) {
+            return res.status(404).json({ error: 'Comprovante não encontrado ou expirado. Por favor, gere um novo link.' });
+        }
+
+        const receipt = rows[0];
+        const creationDate = new Date(receipt.created_at);
+        const expirationDate = new Date(creationDate.getTime() + 8 * 60 * 60 * 1000);
+
+        if (new Date() > expirationDate) {
+            // Opcional: Deletar o token expirado assim que for acessado
+            await query("DELETE FROM temporary_receipts WHERE token = $1", [token]);
+            return res.status(404).json({ error: 'Este link de comprovante expirou. Por favor, gere um novo.' });
+        }
+
+        res.status(200).json(receipt.receipt_data);
+
+    } catch (err) {
+        console.error("Erro ao buscar token no banco de dados:", err);
+        res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});
+
+
+// Mantenha o restante do seu código (rotas de /api/items, /api/collaborators, etc.) aqui...
 app.get('/api/items', async (req, res) => {
     try {
         const { rows } = await query('SELECT * FROM items WHERE is_active = TRUE ORDER BY name');
