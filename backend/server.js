@@ -205,7 +205,6 @@ app.post('/api/receipts', async (req, res) => {
     }
 });
 
-
 // Mantenha o restante do seu código (rotas de /api/items, /api/collaborators, etc.) aqui...
 app.get('/api/items', async (req, res) => {
     try {
@@ -387,6 +386,63 @@ io.on('connection', (socket) => {
         console.log('Usuário desconectado');
     });
 });
+
+// NOVO ENDPOINT DE LIMPEZA
+app.post('/api/admin/cleanup-old-tokens', async (req, res) => {
+    console.log('Iniciando limpeza de tokens antigos...');
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // Pega todos os tokens pendentes
+        const { rows: pendingTokens } = await client.query("SELECT token, receipt_data FROM temporary_receipts WHERE status = 'pending'");
+
+        // Pega todos os comprovantes já assinados
+        const { rows: signedReceipts } = await client.query('SELECT collaborator_id, items, created_at FROM signed_receipts');
+
+        let updatedCount = 0;
+
+        for (const token of pendingTokens) {
+            const tempData = token.receipt_data;
+
+            // Procura por uma correspondência nos comprovantes assinados
+            const isAlreadySigned = signedReceipts.some(signed => {
+                // Compara ID do colaborador
+                const collaboratorMatch = signed.collaborator_id === tempData.collaboratorId;
+                if (!collaboratorMatch) return false;
+
+                // Compara os itens de forma robusta
+                try {
+                    const signedItems = signed.items.map(i => ({ name: i.name, quantity: i.quantity })).sort((a, b) => a.name.localeCompare(b.name));
+                    const tempItems = tempData.items.map(i => ({ name: i.name, quantity: i.quantity })).sort((a, b) => a.name.localeCompare(b.name));
+                    return JSON.stringify(signedItems) === JSON.stringify(tempItems);
+                } catch (e) {
+                    return false;
+                }
+            });
+
+            if (isAlreadySigned) {
+                // Se encontrou correspondência, atualiza o status do token
+                await client.query("UPDATE temporary_receipts SET status = 'signed' WHERE token = $1", [token.token]);
+                updatedCount++;
+                console.log(`Token ${token.token.substring(0, 8)}... marcado como 'signed'.`);
+            }
+        }
+
+        await client.query('COMMIT');
+        const message = `Limpeza concluída. ${updatedCount} links de comprovantes antigos foram invalidados com sucesso.`;
+        res.status(200).json({ message });
+        console.log(message);
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Erro durante a limpeza de tokens:", err);
+        res.status(500).json({ error: 'Erro interno do servidor durante a limpeza.' });
+    } finally {
+        client.release();
+    }
+});
+
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
