@@ -300,7 +300,7 @@ function dismissAllNotifications() {
     let dismissedCount = 0;
     allCurrentAlerts.forEach(alert => {
         if (behaviors[alert.type] === 'info' && !dismissedAlerts[alert.id]) {
-            dismissedAlerts[alertId] = {
+            dismissedAlerts[alert.id] = {
                 dismissedAt: new Date().toISOString()
             };
             dismissedCount++;
