@@ -126,7 +126,7 @@ app.get('/api/receipt-data/:token', async (req, res) => {
 
         const creationDate = new Date(receipt.created_at);
         // Aumentamos a validade para 24h
-        const expirationDate = new Date(creationDate.getTime() + 24 * 60 * 60 * 1000);
+        const expirationDate = new Date(creationDate.getTime() + 8 * 60 * 60 * 1000);
 
         if (new Date() > expirationDate) {
             await query("DELETE FROM temporary_receipts WHERE token = $1", [token]);
