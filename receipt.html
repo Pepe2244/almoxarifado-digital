@@ -178,7 +178,7 @@
             }
 
             function startExpirationTimer(creationDate) {
-                const expirationTime = new Date(creationDate).getTime() + (24 * 60 * 60 * 1000);
+                const expirationTime = new Date(creationDate).getTime() + (8 * 60 * 60 * 1000);
                 const timerElement = document.getElementById('expiration-timer');
 
                 if(!timerElement) return;

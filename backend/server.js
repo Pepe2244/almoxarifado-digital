@@ -9,7 +9,7 @@ const { Server } = require("socket.io");
 const app = express();
 const server = http.createServer(app);
 
-// --- SUAS CONFIGURAÇÕES DE CORS (MANTENHA COMO ESTÁ) ---
+
 const allowedOrigins = [
     'https://almoxarifado-digital.netlify.app',
 ];
@@ -28,7 +28,7 @@ const io = new Server(server, {
     cors: corsOptions
 });
 app.use(cors(corsOptions));
-// --- FIM DAS CONFIGURAÇÕES DE CORS ---
+
 
 app.use(express.json({ limit: '25mb' }));
 
@@ -54,18 +54,18 @@ pool.connect((err, client, release) => {
 
 const query = (text, params) => pool.query(text, params);
 
-// Função para limpar tokens expirados (agora limpa após 24h para dar tempo de ver o status "assinado")
+
 async function clearExpiredReceiptTokens() {
     try {
-        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        await query("DELETE FROM temporary_receipts WHERE created_at < $1", [twentyFourHoursAgo]);
-        console.log("Tokens de comprovante expirados foram limpos.");
+        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
+        await query("DELETE FROM temporary_receipts WHERE created_at < $1 AND status = 'pending'", [eightHoursAgo]);
+        console.log("Tokens de comprovante pendentes e expirados foram limpos.");
     } catch (err) {
         console.error("Erro ao limpar tokens expirados:", err);
     }
 }
 
-// Executa a limpeza a cada hora
+
 setInterval(clearExpiredReceiptTokens, 60 * 60 * 1000);
 
 
@@ -94,7 +94,7 @@ app.post('/api/generate-receipt', async (req, res) => {
     };
 
     try {
-        // Agora inserimos com o status 'pending'
+
         const sql = 'INSERT INTO temporary_receipts (token, receipt_data, status) VALUES ($1, $2, $3)';
         await query(sql, [token, JSON.stringify(receiptData), 'pending']);
         res.status(200).json({ token });
@@ -109,7 +109,7 @@ app.get('/api/receipt-data/:token', async (req, res) => {
     const { token } = req.params;
 
     try {
-        // Buscamos também o status
+
         const sql = "SELECT receipt_data, created_at, status FROM temporary_receipts WHERE token = $1";
         const { rows } = await query(sql, [token]);
 
@@ -119,13 +119,13 @@ app.get('/api/receipt-data/:token', async (req, res) => {
 
         const receipt = rows[0];
 
-        // Se já foi assinado, retorna o status para o frontend tratar
+
         if (receipt.status === 'signed') {
             return res.status(200).json({ status: 'signed', receipt_data: receipt.receipt_data });
         }
 
         const creationDate = new Date(receipt.created_at);
-        // Aumentamos a validade para 24h
+
         const expirationDate = new Date(creationDate.getTime() + 8 * 60 * 60 * 1000);
 
         if (new Date() > expirationDate) {
@@ -141,7 +141,7 @@ app.get('/api/receipt-data/:token', async (req, res) => {
     }
 });
 
-// Rota de assinatura atualizada
+
 app.post('/api/receipts', async (req, res) => {
     const client = await pool.connect();
     try {
@@ -164,7 +164,7 @@ app.post('/api/receipts', async (req, res) => {
             return res.status(400).json({ error: 'Token do comprovante não fornecido.' });
         }
 
-        // Verifica o status do token
+
         const { rows: tempRows } = await client.query('SELECT status FROM temporary_receipts WHERE token = $1 FOR UPDATE', [token]);
 
         if (tempRows.length === 0) {
@@ -177,7 +177,7 @@ app.post('/api/receipts', async (req, res) => {
             return res.status(409).json({ error: 'Este comprovante já foi assinado.' });
         }
 
-        // Insere o comprovante definitivo
+
         const insertSql = `
             INSERT INTO signed_receipts
             (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image, observations)
@@ -188,7 +188,7 @@ app.post('/api/receipts', async (req, res) => {
         const result = await client.query(insertSql, values);
         const newReceipt = result.rows[0];
 
-        // ATUALIZA o status em vez de deletar
+
         await client.query("UPDATE temporary_receipts SET status = 'signed' WHERE token = $1", [token]);
 
         await client.query('COMMIT');
@@ -205,7 +205,7 @@ app.post('/api/receipts', async (req, res) => {
     }
 });
 
-// Mantenha o restante do seu código (rotas de /api/items, /api/collaborators, etc.) aqui...
+
 app.get('/api/items', async (req, res) => {
     try {
         const { rows } = await query('SELECT * FROM items WHERE is_active = TRUE ORDER BY name');
