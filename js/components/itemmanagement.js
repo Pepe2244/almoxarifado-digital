@@ -67,7 +67,11 @@ function renderItemManagementComponent() {
                     <label for="item-type-filter">Tipo de Item:</label>
                     <select id="item-type-filter" class="form-control"></select>
                 </div>
-                 <button class="btn btn-sm btn-danger" data-action="clear-item-filters" style="width: 100%;">Limpar Filtros</button>
+                <div class="form-group" style="flex-direction: row; align-items: center; gap: 10px; margin-top: 1rem;">
+                    <input type="checkbox" id="on-loan-filter" name="on-loan-filter" style="width: auto;">
+                    <label for="on-loan-filter" style="margin-bottom: 0;">Apenas itens emprestados</label>
+                </div>
+                 <button class="btn btn-sm btn-danger" data-action="clear-item-filters" style="width: 100%; margin-top: 1rem;">Limpar Filtros</button>
             </div>
         </div>
         <button class="btn btn-icon-only" data-action="${ACTIONS.SCAN_BARCODE}" title="Escanear Código de Barras">

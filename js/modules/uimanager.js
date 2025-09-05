@@ -24,6 +24,7 @@ let lastFocusedElement = null;
 let itemTypeFilterState = 'all';
 let almoxarifadoFilterState = 'todos';
 let empresaFilterState = 'todas';
+let onLoanFilterState = false;
 let collaboratorEmpresaFilterState = 'todas';
 
 let itemSearchTermState = '';
@@ -34,6 +35,8 @@ let logSearchTermState = '';
 let osSearchTermState = '';
 
 let priceHistoryChart = null;
+let itemUsageChart = null;
+let debitHistoryChart = null;
 
 const paginationState = {
     item: { currentPage: 1 },
@@ -555,6 +558,11 @@ function renderItemsTable(filteredItems, updatedItemId = null) {
     const almoxarifadoFilter = document.getElementById('almoxarifado-filter');
     if (almoxarifadoFilter) {
         almoxarifadoFilter.value = almoxarifadoFilterState;
+    }
+
+    const onLoanFilter = document.getElementById('on-loan-filter');
+    if (onLoanFilter) {
+        onLoanFilter.checked = onLoanFilterState;
     }
 
     const searchTerm = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
@@ -1730,7 +1738,8 @@ function renderHistoryContent(history, modal) {
             [ACTIONS.HISTORY_LOAN]: 'Empréstimo',
             [ACTIONS.HISTORY_RETURN]: 'Devolução',
             [ACTIONS.HISTORY_LOSS]: 'Perda',
-            [ACTIONS.HISTORY_DISCARD]: 'Descarte'
+            [ACTIONS.HISTORY_DISCARD]: 'Descarte',
+            [ACTIONS.HISTORY_EXCHANGE]: 'Troca'
         };
         const rows = history.map(record => `<tr><td>${new Date(record.timestamp).toLocaleString('pt-BR')}</td><td>${typeMap[record.type] || record.type}</td><td>${record.quantity}</td><td>${record.responsible || 'N/A'}</td></tr>`).join('');
         container.innerHTML = `<div class="table-responsive"><table class="item-table"><thead><tr><th>Data</th><th>Tipo</th><th>Qtd.</th><th>Responsável</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -2869,6 +2878,65 @@ function openCollaboratorDashboardModal(collaboratorId) {
             debitsContainer.innerHTML = debitsHtml;
         } else {
             debitsContainer.innerHTML = '<p>Nenhum débito pendente para este colaborador.</p>';
+        }
+
+        const isDarkMode = document.body.classList.contains('dark');
+        const textColor = isDarkMode ? '#c9d1d9' : '#212529';
+        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
+
+        const { itemUsageData, debitHistoryData } = getCollaboratorPerformanceData(collaboratorId);
+
+        const itemUsageCtx = document.getElementById('item-usage-chart')?.getContext('2d');
+        if (itemUsageCtx) {
+            if (itemUsageChart) itemUsageChart.destroy();
+            itemUsageChart = new Chart(itemUsageCtx, {
+                type: 'bar',
+                data: {
+                    labels: itemUsageData.labels,
+                    datasets: [{
+                        label: 'Quantidade Retirada',
+                        data: itemUsageData.data,
+                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+                        x: { ticks: { color: textColor } }
+                    }
+                }
+            });
+        }
+
+        const debitHistoryCtx = document.getElementById('debit-history-chart')?.getContext('2d');
+        if (debitHistoryCtx) {
+            if (debitHistoryChart) debitHistoryChart.destroy();
+            debitHistoryChart = new Chart(debitHistoryCtx, {
+                type: 'line',
+                data: {
+                    labels: debitHistoryData.labels,
+                    datasets: [{
+                        label: 'Valor do Débito (R$)',
+                        data: debitHistoryData.data,
+                        borderColor: 'rgba(220, 53, 69, 0.8)',
+                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
+                        fill: true,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
+                        x: { ticks: { color: textColor } }
+                    }
+                }
+            });
         }
     });
 }

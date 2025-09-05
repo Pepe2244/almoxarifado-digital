@@ -100,3 +100,63 @@ function generateUnifiedPredictiveAnalysis() {
 
     return analysis.sort((a, b) => a.sortPriority - b.sortPriority);
 }
+
+function getCollaboratorPerformanceData(collaboratorId) {
+    const allItems = getAllItems();
+    const allDebits = getAllDebits();
+    const ninetyDaysAgo = new Date();
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+    const itemUsage = new Map();
+    allItems.forEach(item => {
+        (item.history || []).forEach(record => {
+            if (record.responsible === getCollaboratorById(collaboratorId)?.name && new Date(record.timestamp) >= ninetyDaysAgo) {
+                if ([ACTIONS.HISTORY_EXIT, ACTIONS.HISTORY_LOAN].includes(record.type)) {
+                    const currentQty = itemUsage.get(item.name) || 0;
+                    itemUsage.set(item.name, currentQty + record.quantity);
+                }
+            }
+        });
+    });
+
+    const sortedItemUsage = Array.from(itemUsage.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    const itemUsageData = {
+        labels: sortedItemUsage.map(entry => entry[0]),
+        data: sortedItemUsage.map(entry => entry[1])
+    };
+
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12);
+    const monthlyDebits = new Map();
+    for (let i = 0; i < 12; i++) {
+        const month = new Date();
+        month.setMonth(month.getMonth() - i);
+        const monthKey = `${month.getFullYear()}-${(month.getMonth() + 1).toString().padStart(2, '0')}`;
+        monthlyDebits.set(monthKey, 0);
+    }
+
+    allDebits.forEach(debit => {
+        if (debit.collaboratorId === collaboratorId && new Date(debit.date) >= twelveMonthsAgo) {
+            const debitDate = new Date(debit.date);
+            const monthKey = `${debitDate.getFullYear()}-${(debitDate.getMonth() + 1).toString().padStart(2, '0')}`;
+            if (monthlyDebits.has(monthKey)) {
+                monthlyDebits.set(monthKey, monthlyDebits.get(monthKey) + debit.amount);
+            }
+        }
+    });
+
+    const sortedMonthlyDebits = Array.from(monthlyDebits.entries()).reverse();
+
+    const debitHistoryData = {
+        labels: sortedMonthlyDebits.map(entry => {
+            const [year, month] = entry[0].split('-');
+            return `${month}/${year}`;
+        }),
+        data: sortedMonthlyDebits.map(entry => entry[1])
+    };
+
+    return { itemUsageData, debitHistoryData };
+}

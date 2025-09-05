@@ -274,6 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (empresaFilterState !== 'todas') activeFiltersCount++;
         if (almoxarifadoFilterState !== 'todos') activeFiltersCount++;
         if (itemTypeFilterState !== 'all') activeFiltersCount++;
+        if (onLoanFilterState) activeFiltersCount++;
 
         const activeFiltersBadge = document.getElementById('active-filters-count');
         if (activeFiltersBadge) {
@@ -296,7 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 (item.location?.aisle || '').toLowerCase().includes(itemSearchTerm) :
                 true;
             const matchesType = itemTypeFilterState === 'all' ? true : item.type === itemTypeFilterState;
-            return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
+            const matchesOnLoan = onLoanFilterState ? (item.onLoanCount > 0) : true;
+            return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType && matchesOnLoan;
         });
 
         const sortItemsBy = sortState.item.key;
@@ -1208,7 +1210,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         (item.location?.aisle || '').toLowerCase().includes(itemSearchTermState) :
                         true;
                     const matchesType = itemTypeFilterState === 'all' || !itemTypeFilterState ? true : item.type === itemTypeFilterState;
-                    return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType;
+                    const matchesOnLoan = onLoanFilterState ? (item.onLoanCount > 0) : true;
+                    return isNotKit && matchesEmpresa && matchesAlmoxarifado && matchesSearch && matchesType && matchesOnLoan;
                 }).length;
             case 'kit':
                 return allItems.filter(item => {
@@ -1569,6 +1572,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 empresaFilterState = 'todas';
                 almoxarifadoFilterState = 'todos';
                 itemTypeFilterState = 'all';
+                onLoanFilterState = false;
                 itemSearchTermState = '';
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
                 break;
@@ -1802,10 +1806,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         document.body.addEventListener('change', (event) => {
-            if (event.target.matches('#item-type-filter, #almoxarifado-filter, #empresa-filter')) {
+            if (event.target.matches('#item-type-filter, #almoxarifado-filter, #empresa-filter, #on-loan-filter')) {
                 itemTypeFilterState = document.getElementById('item-type-filter').value;
                 almoxarifadoFilterState = document.getElementById('almoxarifado-filter').value;
                 empresaFilterState = document.getElementById('empresa-filter').value;
+                onLoanFilterState = document.getElementById('on-loan-filter').checked;
                 document.body.dispatchEvent(new CustomEvent('resetPage', {
                     detail: {
                         table: 'item'

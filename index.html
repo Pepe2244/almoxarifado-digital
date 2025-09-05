@@ -704,6 +704,20 @@
             </div>
             <div class="modal-body settings-body" style="display: flex; flex-direction: column; gap: 1.5rem;">
                 <div id="collaborator-dashboard-summary" class="os-details-grid"></div>
+                <div class="charts-grid" id="collaborator-charts-grid">
+                    <div class="chart-container">
+                        <h4>Itens Mais Retirados (Últimos 90 dias)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="item-usage-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <h4>Histórico de Débitos (Últimos 12 meses)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="debit-history-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
                 <fieldset>
                     <legend>Itens Atualmente Alocados</legend>
                     <div id="collaborator-dashboard-items" class="table-responsive"></div>
