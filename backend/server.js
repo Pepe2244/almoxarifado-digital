@@ -32,8 +32,6 @@ app.use(cors(corsOptions));
 
 app.use(express.json({ limit: '25mb' }));
 
-// REMOVIDO: const temporaryReceipts = new Map();
-
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
     ssl: {
@@ -56,11 +54,11 @@ pool.connect((err, client, release) => {
 
 const query = (text, params) => pool.query(text, params);
 
-// Função para limpar tokens expirados (pode ser executada periodicamente)
+// Função para limpar tokens expirados (agora limpa após 24h para dar tempo de ver o status "assinado")
 async function clearExpiredReceiptTokens() {
     try {
-        const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-        await query("DELETE FROM temporary_receipts WHERE created_at < $1", [eightHoursAgo]);
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        await query("DELETE FROM temporary_receipts WHERE created_at < $1", [twentyFourHoursAgo]);
         console.log("Tokens de comprovante expirados foram limpos.");
     } catch (err) {
         console.error("Erro ao limpar tokens expirados:", err);
@@ -96,8 +94,9 @@ app.post('/api/generate-receipt', async (req, res) => {
     };
 
     try {
-        const sql = 'INSERT INTO temporary_receipts (token, receipt_data) VALUES ($1, $2)';
-        await query(sql, [token, JSON.stringify(receiptData)]);
+        // Agora inserimos com o status 'pending'
+        const sql = 'INSERT INTO temporary_receipts (token, receipt_data, status) VALUES ($1, $2, $3)';
+        await query(sql, [token, JSON.stringify(receiptData), 'pending']);
         res.status(200).json({ token });
     } catch (err) {
         console.error("Erro ao salvar token no banco de dados:", err);
@@ -108,9 +107,10 @@ app.post('/api/generate-receipt', async (req, res) => {
 
 app.get('/api/receipt-data/:token', async (req, res) => {
     const { token } = req.params;
-    
+
     try {
-        const sql = "SELECT receipt_data, created_at FROM temporary_receipts WHERE token = $1";
+        // Buscamos também o status
+        const sql = "SELECT receipt_data, created_at, status FROM temporary_receipts WHERE token = $1";
         const { rows } = await query(sql, [token]);
 
         if (rows.length === 0) {
@@ -118,20 +118,90 @@ app.get('/api/receipt-data/:token', async (req, res) => {
         }
 
         const receipt = rows[0];
+
+        // Se já foi assinado, retorna o status para o frontend tratar
+        if (receipt.status === 'signed') {
+            return res.status(200).json({ status: 'signed', receipt_data: receipt.receipt_data });
+        }
+
         const creationDate = new Date(receipt.created_at);
-        const expirationDate = new Date(creationDate.getTime() + 8 * 60 * 60 * 1000);
+        // Aumentamos a validade para 24h
+        const expirationDate = new Date(creationDate.getTime() + 24 * 60 * 60 * 1000);
 
         if (new Date() > expirationDate) {
-            // Opcional: Deletar o token expirado assim que for acessado
             await query("DELETE FROM temporary_receipts WHERE token = $1", [token]);
             return res.status(404).json({ error: 'Este link de comprovante expirou. Por favor, gere um novo.' });
         }
 
-        res.status(200).json(receipt.receipt_data);
+        res.status(200).json({ status: 'pending', receipt_data: receipt.receipt_data });
 
     } catch (err) {
         console.error("Erro ao buscar token no banco de dados:", err);
         res.status(500).json({ error: 'Erro interno do servidor.' });
+    }
+});
+
+// Rota de assinatura atualizada
+app.post('/api/receipts', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        const {
+            token,
+            service_order_id,
+            collaborator_id,
+            collaborator_name,
+            collaborator_role,
+            delivery_location,
+            items,
+            proof_image,
+            observations
+        } = req.body;
+
+        if (!token) {
+            await client.query('ROLLBACK');
+            return res.status(400).json({ error: 'Token do comprovante não fornecido.' });
+        }
+
+        // Verifica o status do token
+        const { rows: tempRows } = await client.query('SELECT status FROM temporary_receipts WHERE token = $1 FOR UPDATE', [token]);
+
+        if (tempRows.length === 0) {
+            await client.query('ROLLBACK');
+            return res.status(404).json({ error: 'Link de comprovante inválido ou expirado.' });
+        }
+
+        if (tempRows[0].status === 'signed') {
+            await client.query('ROLLBACK');
+            return res.status(409).json({ error: 'Este comprovante já foi assinado.' });
+        }
+
+        // Insere o comprovante definitivo
+        const insertSql = `
+            INSERT INTO signed_receipts
+            (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image, observations)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING *
+        `;
+        const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image, observations];
+        const result = await client.query(insertSql, values);
+        const newReceipt = result.rows[0];
+
+        // ATUALIZA o status em vez de deletar
+        await client.query("UPDATE temporary_receipts SET status = 'signed' WHERE token = $1", [token]);
+
+        await client.query('COMMIT');
+
+        io.emit('new_receipt_signed', newReceipt);
+        res.status(201).json({ id: newReceipt.id, message: 'Comprovante salvo com sucesso!' });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error("Erro ao processar comprovante:", err);
+        res.status(500).json({ error: 'Erro interno do servidor ao processar o comprovante.' });
+    } finally {
+        client.release();
     }
 });
 
@@ -296,53 +366,6 @@ app.post('/api/service-orders', async (req, res) => {
         res.status(500).json({ error: err.message });
     } finally {
         client.release();
-    }
-});
-
-app.post('/api/receipts', async (req, res) => {
-    const {
-        service_order_id,
-        collaborator_id,
-        collaborator_name,
-        collaborator_role,
-        delivery_location,
-        items,
-        proof_image,
-        observations
-    } = req.body;
-
-    try {
-        if (!service_order_id) {
-            const checkSql = `
-                SELECT id FROM signed_receipts
-                WHERE collaborator_id = $1
-                  AND items = $2
-                  AND created_at > NOW() - INTERVAL '5 minutes'
-            `;
-            const { rows } = await query(checkSql, [collaborator_id, JSON.stringify(items)]);
-            if (rows.length > 0) {
-                return res.status(409).json({ error: 'Um comprovante idêntico foi enviado há poucos instantes. Tente novamente em alguns minutos se esta for uma nova entrega.' });
-            }
-        }
-
-        const insertSql = `
-            INSERT INTO signed_receipts
-            (service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, items, proof_image, observations)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING *
-        `;
-        const values = [service_order_id, collaborator_id, collaborator_name, collaborator_role, delivery_location, JSON.stringify(items), proof_image, observations];
-
-        const result = await query(insertSql, values);
-        const newReceipt = result.rows[0];
-
-        io.emit('new_receipt_signed', newReceipt);
-
-        res.status(201).json({ id: newReceipt.id, message: 'Comprovante salvo com sucesso!' });
-
-    } catch (err) {
-        console.error("Erro ao processar comprovante:", err);
-        res.status(500).json({ error: 'Erro interno do servidor ao processar o comprovante.' });
     }
 });
 

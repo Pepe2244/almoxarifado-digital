@@ -97,16 +97,21 @@
             cursor: not-allowed;
             opacity: 0.7;
         }
-        .loading, .error, .success {
+        .loading, .error, .success, .already-signed {
             text-align: center;
             padding: 3rem;
         }
-        .success h2 {
+        .success h2, .already-signed h2 {
             color: #28a745;
         }
-        .success i {
+        .success i, .already-signed i {
             font-size: 3rem;
             color: #28a745;
+        }
+        .already-signed p {
+            margin-top: 1rem;
+            font-size: 1.1rem;
+            color: #333;
         }
 
         @media (min-width: 600px) {
@@ -146,16 +151,34 @@
 
             try {
                 const response = await fetch(`${API_BASE_URL}/receipt-data/${token}`);
-                receiptData = await response.json();
-                if (!response.ok) throw new Error(receiptData.error);
-                renderReceipt(receiptData);
-                startExpirationTimer(receiptData.deliveryDate);
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+
+                if (data.status === 'signed') {
+                    renderAlreadySigned(data.receipt_data);
+                } else if (data.status === 'pending') {
+                    receiptData = data.receipt_data;
+                    renderReceipt(receiptData);
+                    startExpirationTimer(receiptData.deliveryDate);
+                } else {
+                    throw new Error('Status do comprovante desconhecido.');
+                }
             } catch (error) {
                 container.innerHTML = `<div class="error"><h1>Erro ao Carregar</h1><p>${error.message}</p></div>`;
             }
 
+            function renderAlreadySigned(data) {
+                container.innerHTML = `
+                    <div class="already-signed">
+                        <h1><i class="fas fa-check-circle"></i></h1>
+                        <h2>Comprovante Já Assinado</h2>
+                        <p>Este comprovante de entrega para <strong>${data.collaboratorName}</strong> já foi confirmado e não pode ser reenviado.</p>
+                    </div>
+                `;
+            }
+
             function startExpirationTimer(creationDate) {
-                const expirationTime = new Date(creationDate).getTime() + (28800 * 1000);
+                const expirationTime = new Date(creationDate).getTime() + (24 * 60 * 60 * 1000);
                 const timerElement = document.getElementById('expiration-timer');
 
                 if(!timerElement) return;
@@ -167,7 +190,6 @@
                     if (distance < 0) {
                         clearInterval(expirationInterval);
                         timerElement.innerHTML = "Este comprovante expirou!";
-                        // Optionally disable the form/buttons
                         document.getElementById('submit-receipt').disabled = true;
                         document.getElementById('start-camera-btn').disabled = true;
                         return;
@@ -296,6 +318,7 @@
                 submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
 
                 const finalReceiptData = {
+                    token: token,
                     service_order_id: receiptData.service_order_id,
                     collaborator_id: receiptData.collaboratorId,
                     collaborator_name: receiptData.collaboratorName,
