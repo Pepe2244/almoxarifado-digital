@@ -2076,25 +2076,56 @@ function openReceiptGeneratorModal(collaboratorId) {
         modal.querySelector('#receipt-collaborator-name').textContent = collaborator.name;
 
         const allItems = getAllItems();
+        const oneDayAgo = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
+
+        // Itens retornáveis (empréstimos)
         const allocatedItems = allItems.flatMap(item =>
             (item.allocations || [])
                 .filter(alloc => alloc.collaboratorId === collaboratorId)
                 .map(alloc => ({
-                    ...item,
-                    allocationDetails: alloc
+                    id: alloc.id,
+                    itemId: item.id,
+                    name: item.name,
+                    ca: item.ca,
+                    quantity: alloc.quantity,
+                    date: alloc.date,
+                    type: 'Empréstimo' // loan
                 }))
         );
 
+        // Itens não retornáveis (saídas de consumo) recentes
+        const recentExits = allItems.flatMap(item =>
+            (item.history || [])
+                .filter(record =>
+                    record.type === ACTIONS.HISTORY_EXIT &&
+                    record.responsible === collaborator.name &&
+                    new Date(record.timestamp) > oneDayAgo
+                )
+                .map(record => ({
+                    id: record.exitId,
+                    itemId: item.id,
+                    name: item.name,
+                    ca: item.ca,
+                    quantity: record.quantity,
+                    date: record.timestamp,
+                    type: 'Saída' // exit
+                }))
+        );
+
+        const itemsForReceipt = [...allocatedItems, ...recentExits]
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+
         const itemsListContainer = modal.querySelector('#receipt-items-list');
-        if (allocatedItems.length > 0) {
-            let itemsHtml = '<table class="item-table"><thead><tr><th><input type="checkbox" id="select-all-receipt-items"></th><th>Item</th><th>Qtd.</th><th>Data Alocação</th></tr></thead><tbody>';
-            allocatedItems.forEach(item => {
+        if (itemsForReceipt.length > 0) {
+            let itemsHtml = '<table class="item-table"><thead><tr><th><input type="checkbox" id="select-all-receipt-items"></th><th>Item</th><th>Qtd.</th><th>Tipo</th><th>Data</th></tr></thead><tbody>';
+            itemsForReceipt.forEach(item => {
                 itemsHtml += `
                     <tr>
-                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedAllocations" value="${item.allocationDetails.id}"></td>
+                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedItemsForReceipt" value="${item.type}_${item.id}"></td>
                         <td>${item.name} ${item.ca ? `(CA: ${item.ca})` : ''}</td>
-                        <td>${item.allocationDetails.quantity}</td>
-                        <td>${new Date(item.allocationDetails.date).toLocaleDateString('pt-BR')}</td>
+                        <td>${item.quantity}</td>
+                        <td><span class="status-badge ${item.type === 'Empréstimo' ? 'status-warning' : 'status-info'}">${item.type}</span></td>
+                        <td>${new Date(item.date).toLocaleDateString('pt-BR')}</td>
                     </tr>
                 `;
             });
@@ -2110,7 +2141,7 @@ function openReceiptGeneratorModal(collaboratorId) {
             };
 
         } else {
-            itemsListContainer.innerHTML = '<p>Nenhum item alocado para este colaborador.</p>';
+            itemsListContainer.innerHTML = '<p>Nenhum item emprestado ou com saída recente para este colaborador.</p>';
         }
 
         const observationsContainer = modal.querySelector('#receipt-observations-container');
@@ -2127,6 +2158,7 @@ function openReceiptGeneratorModal(collaboratorId) {
         modal.querySelector('#generate-receipt-link-btn').style.display = 'inline-flex';
     });
 }
+
 
 async function openSignedReceiptsModal(collaboratorId) {
     const collaborator = getCollaboratorById(collaboratorId);

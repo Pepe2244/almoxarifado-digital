@@ -64,7 +64,8 @@ function registerMovement(itemId, quantity, collaboratorId, allocationLocation =
             quantity: movementQuantity,
             timestamp: historyTimestamp,
             responsible: collaborator.name,
-            details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`
+            details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`,
+            exitId: crypto.randomUUID() // ID único para a saída
         });
         updateAffectedKits(item.id, allItems);
     }
@@ -140,7 +141,8 @@ function registerMultipleMovements(itemsToMove, collaboratorId, location) {
                 quantity: movementQuantity,
                 timestamp: historyTimestamp,
                 responsible: collaborator.name,
-                details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`
+                details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`,
+                exitId: crypto.randomUUID() // ID único para a saída
             });
         }
         successCount++;
