@@ -1113,6 +1113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const collaborator = getCollaboratorById(collaboratorId);
         const selectedCheckboxes = form.querySelectorAll('input[name="selectedAllocations"]:checked');
         const observations = form.elements.observations.value;
+
         if (!collaborator) {
             showToast('Erro: Colaborador não encontrado.', 'error');
             return false;
@@ -1128,24 +1129,40 @@ document.addEventListener('DOMContentLoaded', () => {
         let service_order_id = null;
 
         const itemsForReceipt = Array.from(selectedCheckboxes).map(cb => {
-            const allocationId = cb.value;
-            const item = allItems.find(i => i.allocations?.some(a => a.id === allocationId));
-            const allocation = item?.allocations.find(a => a.id === allocationId);
+            const [type, id] = cb.value.split('_');
+            let item, allocation, quantity, ca;
 
-            if (allocation && allocation.location && !deliveryLocation) {
-                deliveryLocation = allocation.location;
+            if (type === 'Empréstimo') {
+                item = allItems.find(i => i.allocations?.some(a => a.id === id));
+                if (item) {
+                    allocation = item.allocations.find(a => a.id === id);
+                    quantity = allocation.quantity;
+                    ca = item.ca || '';
+                }
+            } else if (type === 'Saída') {
+                item = allItems.find(i => i.history?.some(h => h.exitId === id));
+                if (item) {
+                    const historyEntry = item.history.find(h => h.exitId === id);
+                    quantity = historyEntry.quantity;
+                    ca = item.ca || '';
+                }
             }
 
-            if (allocation && allocation.serviceOrderId) {
-                service_order_id = allocation.serviceOrderId;
+            if (item) {
+                if (allocation && allocation.location && !deliveryLocation) {
+                    deliveryLocation = allocation.location;
+                }
+                if (allocation && allocation.serviceOrderId) {
+                    service_order_id = allocation.serviceOrderId;
+                }
+                return {
+                    name: item.name,
+                    quantity: quantity,
+                    ca: ca
+                };
             }
-
-            return {
-                name: item.name,
-                quantity: allocation.quantity,
-                ca: item.ca || ''
-            };
-        });
+            return null;
+        }).filter(Boolean);
 
         const requestBody = {
             collaboratorId: collaborator.id,
@@ -1189,6 +1206,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return false;
         }
     }
+
 
     function getFilteredDataLength(tableType) {
         const allItems = getAllItems();
