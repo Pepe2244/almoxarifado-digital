@@ -2121,7 +2121,7 @@ function openReceiptGeneratorModal(collaboratorId) {
             itemsForReceipt.forEach(item => {
                 itemsHtml += `
                     <tr>
-                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedItemsForReceipt" value="${item.type}_${item.id}"></td>
+                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedAllocations" value="${item.type}_${item.id}"></td>
                         <td>${item.name} ${item.ca ? `(CA: ${item.ca})` : ''}</td>
                         <td>${item.quantity}</td>
                         <td><span class="status-badge ${item.type === 'Empréstimo' ? 'status-warning' : 'status-info'}">${item.type}</span></td>
