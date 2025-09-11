@@ -751,14 +751,18 @@ function createDebitRow(debit) {
     const row = document.createElement('tr');
     row.dataset.id = debit.id;
     const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || 'Colaborador não encontrado';
+    const isDiscount = debit.type === 'Desconto';
+    const typeBadge = `<span class="status-badge ${isDiscount ? 'status-info' : 'status-danger'}">${debit.type || 'Débito'}</span>`;
+
     row.innerHTML = `
         <td>${new Date(debit.date).toLocaleDateString('pt-BR')}</td>
         <td>${collaboratorName}</td>
         <td>${debit.itemName} (Qtd: ${debit.quantity})</td>
         <td>${debit.reason}</td>
+        <td>${typeBadge}</td>
         <td>R$ ${debit.amount.toFixed(2)}</td>
         <td class="actions-cell">
-            <button class="btn btn-sm btn-success" data-action="${ACTIONS.SETTLE_DEBIT}" data-id="${debit.id}" title="Quitar Débito"><i class="fas fa-check"></i></button>
+            <button class="btn btn-sm btn-success" data-action="${ACTIONS.SETTLE_DEBIT}" data-id="${debit.id}" title="Quitar Pendência"><i class="fas fa-check"></i></button>
         </td>`;
     return row;
 }
@@ -770,7 +774,7 @@ function renderDebitsTable(allDebits, searchTerm = '') {
         paginationContainerId: 'debit-pagination-container',
         data: debits,
         renderRowFunction: createDebitRow,
-        noDataMessage: searchTerm ? `Nenhum débito encontrado para "${searchTerm}".` : 'Nenhum débito pendente registrado.',
+        noDataMessage: searchTerm ? `Nenhuma pendência encontrada para "${searchTerm}".` : 'Nenhuma pendência financeira registrada.',
         tableType: 'debit'
     });
 }
@@ -2078,7 +2082,6 @@ function openReceiptGeneratorModal(collaboratorId) {
         const allItems = getAllItems();
         const oneDayAgo = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
 
-        // Itens retornáveis (empréstimos)
         const allocatedItems = allItems.flatMap(item =>
             (item.allocations || [])
                 .filter(alloc => alloc.collaboratorId === collaboratorId)
@@ -2089,11 +2092,10 @@ function openReceiptGeneratorModal(collaboratorId) {
                     ca: item.ca,
                     quantity: alloc.quantity,
                     date: alloc.date,
-                    type: 'Empréstimo' // loan
+                    type: 'Empréstimo'
                 }))
         );
 
-        // Itens não retornáveis (saídas de consumo) recentes
         const recentExits = allItems.flatMap(item =>
             (item.history || [])
                 .filter(record =>
@@ -2108,7 +2110,7 @@ function openReceiptGeneratorModal(collaboratorId) {
                     ca: item.ca,
                     quantity: record.quantity,
                     date: record.timestamp,
-                    type: 'Saída' // exit
+                    type: 'Saída'
                 }))
         );
 
@@ -3352,7 +3354,7 @@ async function printSignedReceipt(receiptId) {
         const items = JSON.parse(receipt.items);
         const itemsHtml = items.map(item => `
             <tr>
-                <td>${item.quantity}x ${item.name}</td>
+                <td>${item.quantity}x ${item.name} ${item.ca ? `(CA: ${item.ca})` : ''}</td>
             </tr>
         `).join('');
 

@@ -1,4 +1,3 @@
-// almoxarifado-digital/js/components/debitManagement.js
 function initializeDebitManagement() {
     renderDebitManagementComponent();
     addDebitTabEventListeners('debit-management');
@@ -17,10 +16,10 @@ function renderDebitManagementComponent() {
 
     component.innerHTML = `
         <div class="card-header">
-            <h2><i class="fas fa-hand-holding-usd"></i> Gestão de Débitos</h2>
+            <h2><i class="fas fa-file-invoice-dollar"></i> Gestão de Pendências Financeiras</h2>
             <div class="header-actions">
                 <div class="search-container">
-                    <input type="text" id="debit-search-input" class="search-input" placeholder="Buscar débitos...">
+                    <input type="text" id="debit-search-input" class="search-input" placeholder="Buscar pendências...">
                     <button id="debit-search-btn-icon" class="btn btn-icon-only">
                         <i class="fas fa-search"></i>
                     </button>
@@ -38,7 +37,7 @@ function renderDebitManagementComponent() {
                             <th>Data</th>
                             <th>Colaborador</th>
                             <th>Item (Qtd.)</th>
-                            <th>Motivo</th>
+                            <th>Tipo</th>
                             <th>Valor (R$)</th>
                             <th>Ações</th>
                         </tr>
@@ -56,7 +55,7 @@ function addDebitTabEventListeners(componentId) {
     const component = document.getElementById(componentId);
     if (!component) return;
 
-    component.addEventListener('click', async(event) => {
+    component.addEventListener('click', async (event) => {
         const button = event.target.closest('button');
         if (!button) return;
 
@@ -69,8 +68,8 @@ function addDebitTabEventListeners(componentId) {
                 if (debitToSettle) {
                     const collaboratorName = getCollaboratorById(debitToSettle.collaboratorId)?.name || 'Desconhecido';
                     openConfirmationModal({
-                        title: 'Quitar Débito',
-                        message: `Tem certeza que deseja quitar o débito de R$ ${debitToSettle.amount.toFixed(2)} de "${debitToSettle.itemName}" para ${collaboratorName}?`,
+                        title: 'Quitar Pendência',
+                        message: `Tem certeza que deseja quitar a pendência de R$ ${debitToSettle.amount.toFixed(2)} de "${debitToSettle.itemName}" para ${collaboratorName}?`,
                         onConfirm: () => {
                             if (settleDebit(id)) {
                                 document.body.dispatchEvent(new CustomEvent('dataChanged'));

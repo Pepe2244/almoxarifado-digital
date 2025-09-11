@@ -1,4 +1,3 @@
-// almoxarifado-digital/js/modules/itemManager.js
 function initializeItems() {
     return loadDataFromLocal(DB_KEYS.ITEMS);
 }
@@ -119,6 +118,7 @@ async function createItem(itemDetails) {
         allocations: [],
         maintenanceHistory: [],
         kitItems: itemDetails.type === 'Kit' ? [] : undefined,
+        geraDesconto: itemDetails.geraDesconto || false,
         createdAt: new Date().toISOString()
     };
 
@@ -302,6 +302,7 @@ async function updateItem(id, updatedDetails) {
         },
         isReturnable: isNowReturnable,
         status: isNowReturnable ? (updatedDetails.status || 'Ativo') : 'N/A',
+        geraDesconto: updatedDetails.geraDesconto || false,
         updatedAt: new Date().toISOString()
     };
 

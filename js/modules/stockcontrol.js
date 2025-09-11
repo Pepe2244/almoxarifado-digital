@@ -65,13 +65,19 @@ function registerMovement(itemId, quantity, collaboratorId, allocationLocation =
             timestamp: historyTimestamp,
             responsible: collaborator.name,
             details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`,
-            exitId: crypto.randomUUID() // ID único para a saída
+            exitId: crypto.randomUUID()
         });
         updateAffectedKits(item.id, allItems);
     }
 
     if (item.history.length > ITEM_HISTORY_LIMIT) {
         item.history.length = ITEM_HISTORY_LIMIT;
+    }
+
+    if (item.geraDesconto) {
+        const discountAmount = (item.price || 0) * movementQuantity;
+        const reason = `Desconto referente à retirada de ${item.name}`;
+        addDebit(collaboratorId, itemId, item.name, movementQuantity, discountAmount, reason, 'Desconto');
     }
 
     recalculateStockFromBatches(item, allItems);
@@ -142,9 +148,16 @@ function registerMultipleMovements(itemsToMove, collaboratorId, location) {
                 timestamp: historyTimestamp,
                 responsible: collaborator.name,
                 details: `Saída de ${movementQuantity} unidade(s) ${historyDetails}`,
-                exitId: crypto.randomUUID() // ID único para a saída
+                exitId: crypto.randomUUID()
             });
         }
+
+        if (item.geraDesconto) {
+            const discountAmount = (item.price || 0) * movementQuantity;
+            const reason = `Desconto referente à retirada de ${item.name}`;
+            addDebit(collaboratorId, item.id, item.name, movementQuantity, discountAmount, reason, 'Desconto');
+        }
+
         successCount++;
     }
 

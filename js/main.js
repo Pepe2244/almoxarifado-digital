@@ -493,7 +493,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 shelf: formData.get('shelf'),
                 box: formData.get('box')
             },
-            status: formData.get('status')
+            status: formData.get('status'),
+            geraDesconto: formData.get('geraDesconto') === 'on'
         };
 
         if (!isUpdate) {
@@ -1699,7 +1700,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     settings.dashboardsCollapsed[dashboardKey] = isCollapsed;
                     saveSettings(settings);
                     const icon = button.querySelector('i');
-                    if (icon) icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
+                    if (icon) icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fa-chevron-up';
                 }
                 break;
             }

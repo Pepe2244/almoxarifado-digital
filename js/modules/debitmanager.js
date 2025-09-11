@@ -6,7 +6,7 @@ function generateDebitId() {
     return crypto.randomUUID();
 }
 
-function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason) {
+function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason, type = 'Débito') {
     const finalAmount = Math.round(amount * 100) / 100;
 
     if (typeof finalAmount !== 'number' || finalAmount < 0) {
@@ -25,14 +25,14 @@ function addDebit(collaboratorId, itemId, itemName, quantity, amount, reason) {
         reason: reason,
         date: new Date().toISOString(),
         isSettled: false,
-        settledDate: null
+        settledDate: null,
+        type: type
     };
     debits.unshift(newDebit);
     saveDataToLocal(DB_KEYS.DEBITS, debits);
     const collaboratorName = getCollaboratorById(collaboratorId)?.name || 'Desconhecido';
     createLog('ADD_DEBIT', `Débito de R$ ${finalAmount.toFixed(2)} gerado para ${collaboratorName} (Item: ${itemName}). Motivo: ${reason}.`, 'Sistema');
 
-    // Dispara o evento para notificar a UI sobre a mudança nos dados
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 
     return newDebit;
@@ -61,4 +61,4 @@ function settleDebit(debitId) {
 
 function getAllDebits() {
     return loadDataFromLocal(DB_KEYS.DEBITS) || [];
-} 
+}
