@@ -758,7 +758,6 @@ function createDebitRow(debit) {
         <td>${new Date(debit.date).toLocaleDateString('pt-BR')}</td>
         <td>${collaboratorName}</td>
         <td>${debit.itemName} (Qtd: ${debit.quantity})</td>
-        <td>${debit.reason}</td>
         <td>${typeBadge}</td>
         <td>R$ ${debit.amount.toFixed(2)}</td>
         <td class="actions-cell">
@@ -1093,7 +1092,8 @@ function createMovementReportRow(record) {
         [ACTIONS.HISTORY_LOAN]: 'Empréstimo',
         [ACTIONS.HISTORY_RETURN]: 'Devolução',
         [ACTIONS.HISTORY_LOSS]: 'Perda',
-        [ACTIONS.HISTORY_DISCARD]: 'Descarte'
+        [ACTIONS.HISTORY_DISCARD]: 'Descarte',
+        [ACTIONS.HISTORY_EXCHANGE]: 'Troca'
     };
     row.innerHTML = `
         <td>${new Date(record.timestamp).toLocaleString('pt-BR')}</td>
