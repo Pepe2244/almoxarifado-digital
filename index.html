@@ -748,7 +748,13 @@
                 <legend>Selecione os Itens para o Comprovante</legend>
                 <div id="receipt-items-list" class="table-responsive"></div>
             </fieldset>
-            <div id="receipt-observations-container"></div>
+            <fieldset>
+    <legend>Observações Adicionais</legend>
+    <div id="receipt-observations-container" class="form-group">
+        <label for="receipt-observations">Adicione qualquer observação relevante (opcional):</label>
+        <textarea id="receipt-observations" name="observations" rows="3" class="form-control" maxlength="500"></textarea>
+    </div>
+</fieldset>
             <div id="receipt-link-container" class="form-group" style="display: none;">
                 <label for="receipt-link">Link Gerado (válido por 8 horas):</label>
                 <input type="text" id="receipt-link" readonly>

@@ -1139,39 +1139,25 @@ document.addEventListener('DOMContentLoaded', () => {
         let service_order_id = null;
 
         const itemsForReceipt = Array.from(selectedCheckboxes).map(cb => {
-            const [type, id] = cb.value.split('_');
-            let item, allocation, quantity, ca;
+            const allocationId = cb.value;
+            const item = allItems.find(i => i.allocations?.some(a => a.id === allocationId));
+            if (!item) return null;
 
-            if (type === 'Empréstimo') {
-                item = allItems.find(i => i.allocations?.some(a => a.id === id));
-                if (item) {
-                    allocation = item.allocations.find(a => a.id === id);
-                    quantity = allocation.quantity;
-                    ca = item.ca || '';
-                }
-            } else if (type === 'Saída') {
-                item = allItems.find(i => i.history?.some(h => h.exitId === id));
-                if (item) {
-                    const historyEntry = item.history.find(h => h.exitId === id);
-                    quantity = historyEntry.quantity;
-                    ca = item.ca || '';
-                }
+            const allocation = item.allocations.find(a => a.id === allocationId);
+            if (!allocation) return null;
+
+            if (allocation && allocation.location && !deliveryLocation) {
+                deliveryLocation = allocation.location;
+            }
+            if (allocation && allocation.serviceOrderId) {
+                service_order_id = allocation.serviceOrderId;
             }
 
-            if (item) {
-                if (allocation && allocation.location && !deliveryLocation) {
-                    deliveryLocation = allocation.location;
-                }
-                if (allocation && allocation.serviceOrderId) {
-                    service_order_id = allocation.serviceOrderId;
-                }
-                return {
-                    name: item.name,
-                    quantity: quantity,
-                    ca: ca
-                };
-            }
-            return null;
+            return {
+                name: item.name,
+                quantity: allocation.quantity,
+                ca: item.ca || ''
+            };
         }).filter(Boolean);
 
         const requestBody = {
