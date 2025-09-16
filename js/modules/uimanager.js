@@ -2099,14 +2099,26 @@ function openCollaboratorModal(collaborator = null) {
             return;
         }
         form.reset();
-        const collabIdInput = document.getElementById('collaborator-id');
+        clearFormErrors(form);
+
+        const collabIdInput = form.elements['collaborator-id'];
         if (collabIdInput) collabIdInput.value = '';
 
+        // Popula o campo de seleção de Empresa
+        const empresaSelect = form.elements['collaborator-empresa'];
+        empresaSelect.innerHTML = `
+            <option value="" disabled selected>Selecione a empresa</option>
+            <option value="WeldingPro">WeldingPro</option>
+            <option value="ALV">ALV</option>
+        `;
+
+        // Se estiver editando, preenche os campos com os dados existentes
         if (collaborator) {
             form.elements['collaborator-id'].value = collaborator.id;
             form.elements['collaborator-name'].value = collaborator.name;
             form.elements['collaborator-role'].value = collaborator.role;
             form.elements['collaborator-registration'].value = collaborator.registration;
+            form.elements['collaborator-empresa'].value = collaborator.empresa || '';
         }
     });
 }
