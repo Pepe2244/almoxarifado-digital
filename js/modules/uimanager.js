@@ -134,6 +134,54 @@ function showToast(message, type = 'info') {
     }, 4000);
 }
 
+function openModal(modalId, setupFunction) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+
+    const isFirstModal = !document.querySelector('dialog[open]');
+    if (isFirstModal) {
+        lastScrollY = window.scrollY;
+        document.body.style.overflow = 'hidden';
+    }
+
+    lastFocusedElement = document.activeElement;
+
+    if (setupFunction && typeof setupFunction === 'function') {
+        setupFunction(modal);
+    }
+
+    if (!modal.open) {
+        modal.showModal();
+    }
+
+    const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
+    closeButtons.forEach(button => {
+        if (button._closeModalHandler) {
+            button.removeEventListener('click', button._closeModalHandler);
+        }
+        button._closeModalHandler = (event) => {
+            event.preventDefault();
+            closeModal(modalId);
+        };
+        button.addEventListener('click', button._closeModalHandler);
+    });
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.open) {
+        modal.close();
+
+        queueMicrotask(() => {
+            const anyModalOpen = document.querySelector('dialog[open]');
+            if (!anyModalOpen) {
+                document.body.style.overflow = '';
+                window.scrollTo(0, lastScrollY);
+            }
+        });
+    }
+}
+
 function renderMainLayout() {
     renderUnifiedDashboardComponent();
     const logViewer = document.getElementById('log-viewer');
@@ -1314,6 +1362,33 @@ function renderBatchValidityReport(reportData) {
         noDataMessage: 'Nenhum lote para análise.',
         tableType: 'report'
     });
+}
+
+
+function openModal(modalId, setupFunction) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    lastFocusedElement = document.activeElement;
+    if (setupFunction) setupFunction(modal);
+    if (!modal.open) {
+        modal.showModal();
+    }
+    const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
+    closeButtons.forEach(button => {
+        button.removeEventListener('click', button._closeModalHandler);
+        button._closeModalHandler = (event) => {
+            event.preventDefault();
+            closeModal(modalId);
+        };
+        button.addEventListener('click', button._closeModalHandler);
+    });
+}
+
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal && modal.open) {
+        modal.close();
+    }
 }
 
 function openItemFormModal(options = {}) {
