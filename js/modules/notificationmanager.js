@@ -8,6 +8,12 @@ function initializeNotificationManager() {
 
 function addNotification(type, message, relatedId, isActionable = false) {
     const settings = getSettings();
+    const existingNotification = notifications.find(n => n.type === type && n.relatedId === relatedId);
+    if (existingNotification) {
+        console.log('Notificação duplicada evitada:', message);
+        return;
+    }
+
     const newNotification = {
         id: `notif_${new Date().getTime()}_${Math.random()}`,
         type,
@@ -86,6 +92,10 @@ function renderNotifications() {
                 icon = 'fa-gem';
                 title = 'Comprovante Assinado';
                 action = ACTIONS.PRINT_SIGNED_RECEIPT;
+                break;
+            case ALERT_TYPES.UNSIGNED_RECEIPT:
+                icon = 'fa-clock';
+                title = 'Comprovante Expirado';
                 break;
             default:
                 icon = 'fa-gem';

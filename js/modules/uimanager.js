@@ -1,26 +1,70 @@
-function clearFormErrors(form) {
-    const errorMessages = form.querySelectorAll('.error-message');
-    errorMessages.forEach(msg => msg.remove());
-    const errorInputs = form.querySelectorAll('.is-invalid');
-    errorInputs.forEach(input => input.classList.remove('is-invalid'));
-}
-
-function showFormErrors(form, errors) {
-    errors.forEach(error => {
-        const field = form.querySelector(`[name="${error.field}"]`);
-        if (field) {
-            field.classList.add('is-invalid');
-            const errorElement = document.createElement('div');
-            errorElement.className = 'error-message';
-            errorElement.textContent = error.message;
-            field.parentElement.appendChild(errorElement);
-        }
+function closeAllFixedDropdowns() {
+    document.querySelectorAll('.actions-dropdown-content:not(.hidden)').forEach(dropdown => {
+        dropdown.classList.add('hidden');
     });
-    showToast('Por favor, corrija os erros no formulário.', 'error');
+    document.querySelectorAll('.filters-dropdown-content:not(.hidden)').forEach(dropdown => {
+        dropdown.classList.add('hidden');
+    });
 }
-let lastScrollY = 0;
-let lastFocusedElement = null;
 
+const paginationState = {
+    item: {
+        currentPage: 1
+    },
+    kit: {
+        currentPage: 1
+    },
+    collaborator: {
+        currentPage: 1
+    },
+    debit: {
+        currentPage: 1
+    },
+    consumption: {
+        currentPage: 1
+    },
+    lifecycle: {
+        currentPage: 1
+    },
+    log: {
+        currentPage: 1
+    },
+    report: {
+        currentPage: 1
+    },
+    serviceOrder: {
+        currentPage: 1
+    }
+};
+
+const sortState = {
+    item: {
+        key: 'name',
+        direction: 'asc'
+    },
+    kit: {
+        key: 'name',
+        direction: 'asc'
+    },
+    collaborator: {
+        key: 'name',
+        direction: 'asc'
+    },
+    debit: {
+        key: 'date',
+        direction: 'desc'
+    },
+    log: {
+        key: 'timestamp',
+        direction: 'desc'
+    },
+    serviceOrder: {
+        key: 'openDate',
+        direction: 'desc'
+    }
+};
+
+let lastFocusedElement = null;
 let itemTypeFilterState = 'all';
 let almoxarifadoFilterState = 'todos';
 let empresaFilterState = 'todas';
@@ -38,44 +82,24 @@ let priceHistoryChart = null;
 let itemUsageChart = null;
 let debitHistoryChart = null;
 
-const paginationState = {
-    item: { currentPage: 1 },
-    kit: { currentPage: 1 },
-    collaborator: { currentPage: 1 },
-    debit: { currentPage: 1 },
-    consumption: { currentPage: 1 },
-    lifecycle: { currentPage: 1 },
-    log: { currentPage: 1 },
-    report: { currentPage: 1 },
-    serviceOrder: { currentPage: 1 }
-};
-
-const sortState = {
-    item: { key: 'name', direction: 'asc' },
-    kit: { key: 'name', direction: 'asc' },
-    collaborator: { key: 'name', direction: 'asc' },
-    debit: { key: 'date', direction: 'desc' },
-    log: { key: 'timestamp', direction: 'desc' },
-    serviceOrder: { key: 'openDate', direction: 'desc' }
-};
-
-function closeAllFixedDropdowns() {
-    document.querySelectorAll('.actions-dropdown-content:not(.hidden), .filters-dropdown-content:not(.hidden)').forEach(dropdown => {
-        dropdown.classList.add('hidden');
-    });
-}
 
 function dismissTemporaryAlert(alertId) {
     const dismissedAlerts = loadDataFromLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS) || {};
-    dismissedAlerts[alertId] = { dismissedAt: new Date().toISOString() };
+    dismissedAlerts[alertId] = {
+        dismissedAt: new Date().toISOString()
+    };
     saveDataToLocal(DB_KEYS.DISMISSED_TEMPORARY_ALERTS, dismissedAlerts);
     document.body.dispatchEvent(new CustomEvent('dataChanged'));
 }
 
 document.body.addEventListener('changePage', (event) => {
-    const { table, direction, totalItems } = event.detail;
+    const {
+        table,
+        direction
+    } = event.detail;
     if (!paginationState[table]) return;
 
+    const totalItems = event.detail.totalItems;
     const itemsPerPage = getSettings().itemsPerPage;
     const totalPages = Math.ceil(totalItems / itemsPerPage);
 
@@ -88,7 +112,9 @@ document.body.addEventListener('changePage', (event) => {
 });
 
 document.body.addEventListener('resetPage', (event) => {
-    const { table } = event.detail;
+    const {
+        table
+    } = event.detail;
     if (paginationState[table]) {
         paginationState[table].currentPage = 1;
     }
@@ -106,54 +132,6 @@ function showToast(message, type = 'info') {
         toast.classList.remove('show');
         setTimeout(() => toast.remove(), 500);
     }, 4000);
-}
-
-function openModal(modalId, setupFunction) {
-    const modal = document.getElementById(modalId);
-    if (!modal) return;
-
-    const isFirstModal = !document.querySelector('dialog[open]');
-    if (isFirstModal) {
-        lastScrollY = window.scrollY;
-        document.body.style.overflow = 'hidden';
-    }
-
-    lastFocusedElement = document.activeElement;
-
-    if (setupFunction && typeof setupFunction === 'function') {
-        setupFunction(modal);
-    }
-
-    if (!modal.open) {
-        modal.showModal();
-    }
-
-    const closeButtons = modal.querySelectorAll('[data-action^="cancel-"], [data-action^="close-"]');
-    closeButtons.forEach(button => {
-        if (button._closeModalHandler) {
-            button.removeEventListener('click', button._closeModalHandler);
-        }
-        button._closeModalHandler = (event) => {
-            event.preventDefault();
-            closeModal(modalId);
-        };
-        button.addEventListener('click', button._closeModalHandler);
-    });
-}
-
-function closeModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal && modal.open) {
-        modal.close();
-
-        queueMicrotask(() => {
-            const anyModalOpen = document.querySelector('dialog[open]');
-            if (!anyModalOpen) {
-                document.body.style.overflow = '';
-                window.scrollTo(0, lastScrollY);
-            }
-        });
-    }
 }
 
 function renderMainLayout() {
@@ -211,8 +189,8 @@ function renderUnifiedDashboardComponent() {
             <h2><i class="fas fa-tachometer-alt"></i> Dashboard de Análise</h2>
             <div class="header-actions">
                  <button class="btn btn-icon-only toggle-dashboard-btn" data-action="toggle-dashboard" data-target="unified-dashboard" title="Mostrar/Ocultar Painel">
-                     <i class="fas ${iconClass}"></i>
-                 </button>
+                    <i class="fas ${iconClass}"></i>
+                </button>
             </div>
         </div>
         <div class="card-body" style="padding-top: 0.5rem;">
@@ -244,7 +222,7 @@ function renderUnifiedDashboardComponent() {
                 </div>
                 <div id="lifecycle-tab-content" class="dashboard-tab-content ${activeTab === 'lifecycle' ? 'active' : ''}">
                      <div id="lifecycle-predictive-container" class="predictive-grid"></div>
-                       <div id="lifecycle-pagination-container" class="card-footer"></div>
+                     <div id="lifecycle-pagination-container" class="card-footer"></div>
                 </div>
             </div>
         </div>
@@ -276,7 +254,10 @@ function renderAllModals() {
 }
 
 function updateSortIndicators(tableType) {
-    const { key, direction } = sortState[tableType];
+    const {
+        key,
+        direction
+    } = sortState[tableType];
     const tableHeaders = document.querySelectorAll(`#${tableType}-management th[data-sort]`);
 
     tableHeaders.forEach(th => {
@@ -560,11 +541,6 @@ function renderItemsTable(filteredItems, updatedItemId = null) {
         almoxarifadoFilter.value = almoxarifadoFilterState;
     }
 
-    const onLoanFilter = document.getElementById('on-loan-filter');
-    if (onLoanFilter) {
-        onLoanFilter.checked = onLoanFilterState;
-    }
-
     const searchTerm = document.getElementById('search-input')?.value.trim().toLowerCase() || '';
     renderPaginatedTable({
         containerId: 'items-table-body',
@@ -664,32 +640,16 @@ function renderKitsTable(filteredKits) {
 function createCollaboratorRow(collaborator) {
     const row = document.createElement('tr');
     row.dataset.id = collaborator.id;
-
-    const dropdownOptions = `
-        <a href="#" data-action="${ACTIONS.VIEW_COLLABORATOR_DASHBOARD}" data-id="${collaborator.id}"><i class="fas fa-tachometer-alt"></i> Dashboard do Colaborador</a>
-        <a href="#" data-action="${ACTIONS.VIEW_SIGNED_RECEIPTS}" data-id="${collaborator.id}"><i class="fas fa-check-double"></i> Ver Comprovantes Assinados</a>
-        <div class="dropdown-divider"></div>
-        <a href="#" data-action="${ACTIONS.EDIT_COLLABORATOR}" data-id="${collaborator.id}"><i class="fas fa-edit"></i> Editar Colaborador</a>
-        <a href="#" class="danger-action" data-action="${ACTIONS.DELETE_COLLABORATOR}" data-id="${collaborator.id}"><i class="fas fa-trash-alt"></i> Excluir Colaborador</a>
-    `;
-
     row.innerHTML = `
         <td>${collaborator.name}</td>
         <td>${collaborator.registration || 'N/A'}</td>
-        <td>${collaborator.role || 'N/A'}</td>
-        <td>${collaborator.empresa || 'N/A'}</td>
+        <td><span class="status-badge">${collaborator.role || 'N/A'}</span></td>
         <td class="actions-cell">
-            <div class="actions-container">
-                <button class="btn btn-sm btn-success" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${collaborator.id}" title="Gerar Comprovante de Entrega">
-                    <i class="fas fa-file-signature"></i>
-                </button>
-                <div class="actions-dropdown-container">
-                    <button class="btn btn-sm btn-secondary" data-action="toggle-actions-dropdown" title="Mais Opções">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
-                    <div class="actions-dropdown-content hidden">${dropdownOptions}</div>
-                </div>
-            </div>
+            <button class="btn btn-sm btn-success" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${collaborator.id}" title="Gerar Comprovante de Entrega"><i class="fas fa-receipt"></i></button>
+            <button class="btn btn-sm btn-secondary" data-action="${ACTIONS.VIEW_SIGNED_RECEIPTS}" data-id="${collaborator.id}" title="Ver Comprovantes Assinados"><i class="fas fa-history"></i></button>
+            <button class="btn btn-sm btn-info" data-action="${ACTIONS.VIEW_COLLABORATOR_DASHBOARD}" data-id="${collaborator.id}" title="Dashboard do Colaborador"><i class="fas fa-chart-bar"></i></button>
+            <button class="btn btn-sm btn-primary" data-action="${ACTIONS.EDIT_COLLABORATOR}" data-id="${collaborator.id}" title="Editar Colaborador"><i class="fas fa-user-edit"></i></button>
+            <button class="btn btn-sm btn-danger" data-action="${ACTIONS.DELETE_COLLABORATOR}" data-id="${collaborator.id}" title="Excluir Colaborador"><i class="fas fa-user-times"></i></button>
         </td>`;
     return row;
 }
@@ -724,7 +684,6 @@ function renderCollaboratorsTable(collaborators) {
                             <th>Nome</th>
                             <th>Matrícula</th>
                             <th>Cargo</th>
-                            <th>Empresa</th>
                             <th>Ações</th>
                         </tr>
                     </thead>
@@ -751,17 +710,14 @@ function createDebitRow(debit) {
     const row = document.createElement('tr');
     row.dataset.id = debit.id;
     const collaboratorName = getCollaboratorById(debit.collaboratorId)?.name || 'Colaborador não encontrado';
-    const isDiscount = debit.type === 'Desconto';
-    const typeBadge = `<span class="status-badge ${isDiscount ? 'status-info' : 'status-danger'}">${debit.type || 'Débito'}</span>`;
-
     row.innerHTML = `
         <td>${new Date(debit.date).toLocaleDateString('pt-BR')}</td>
         <td>${collaboratorName}</td>
         <td>${debit.itemName} (Qtd: ${debit.quantity})</td>
-        <td>${typeBadge}</td>
+        <td>${debit.reason}</td>
         <td>R$ ${debit.amount.toFixed(2)}</td>
         <td class="actions-cell">
-            <button class="btn btn-sm btn-success" data-action="${ACTIONS.SETTLE_DEBIT}" data-id="${debit.id}" title="Quitar Pendência"><i class="fas fa-check"></i></button>
+            <button class="btn btn-sm btn-success" data-action="${ACTIONS.SETTLE_DEBIT}" data-id="${debit.id}" title="Quitar Débito"><i class="fas fa-check"></i></button>
         </td>`;
     return row;
 }
@@ -773,7 +729,7 @@ function renderDebitsTable(allDebits, searchTerm = '') {
         paginationContainerId: 'debit-pagination-container',
         data: debits,
         renderRowFunction: createDebitRow,
-        noDataMessage: searchTerm ? `Nenhuma pendência encontrada para "${searchTerm}".` : 'Nenhuma pendência financeira registrada.',
+        noDataMessage: searchTerm ? `Nenhum débito encontrado para "${searchTerm}".` : 'Nenhum débito pendente registrado.',
         tableType: 'debit'
     });
 }
@@ -831,7 +787,7 @@ function renderServiceOrdersTable(serviceOrders, searchTerm = '') {
         cardBody.innerHTML = `
             <div class="table-responsive">
                 <table class="item-table">
-                    <thead>
+                     <thead>
                         <tr>
                             <th data-sort="id">Número O.S.</th>
                             <th data-sort="customer">Cliente</th>
@@ -897,7 +853,8 @@ function renderNotificationPanel(allAlerts) {
                 [ALERT_TYPES.VALIDITY_WARNING]: 'fa-hourglass-half',
                 [ALERT_TYPES.PRICE_CHECK_REMINDER]: 'fa-tags',
                 [ALERT_TYPES.MAINTENANCE_NEEDED]: 'fa-tools',
-                [ALERT_TYPES.BACKUP_REMINDER]: 'fa-save'
+                [ALERT_TYPES.BACKUP_REMINDER]: 'fa-save',
+                [ALERT_TYPES.UNSIGNED_RECEIPT]: 'fa-clock'
             };
 
             let buttonsHTML = '';
@@ -910,6 +867,9 @@ function renderNotificationPanel(allAlerts) {
                     break;
                 case ALERT_TYPES.VALIDITY_EXPIRED:
                     buttonsHTML = `<button class="btn btn-sm btn-danger" data-action="${ACTIONS.REPLACE_ITEM}" data-id="${alertData.itemId}" data-quantity="${alertData.quantity}">Substituir</button>`;
+                    break;
+                case ALERT_TYPES.UNSIGNED_RECEIPT:
+                    buttonsHTML = `<button class="btn btn-sm btn-info" data-action="${ACTIONS.DISMISS_MANUAL_ALERT}" data-id="${alertData.id}">Ok, Ciente</button>`;
                     break;
                 case ALERT_TYPES.PRICE_CHECK_REMINDER:
                 case ALERT_TYPES.PRICE_VARIATION:
@@ -1092,8 +1052,7 @@ function createMovementReportRow(record) {
         [ACTIONS.HISTORY_LOAN]: 'Empréstimo',
         [ACTIONS.HISTORY_RETURN]: 'Devolução',
         [ACTIONS.HISTORY_LOSS]: 'Perda',
-        [ACTIONS.HISTORY_DISCARD]: 'Descarte',
-        [ACTIONS.HISTORY_EXCHANGE]: 'Troca'
+        [ACTIONS.HISTORY_DISCARD]: 'Descarte'
     };
     row.innerHTML = `
         <td>${new Date(record.timestamp).toLocaleString('pt-BR')}</td>
@@ -1357,9 +1316,10 @@ function renderBatchValidityReport(reportData) {
     });
 }
 
-
 function openItemFormModal(options = {}) {
-    const { itemId = null, defaultValues = {} } = options;
+    const {
+        itemId = null, defaultValues = {}
+    } = options;
     openModal(MODAL_IDS.ITEM_FORM, async (modal) => {
         const item = itemId ? getItemById(itemId) : null;
         const isEditing = !!item;
@@ -1417,7 +1377,7 @@ function openItemFormModal(options = {}) {
             idDisplayInput.value = item.id;
             form.elements.name.value = item.name;
             form.elements.barcode.value = item.barcode || '';
-            form.elements.empresa.value = item.empresa || 'WeldingPro';
+            form.elements.empresa.value = item.empresa || 'Weldingpro';
             form.elements.ca.value = item.ca || '';
             form.elements.almoxarifado.value = item.almoxarifado || 'equipamentos';
             form.elements.type.value = item.type;
@@ -1742,8 +1702,7 @@ function renderHistoryContent(history, modal) {
             [ACTIONS.HISTORY_LOAN]: 'Empréstimo',
             [ACTIONS.HISTORY_RETURN]: 'Devolução',
             [ACTIONS.HISTORY_LOSS]: 'Perda',
-            [ACTIONS.HISTORY_DISCARD]: 'Descarte',
-            [ACTIONS.HISTORY_EXCHANGE]: 'Troca'
+            [ACTIONS.HISTORY_DISCARD]: 'Descarte'
         };
         const rows = history.map(record => `<tr><td>${new Date(record.timestamp).toLocaleString('pt-BR')}</td><td>${typeMap[record.type] || record.type}</td><td>${record.quantity}</td><td>${record.responsible || 'N/A'}</td></tr>`).join('');
         container.innerHTML = `<div class="table-responsive"><table class="item-table"><thead><tr><th>Data</th><th>Tipo</th><th>Qtd.</th><th>Responsável</th></tr></thead><tbody>${rows}</tbody></table></div>`;
@@ -1911,11 +1870,11 @@ function renderBatchControlForm(item, modal) {
     form.elements.manufacturingDate.valueAsDate = new Date();
     form.elements.shelfLifeDays.value = item.shelfLifeDays || '';
 
-    renderBatchesTable(item, modal);
+    renderBatchesTable(item, form);
 }
 
-function renderBatchesTable(item, modal) {
-    const tableBody = modal.querySelector('#batches-table-body');
+function renderBatchesTable(item, form) {
+    const tableBody = form.querySelector('#batches-table-body');
     if (!tableBody) {
         return;
     }
@@ -1992,7 +1951,7 @@ function openMovementModal(itemId) {
         modal.querySelector('#movement-quantity').max = item.currentStock;
 
         const settings = getSettings();
-        const isReturnable = settings.returnableTypes.includes(item.type) || item.type === 'Kit';
+        const isReturnable = settings.returnableTypes.includes(item.type);
         modal.querySelector('#movement-modal-title').textContent = isReturnable ? 'Registrar Empréstimo' : 'Registrar Saída de Consumo';
 
         const collaboratorSelect = modal.querySelector('#movement-collaborator');
@@ -2022,7 +1981,6 @@ function renderAllocationModalContent(item, modal) {
                 <td>${alloc.location}</td>
                 <td>${new Date(alloc.date).toLocaleDateString('pt-BR')}</td>
                 <td class="actions-cell">
-                    <button class="btn btn-sm btn-info" data-action="exchange-item" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Trocar Item"><i class="fas fa-exchange-alt"></i></button>
                     <button class="btn btn-sm btn-success" data-action="${ACTIONS.RETURN_ALLOCATION}" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Devolver Item"><i class="fas fa-undo"></i></button>
                     <button class="btn btn-sm btn-danger" data-action="${ACTIONS.REGISTER_LOSS}" data-id="${currentItem.id}" data-alloc-id="${alloc.id}" title="Registrar Perda"><i class="fas fa-exclamation-triangle"></i></button>
                 </td>
@@ -2048,22 +2006,11 @@ function openCollaboratorModal(collaborator = null) {
         const collabIdInput = document.getElementById('collaborator-id');
         if (collabIdInput) collabIdInput.value = '';
 
-        const empresaSelect = modal.querySelector('#collaborator-empresa');
-        if (empresaSelect) {
-            empresaSelect.innerHTML = `
-                <option value="WeldingPro">WeldingPro</option>
-                <option value="ALV">ALV</option>
-            `;
-        }
-
         if (collaborator) {
             form.elements['collaborator-id'].value = collaborator.id;
             form.elements['collaborator-name'].value = collaborator.name;
             form.elements['collaborator-role'].value = collaborator.role;
             form.elements['collaborator-registration'].value = collaborator.registration;
-            form.elements['collaborator-empresa'].value = collaborator.empresa;
-        } else {
-            form.elements['collaborator-empresa'].value = 'WeldingPro';
         }
     });
 }
@@ -2080,54 +2027,25 @@ function openReceiptGeneratorModal(collaboratorId) {
         modal.querySelector('#receipt-collaborator-name').textContent = collaborator.name;
 
         const allItems = getAllItems();
-        const oneDayAgo = new Date(new Date().getTime() - (24 * 60 * 60 * 1000));
-
         const allocatedItems = allItems.flatMap(item =>
             (item.allocations || [])
                 .filter(alloc => alloc.collaboratorId === collaboratorId)
                 .map(alloc => ({
-                    id: alloc.id,
-                    itemId: item.id,
-                    name: item.name,
-                    ca: item.ca,
-                    quantity: alloc.quantity,
-                    date: alloc.date,
-                    type: 'Empréstimo'
+                    ...item,
+                    allocationDetails: alloc
                 }))
         );
-
-        const recentExits = allItems.flatMap(item =>
-            (item.history || [])
-                .filter(record =>
-                    record.type === ACTIONS.HISTORY_EXIT &&
-                    record.responsible === collaborator.name &&
-                    new Date(record.timestamp) > oneDayAgo
-                )
-                .map(record => ({
-                    id: record.exitId,
-                    itemId: item.id,
-                    name: item.name,
-                    ca: item.ca,
-                    quantity: record.quantity,
-                    date: record.timestamp,
-                    type: 'Saída'
-                }))
-        );
-
-        const itemsForReceipt = [...allocatedItems, ...recentExits]
-            .sort((a, b) => new Date(b.date) - new Date(a.date));
 
         const itemsListContainer = modal.querySelector('#receipt-items-list');
-        if (itemsForReceipt.length > 0) {
-            let itemsHtml = '<table class="item-table"><thead><tr><th><input type="checkbox" id="select-all-receipt-items"></th><th>Item</th><th>Qtd.</th><th>Tipo</th><th>Data</th></tr></thead><tbody>';
-            itemsForReceipt.forEach(item => {
+        if (allocatedItems.length > 0) {
+            let itemsHtml = '<table class="item-table"><thead><tr><th><input type="checkbox" id="select-all-receipt-items"></th><th>Item</th><th>Qtd.</th><th>Data Alocação</th></tr></thead><tbody>';
+            allocatedItems.forEach(item => {
                 itemsHtml += `
                     <tr>
-                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedAllocations" value="${item.type}_${item.id}"></td>
+                        <td><input type="checkbox" class="receipt-item-checkbox" name="selectedAllocations" value="${item.allocationDetails.id}"></td>
                         <td>${item.name} ${item.ca ? `(CA: ${item.ca})` : ''}</td>
-                        <td>${item.quantity}</td>
-                        <td><span class="status-badge ${item.type === 'Empréstimo' ? 'status-warning' : 'status-info'}">${item.type}</span></td>
-                        <td>${new Date(item.date).toLocaleDateString('pt-BR')}</td>
+                        <td>${item.allocationDetails.quantity}</td>
+                        <td>${new Date(item.allocationDetails.date).toLocaleDateString('pt-BR')}</td>
                     </tr>
                 `;
             });
@@ -2143,25 +2061,17 @@ function openReceiptGeneratorModal(collaboratorId) {
             };
 
         } else {
-            itemsListContainer.innerHTML = '<p>Nenhum item emprestado ou com saída recente para este colaborador.</p>';
+            itemsListContainer.innerHTML = '<p>Nenhum item alocado para este colaborador.</p>';
         }
-
-        const observationsContainer = modal.querySelector('#receipt-observations-container');
-        observationsContainer.innerHTML = `
-            <fieldset>
-                <legend>Observações</legend>
-                <div class="form-group">
-                    <textarea id="receipt-observations" name="observations" rows="3" placeholder="Adicione informações extras aqui..."></textarea>
-                </div>
-            </fieldset>
-        `;
 
         modal.querySelector('#receipt-link-container').style.display = 'none';
         modal.querySelector('#generate-receipt-link-btn').style.display = 'inline-flex';
     });
 }
 
-
+// ==================================================================
+// == FUNÇÃO CORRIGIDA PARA BUSCAR E EXIBIR COMPROVANTES ==
+// ==================================================================
 async function openSignedReceiptsModal(collaboratorId) {
     const collaborator = getCollaboratorById(collaboratorId);
     if (!collaborator) {
@@ -2174,8 +2084,10 @@ async function openSignedReceiptsModal(collaboratorId) {
         const listContainer = modal.querySelector('#signed-receipts-list');
         listContainer.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><span>Buscando comprovantes...</span></div>`;
 
-        const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
+        // A constante API_BASE_URL deve ser definida globalmente ou importada
+        const API_BASE_URL = 'http://localhost:3000/api';
         try {
+            // 1. Busca TODOS os comprovantes da API
             const response = await fetch(`${API_BASE_URL}/receipts`);
             const allReceipts = await response.json();
 
@@ -2183,6 +2095,7 @@ async function openSignedReceiptsModal(collaboratorId) {
                 throw new Error(allReceipts.error || 'Falha ao buscar comprovantes.');
             }
 
+            // 2. Filtra os comprovantes no frontend para o colaborador específico
             const receipts = allReceipts.filter(receipt => receipt.collaborator_id === collaboratorId);
 
             if (receipts.length === 0) {
@@ -2404,14 +2317,14 @@ function openConfirmationModal(options) {
             if (details.customHTML) {
                 messageHtml += details.customHTML;
             }
-            if (details.addedCount > 0 && Array.isArray(details.addedNames)) {
+            if (details.addedCount > 0) {
                 messageHtml += `<h6>Adicionados (${details.addedCount}):</h6><ul class="feedback-list">`;
                 details.addedNames.forEach(name => {
                     messageHtml += `<li><i class="fas fa-check-circle success"></i> ${name}</li>`;
                 });
                 messageHtml += '</ul>';
             }
-            if (details.ignoredCount > 0 && Array.isArray(details.ignoredNames)) {
+            if (details.ignoredCount > 0) {
                 messageHtml += `<h6>Ignorados (${details.ignoredCount}):</h6><ul class="feedback-list">`;
                 details.ignoredNames.forEach(name => {
                     messageHtml += `<li><i class="fas fa-times-circle danger"></i> ${name}</li>`;
@@ -2607,7 +2520,7 @@ function openBarcodeActionModal(mode = 'action', onScanComplete = null) {
                     showView(feedback);
                 }
             } catch (err) {
-                feedback.textContent = 'Erro ao acessar dispositivos de câmera:';
+                feedback.textContent = 'Erro ao acessar dispositivos de câmera.';
                 showView(feedback);
             }
         };
@@ -2735,7 +2648,10 @@ function renderPredictiveCards(containerId, predictiveData) {
     const container = document.getElementById(containerId);
     if (!container) return;
     const settings = getSettings();
-    const { critical, warning } = settings.predictiveAlertLevels;
+    const {
+        critical,
+        warning
+    } = settings.predictiveAlertLevels;
 
     const renderCardGrid = (data, fragment) => {
         data.forEach(item => {
@@ -2913,66 +2829,71 @@ function openCollaboratorDashboardModal(collaboratorId) {
         } else {
             debitsContainer.innerHTML = '<p>Nenhum débito pendente para este colaborador.</p>';
         }
+    });
+}
 
-        const isDarkMode = document.body.classList.contains('dark');
-        const textColor = isDarkMode ? '#c9d1d9' : '#212529';
-        const gridColor = isDarkMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
-
-        const { itemUsageData, debitHistoryData } = getCollaboratorPerformanceData(collaboratorId);
-
-        const itemUsageCtx = document.getElementById('item-usage-chart')?.getContext('2d');
-        if (itemUsageCtx) {
-            if (itemUsageChart) itemUsageChart.destroy();
-            itemUsageChart = new Chart(itemUsageCtx, {
-                type: 'bar',
-                data: {
-                    labels: itemUsageData.labels,
-                    datasets: [{
-                        label: 'Quantidade Retirada',
-                        data: itemUsageData.data,
-                        backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
-                        x: { ticks: { color: textColor } }
-                    }
-                }
-            });
-        }
-
-        const debitHistoryCtx = document.getElementById('debit-history-chart')?.getContext('2d');
-        if (debitHistoryCtx) {
-            if (debitHistoryChart) debitHistoryChart.destroy();
-            debitHistoryChart = new Chart(debitHistoryCtx, {
-                type: 'line',
-                data: {
-                    labels: debitHistoryData.labels,
-                    datasets: [{
-                        label: 'Valor do Débito (R$)',
-                        data: debitHistoryData.data,
-                        borderColor: 'rgba(220, 53, 69, 0.8)',
-                        backgroundColor: 'rgba(220, 53, 69, 0.2)',
-                        fill: true,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { color: textColor }, grid: { color: gridColor } },
-                        x: { ticks: { color: textColor } }
-                    }
-                }
-            });
+function showFormErrors(form, errors) {
+    clearFormErrors(form);
+    errors.forEach(error => {
+        const field = form.querySelector(`[name="${error.field}"]`);
+        if (field) {
+            field.classList.add('is-invalid');
+            let errorElement = field.nextElementSibling;
+            if (errorElement && errorElement.classList.contains('form-error-message')) {
+                errorElement.textContent = error.message;
+            } else {
+                errorElement = document.createElement('div');
+                errorElement.className = 'form-error-message';
+                errorElement.textContent = error.message;
+                field.parentNode.insertBefore(errorElement, field.nextSibling);
+            }
         }
     });
+    if (errors.length > 0) {
+        showToast(errors[0].message, 'error');
+    }
+}
+
+function clearFormErrors(form) {
+    form.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+    form.querySelectorAll('.form-error-message').forEach(el => el.remove());
+}
+
+function checkBackupReminder() {
+    const settings = getSettings();
+    if (!settings.backupReminder) return;
+
+    const {
+        lastBackupDate,
+        frequencyDays
+    } = settings.backupReminder;
+
+    if (!lastBackupDate) {
+        openConfirmationModal({
+            title: 'Lembrete de Backup',
+            message: 'Você ainda não fez nenhum backup. É altamente recomendável fazer um agora para garantir a segurança dos seus dados.',
+            onConfirm: () => {
+                backupData();
+                closeModal(MODAL_IDS.CONFIRMATION);
+            }
+        });
+        return;
+    }
+
+    const lastBackup = new Date(lastBackupDate);
+    const today = new Date();
+    const daysSinceLastBackup = Math.floor((today.getTime() - lastBackup.getTime()) / (1000 * 3600 * 24));
+
+    if (daysSinceLastBackup >= frequencyDays) {
+        openConfirmationModal({
+            title: 'Lembrete de Backup',
+            message: `Já se passaram ${daysSinceLastBackup} dia(s) desde o seu último backup. Que tal fazer um agora?`,
+            onConfirm: () => {
+                backupData();
+                closeModal(MODAL_IDS.CONFIRMATION);
+            }
+        });
+    }
 }
 
 function openKitReturnModal(kitId, allocationId) {
@@ -3339,115 +3260,3 @@ function renderAvailableItemsForKitAssembly(kitId, modal) {
     };
 }
 
-async function printSignedReceipt(receiptId) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/receipts`);
-        if (!response.ok) throw new Error('Falha ao buscar comprovantes');
-        const receipts = await response.json();
-        const receipt = receipts.find(r => r.id.toString() === receiptId);
-
-        if (!receipt) {
-            showToast('Comprovante não encontrado.', 'error');
-            return;
-        }
-
-        const items = JSON.parse(receipt.items);
-        const itemsHtml = items.map(item => `
-            <tr>
-                <td>${item.quantity}x ${item.name} ${item.ca ? `(CA: ${item.ca})` : ''}</td>
-            </tr>
-        `).join('');
-
-        const printContent = `
-            <!DOCTYPE html>
-            <html lang="pt-BR">
-            <head>
-                <meta charset="UTF-8">
-                <title>COMPROVANTE DE RECEBIMENTO - ID ${receipt.id}</title>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 20px; }
-                    .receipt-container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #ccc; padding: 20px; }
-                    .header { text-align: center; border-bottom: 1px solid #ccc; padding-bottom: 10px; margin-bottom: 20px; }
-                    .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-                    .info-item { display: flex; flex-direction: column; }
-                    .info-item strong { font-size: 0.8em; color: #555; }
-                    .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-                    .items-table th, .items-table td { text-align: left; padding: 8px; border-bottom: 1px solid #eee; }
-                    .proof-section { text-align: center; }
-                    .proof-section img { max-width: 250px; border: 1px solid #ddd; padding: 5px; }
-                    @media print {
-                        body { margin: 0; }
-                        .receipt-container { border: none; box-shadow: none; }
-                        button { display: none; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="receipt-container">
-                    <div class="header">
-                        <h1>Comprovante de Recebimento</h1>
-                    </div>
-                    <div class="info-grid">
-                        <div class="info-item"><strong>Colaborador:</strong> ${receipt.collaborator_name}</div>
-                        <div class="info-item"><strong>Data e Hora:</strong> ${new Date(receipt.created_at).toLocaleString('pt-BR')}</div>
-                        <div class="info-item"><strong>Cargo:</strong> ${receipt.collaborator_role || 'Não informado'}</div>
-                        <div class="info-item"><strong>Local/Cliente:</strong> ${receipt.delivery_location || 'Não especificado'}</div>
-                    </div>
-                    
-                    <h3>Itens Recebidos</h3>
-                    <table class="items-table">
-                        <tbody>${itemsHtml}</tbody>
-                    </table>
-
-                    <div class="proof-section">
-                        <h3>Comprovação Fotográfica</h3>
-                        <img src="${receipt.proof_image}" alt="Foto do colaborador">
-                    </div>
-                </div>
-            </body>
-            </html>
-        `;
-
-        const printWindow = window.open('', '_blank');
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.onload = function () {
-            printWindow.print();
-        };
-
-    } catch (error) {
-        console.error('Erro ao gerar comprovante para impressão:', error);
-        showToast('Não foi possível gerar o comprovante para impressão.', 'error');
-    }
-}
-
-function openExchangeModal(returnedItemId, allocationId) {
-    const item = getItemById(returnedItemId);
-    const allocation = item?.allocations.find(a => a.id === allocationId);
-    if (!item || !allocation) {
-        showToast('Erro ao encontrar item ou alocação para troca.', 'error');
-        return;
-    }
-
-    openModal(MODAL_IDS.EXCHANGE, (modal) => {
-        const form = modal.querySelector('form');
-        form.reset();
-
-        const collaborator = getCollaboratorById(allocation.collaboratorId);
-
-        modal.querySelector('#exchange-returned-item-id').value = returnedItemId;
-        modal.querySelector('#exchange-allocation-id').value = allocationId;
-        modal.querySelector('#exchange-collaborator-id').value = allocation.collaboratorId;
-        modal.querySelector('#exchange-returned-item-name').textContent = item.name;
-        modal.querySelector('#exchange-collaborator-name').textContent = collaborator.name;
-        modal.querySelector('#exchange-quantity').value = allocation.quantity;
-        modal.querySelector('#exchange-quantity').max = allocation.quantity;
-
-        const newItemSelect = modal.querySelector('#exchange-new-item-select');
-        const availableItems = getAllItems().filter(i => i.type === item.type && i.id !== item.id && i.currentStock > 0);
-        newItemSelect.innerHTML = '<option value="" disabled selected>Selecione o novo item...</option>';
-        availableItems.forEach(i => {
-            newItemSelect.innerHTML += `<option value="${i.id}">${i.name} (Estoque: ${i.currentStock})</option>`;
-        });
-    });
-}

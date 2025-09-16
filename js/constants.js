@@ -141,7 +141,8 @@ const ALERT_TYPES = {
     PRICE_CHECK_REMINDER: 'price_check_reminder',
     MAINTENANCE_NEEDED: 'maintenance_needed',
     BACKUP_REMINDER: 'backup_reminder',
-    SIGNED_RECEIPT: 'signed_receipt'
+    SIGNED_RECEIPT: 'signed_receipt',
+    UNSIGNED_RECEIPT: 'unsigned_receipt'
 };
 
 const ITEM_HISTORY_LIMIT = 50;

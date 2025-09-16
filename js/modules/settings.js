@@ -51,6 +51,7 @@ function getSettings() {
         },
         notificationBehaviors: {
             [ALERT_TYPES.SIGNED_RECEIPT]: 'info',
+            [ALERT_TYPES.UNSIGNED_RECEIPT]: 'info',
             [ALERT_TYPES.LOW_STOCK]: 'action',
             [ALERT_TYPES.VALIDITY_EXPIRED]: 'action',
             [ALERT_TYPES.PENDING_COUNT]: 'action',
@@ -146,6 +147,7 @@ function initializeSettings() {
         },
         notificationBehaviors: {
             [ALERT_TYPES.SIGNED_RECEIPT]: 'info',
+            [ALERT_TYPES.UNSIGNED_RECEIPT]: 'info',
             [ALERT_TYPES.LOW_STOCK]: 'action',
             [ALERT_TYPES.VALIDITY_EXPIRED]: 'action',
             [ALERT_TYPES.PENDING_COUNT]: 'action',

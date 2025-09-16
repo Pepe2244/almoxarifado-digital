@@ -126,6 +126,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.dispatchEvent(new CustomEvent('dataChanged'));
             });
 
+            socket.on('receipt_expired_unsigned', (data) => {
+                const message = data.message || `Comprovante não assinado expirou.`;
+                showToast(message, 'error');
+                const notificationId = `unsigned_${data.collaboratorName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}`;
+                addNotification(ALERT_TYPES.UNSIGNED_RECEIPT, message, notificationId, true);
+                createLog('RECEIPT_EXPIRED_NOTIFICATION', `Notificação recebida: ${message}`, 'Sistema');
+                document.body.dispatchEvent(new CustomEvent('dataChanged'));
+            });
+
             socket.on('disconnect', () => {
                 console.log('Desconectado do servidor de notificações.');
                 createLog('WEBSOCKET_DISCONNECT', 'Desconectado do servidor de notificações.', 'Sistema');
@@ -1700,7 +1709,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     settings.dashboardsCollapsed[dashboardKey] = isCollapsed;
                     saveSettings(settings);
                     const icon = button.querySelector('i');
-                    if (icon) icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fa-chevron-up';
+                    if (icon) icon.className = isCollapsed ? 'fas fa-chevron-down' : 'fas fa-chevron-up';
                 }
                 break;
             }

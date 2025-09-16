@@ -55,18 +55,41 @@ pool.connect((err, client, release) => {
 const query = (text, params) => pool.query(text, params);
 
 
-async function clearExpiredReceiptTokens() {
+async function checkAndClearExpiredReceipts() {
     try {
         const eightHoursAgo = new Date(Date.now() - 8 * 60 * 60 * 1000);
-        await query("DELETE FROM temporary_receipts WHERE created_at < $1 AND status = 'pending'", [eightHoursAgo]);
-        console.log("Tokens de comprovante pendentes e expirados foram limpos.");
+
+        const { rows } = await query(
+            "SELECT token, receipt_data FROM temporary_receipts WHERE created_at < $1 AND status = 'pending'",
+            [eightHoursAgo]
+        );
+
+        for (const receipt of rows) {
+            const collaboratorName = receipt.receipt_data?.collaboratorName || 'Desconhecido';
+            const message = `Comprovante não assinado por ${collaboratorName}.`;
+
+            io.emit('receipt_expired_unsigned', {
+                message: message,
+                collaboratorName: collaboratorName
+            });
+            console.log(`Notificação de comprovante expirado enviada para: ${collaboratorName}`);
+        }
+
+        if (rows.length > 0) {
+            const tokensToDelete = rows.map(r => r.token);
+            await query("DELETE FROM temporary_receipts WHERE token = ANY($1::text[])", [tokensToDelete]);
+            console.log(`${rows.length} token(s) de comprovante pendentes e expirados foram limpos.`);
+        } else {
+            console.log("Nenhum token de comprovante pendente e expirado para limpar.");
+        }
+
     } catch (err) {
-        console.error("Erro ao limpar tokens expirados:", err);
+        console.error("Erro ao verificar e limpar tokens expirados:", err);
     }
 }
 
 
-setInterval(clearExpiredReceiptTokens, 60 * 60 * 1000);
+setInterval(checkAndClearExpiredReceipts, 5 * 60 * 1000);
 
 
 app.get('/', (req, res) => {
