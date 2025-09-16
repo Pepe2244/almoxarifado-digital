@@ -2181,7 +2181,8 @@ async function openSignedReceiptsModal(collaboratorId) {
         listContainer.innerHTML = `<div class="loading-spinner"><i class="fas fa-spinner fa-spin"></i><span>Buscando comprovantes...</span></div>`;
 
         // A constante API_BASE_URL deve ser definida globalmente ou importada
-        const API_BASE_URL = 'http://localhost:3000/api';
+
+
         try {
             // 1. Busca TODOS os comprovantes da API
             const response = await fetch(`${API_BASE_URL}/receipts`);

@@ -133,8 +133,10 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            const container = document.getElementById('receipt-container');
-            const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
+        const container = document.getElementById('receipt-container');
+        const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = IS_LOCAL ? 'http://localhost:3000/api' : 'https://almoxarifado-api.onrender.com/api';
+    
             let receiptData = null;
             let photoBase64 = null;
             let stream = null;

@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
             addEventListeners();
             initializeHeaderFunctionality();
 
-            const socket = io('https://almoxarifado-api.onrender.com');
+            const socket = io(SOCKET_URL); // Usando a nova constante
 
             socket.on('connect', () => {
                 console.log('Conectado ao servidor de notificações via WebSocket.');
@@ -1171,7 +1171,7 @@ document.addEventListener('DOMContentLoaded', () => {
             observations: observations
         };
 
-        const API_BASE_URL = 'https://almoxarifado-api.onrender.com/api';
+
         try {
             const response = await fetch(`${API_BASE_URL}/generate-receipt`, {
                 method: 'POST',

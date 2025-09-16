@@ -1,3 +1,9 @@
+const IS_LOCAL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+const API_BASE_URL = IS_LOCAL ? 'http://localhost:3000/api' : 'https://almoxarifado-api.onrender.com/api';
+
+const SOCKET_URL = IS_LOCAL ? 'http://localhost:3000' : 'https://almoxarifado-api.onrender.com';
+
 const DB_KEYS = {
     ITEMS: 'almoxarifado_items',
     COLLABORATORS: 'almoxarifado_collaborators',
