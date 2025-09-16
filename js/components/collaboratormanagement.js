@@ -69,15 +69,15 @@ function renderCollaboratorManagementComponent() {
         <div class="card-body">
             <div class="table-responsive">
                 <table class="item-table">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Matrícula</th>
-                            <th>Cargo</th>
-                            <th>Empresa</th>
-                            <th class="actions-cell">Ações</th>
-                        </tr>
-                    </thead>
+                <thead>
+    <tr>
+        <th>Nome</th>
+        <th>Matrícula</th>
+        <th>Cargo</th>
+        <th>Empresa</th>
+        <th class="actions-cell">Ações</th>
+    </tr>
+</thead>
                     <tbody id="collaborators-table-body">
                     </tbody>
                 </table>

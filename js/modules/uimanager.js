@@ -689,16 +689,37 @@ function createCollaboratorRow(collaborator) {
     const row = document.createElement('tr');
     row.dataset.id = collaborator.id;
     row.innerHTML = `
-        <td>${collaborator.name}</td>
-        <td>${collaborator.registration || 'N/A'}</td>
-        <td><span class="status-badge">${collaborator.role || 'N/A'}</span></td>
-        <td class="actions-cell">
-            <button class="btn btn-sm btn-success" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${collaborator.id}" title="Gerar Comprovante de Entrega"><i class="fas fa-receipt"></i></button>
-            <button class="btn btn-sm btn-secondary" data-action="${ACTIONS.VIEW_SIGNED_RECEIPTS}" data-id="${collaborator.id}" title="Ver Comprovantes Assinados"><i class="fas fa-history"></i></button>
-            <button class="btn btn-sm btn-info" data-action="${ACTIONS.VIEW_COLLABORATOR_DASHBOARD}" data-id="${collaborator.id}" title="Dashboard do Colaborador"><i class="fas fa-chart-bar"></i></button>
-            <button class="btn btn-sm btn-primary" data-action="${ACTIONS.EDIT_COLLABORATOR}" data-id="${collaborator.id}" title="Editar Colaborador"><i class="fas fa-user-edit"></i></button>
-            <button class="btn btn-sm btn-danger" data-action="${ACTIONS.DELETE_COLLABORATOR}" data-id="${collaborator.id}" title="Excluir Colaborador"><i class="fas fa-user-times"></i></button>
-        </td>`;
+    <td>${collaborator.name}</td>
+    <td>${collaborator.registration || 'N/A'}</td>
+    <td><span class="status-badge">${collaborator.role || 'N/A'}</span></td>
+    <td>${collaborator.empresa || 'N/A'}</td>
+    <td class="actions-cell">
+        <div class="actions-container">
+            <button class="btn btn-sm btn-success" data-action="${ACTIONS.GENERATE_RECEIPT}" data-id="${collaborator.id}" title="Gerar Comprovante de Entrega">
+                <i class="fas fa-receipt"></i>
+            </button>
+            <div class="actions-dropdown-container">
+                <button class="btn btn-sm btn-secondary btn-icon-only" data-action="toggle-actions-dropdown" title="Mais Opções">
+                    <i class="fas fa-ellipsis-v"></i>
+                </button>
+                <div class="actions-dropdown-content hidden">
+                    <a href="#" data-action="${ACTIONS.VIEW_COLLABORATOR_DASHBOARD}" data-id="${collaborator.id}">
+                        <i class="fas fa-chart-bar"></i> Dashboard
+                    </a>
+                    <a href="#" data-action="${ACTIONS.VIEW_SIGNED_RECEIPTS}" data-id="${collaborator.id}">
+                        <i class="fas fa-check-double"></i> Ver Comprovantes
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" data-action="${ACTIONS.EDIT_COLLABORATOR}" data-id="${collaborator.id}">
+                        <i class="fas fa-user-edit"></i> Editar
+                    </a>
+                    <a href="#" data-action="${ACTIONS.DELETE_COLLABORATOR}" data-id="${collaborator.id}" class="danger-action">
+                        <i class="fas fa-user-times"></i> Excluir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </td>`;
     return row;
 }
 
